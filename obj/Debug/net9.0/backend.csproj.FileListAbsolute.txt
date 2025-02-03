@@ -1,8 +1,0 @@
-c:\Users\MCJosephAgbanlog\RiderProjects\Gresham Recordings\backend\obj\Debug\net9.0\backend.csproj.AssemblyReference.cache
-c:\Users\MCJosephAgbanlog\RiderProjects\Gresham Recordings\backend\obj\Debug\net9.0\backend.GeneratedMSBuildEditorConfig.editorconfig
-c:\Users\MCJosephAgbanlog\RiderProjects\Gresham Recordings\backend\obj\Debug\net9.0\backend.AssemblyInfoInputs.cache
-c:\Users\MCJosephAgbanlog\RiderProjects\Gresham Recordings\backend\obj\Debug\net9.0\backend.AssemblyInfo.cs
-c:\Users\MCJosephAgbanlog\RiderProjects\Gresham Recordings\backend\obj\Debug\net9.0\backend.csproj.CoreCompileInputs.cache
-c:\Users\MCJosephAgbanlog\RiderProjects\Gresham Recordings\backend\obj\Debug\net9.0\backend.MvcApplicationPartsAssemblyInfo.cs
-c:\Users\MCJosephAgbanlog\RiderProjects\Gresham Recordings\backend\obj\Debug\net9.0\backend.MvcApplicationPartsAssemblyInfo.cache
-c:\Users\MCJosephAgbanlog\RiderProjects\Gresham Recordings\backend\obj\Debug\net9.0\backend.sourcelink.json
