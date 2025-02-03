@@ -1,4 +1,6 @@
-﻿namespace backend.Services.LiveRecordings;
+﻿using backend.Models;
+
+namespace backend.Services.LiveRecordings;
 
 public interface ILiveRecordingsService
 {

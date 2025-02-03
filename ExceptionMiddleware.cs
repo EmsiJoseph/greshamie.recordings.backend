@@ -1,4 +1,6 @@
-﻿namespace backend;
+﻿using backend.Exceptions;
+
+namespace backend;
 
 public class ExceptionMiddleware
 {

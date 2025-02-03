@@ -1,8 +1,11 @@
-﻿namespace backend.Services.LiveRecordings;
+﻿using backend.Models;
 
-public interface ILiveRecordingsService
+namespace backend.Services.LiveRecordings;
+
+public interface IHistoricRecordingsService
 {
-    Task<IEnumerable<LiveRecording>> GetLiveRecordingsAsync();
-    Task ResumeRecordingAsync(string recorderId, string recordingId);
-    Task PauseRecordingAsync(string recorderId, string recordingId);
+    Task<RecordingSearchResults> SearchRecordingsAsync(DateTime start, DateTime end);
+    Task DeleteRecordingAsync(string recordingId);
+    Task<Stream> ExportMp3Async(string recordingId);
+    Task<Stream> ExportWavAsync(string recordingId);
 }

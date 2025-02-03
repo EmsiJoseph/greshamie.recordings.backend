@@ -1,92 +1,76 @@
 using System.Threading.RateLimiting;
+using backend.Classes;
 using backend.Constants;
-using backend.Services.Audit;
-using backend.Services.ClarifyGo;
-using IdentityModel.Client;
+using backend.Services.Auth;
+using backend.Services.LiveRecordings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
+var configuration = builder.Configuration;
 
 // 1. Core Services
 builder.Services.AddOpenApi();
 builder.Services.AddOutputCache();
 builder.Services.AddRateLimiter();
+builder.Services.AddCors();
 
-// 2. Authentication & Authorization
-ConfigureAuth(builder.Services, builder.Configuration);
+// 2. Application Services
 
-// 3. ClarifyGo Configuration
-ConfigureClarifyGo(builder.Services, builder.Configuration);
+// Register strongly-typed settings from configuration
+builder.Services.Configure<AuthSettings>(configuration.GetSection("AuthSettings"));
+builder.Services.Configure<ApiSettings>(configuration.GetSection("ApiSettings"));
 
-// 4. Application Services
-builder.Services.AddScoped<IAuditService, AuditService>();
-builder.Services.AddScoped<IClarifyGoService, ClarifyGoService>();
+// Register HTTP clients for the services
 
-// 5. Policies
+// IAuthService uses a HttpClient to contact the Identity Server.
+builder.Services.AddHttpClient<IAuthService, AuthService>();
+
+// ILiveRecordingsService uses a separate HttpClient to contact the ClarifyGo API.
+var clarifyGoApiUri = configuration["ApiSettings:ApiBaseUri"] ??
+                      throw new InvalidOperationException("ClarifyGo API URI not configured.");
+builder.Services.AddHttpClient<ILiveRecordingsService, LiveRecordingsService>(client =>
+{
+    client.BaseAddress = new Uri(clarifyGoApiUri);
+});
+
+// Register Authentication & Authorization.
+// NOTE: In production, update the token validation parameters with the proper issuer, audience, and signing key.
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = false,       // change to true and set ValidIssuer for production
+            ValidateAudience = false,     // change to true and set ValidAudience for production
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            // IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("Secret-Key"))
+        };
+    });
+builder.Services.AddAuthorization();
+
+// 3. Policies
 ConfigurePolicies(builder.Services);
 
 var app = builder.Build();
 
-// 6. Pipeline Configuration
+// 4. Pipeline Configuration
 ConfigurePipeline(app);
 
-// 7. Endpoints
+// 5. Endpoints
 ConfigureEndpoints(app);
 
 app.Run();
 
-// Configuration Methods
-void ConfigureAuth(IServiceCollection services, IConfiguration configuration)
-{
-    services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-        .AddJwtBearer(options =>
-        {
-            options.Authority = configuration["Auth:Authority"];
-            options.Audience = configuration["Auth:Audience"];
-            options.TokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateIssuer = true,
-                ValidateAudience = true,
-                ValidateLifetime = true
-            };
-        });
 
-    services.AddAuthorization(options =>
-    {
-        options.AddPolicy("RequireAuditAccess", policy =>
-            policy.RequireClaim("scope", "audit.write"));
-    });
-}
-
-void ConfigureClarifyGo(IServiceCollection services, IConfiguration configuration)
-{
-    var clarifyGoConfig = configuration.GetSection("ClarifyGo");
-    var baseUrl = clarifyGoConfig["BaseUrl"];
-    
-    services.AddHttpClient("ClarifyGoAuth")
-        .AddClientCredentialsTokenManagement(options =>
-        {
-            options.Client.Clients.Add("clarifygo", new ClientCredentialsTokenRequest
-            {
-                Address = $"{baseUrl}/Identity/connect/token",
-                ClientId = clarifyGoConfig["ClientId"],
-                ClientSecret = clarifyGoConfig["ClientSecret"],
-                Scope = "WebApi"
-            });
-        });
-
-    services.AddHttpClient("ClarifyGoAPI", client => 
-    {
-        client.BaseAddress = new Uri($"{baseUrl}/API/");
-    })
-    .AddClientAccessTokenHandler("clarifygo");
-}
+// --- Local Functions ---
 
 void ConfigurePolicies(IServiceCollection services)
 {
+    // Configure a sliding window rate limiter per user or IP address
     services.Configure<RateLimiterOptions>(options =>
     {
         options.AddPolicy<string>("PerUserPolicy", context =>
@@ -95,16 +79,28 @@ void ConfigurePolicies(IServiceCollection services)
                 _ => new SlidingWindowRateLimiterOptions
                 {
                     Window = TimeSpan.FromMinutes(1),
-                    PermissionsPerWindow = 100
+                    PermitLimit = 100
                 }));
     });
 
+    // Configure output caching with a policy for recordings
     services.Configure<OutputCacheOptions>(options =>
     {
         options.AddPolicy("RecordingsCache", builder =>
             builder.Expire(TimeSpan.FromMinutes(5))
-                .SetVaryByQuery("*")
-                .Tag("recordings"));
+                   .SetVaryByQuery("*")
+                   .Tag("recordings"));
+    });
+
+    // Configure CORS with allowed origins from configuration
+    services.AddCors(options =>
+    {
+        options.AddPolicy("RestrictedOrigins", policy =>
+        {
+            policy.WithOrigins(configuration.GetSection("AllowedOrigins").Get<string[]>() ?? Array.Empty<string>())
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        });
     });
 }
 
@@ -126,19 +122,24 @@ void ConfigurePipeline(WebApplication app)
 
 void ConfigureEndpoints(WebApplication app)
 {
-	// Pattern of mapping endpoints to services
+    // Health check endpoint
+    app.MapGet("/health", () => Results.Ok())
+       .AllowAnonymous();
 
-	//app.MapGet(<Call here the endpoint from AppApiEndpoints>, async (<Interface> <Service>) =>
-	//  await <Service>.<Method>Async())
-    // .RequireAuthorization()
-    // .RequireRateLimiting("PerUserPolicy")
-    // .CacheOutput("RecordingsCache");
-
-    app.MapGet(AppApiEndpoints.LiveRecordingsUri, async (IClarifyGoService clarifyGoService) =>
-        await clarifyGoService.GetLiveRecordingsAsync())
-        .RequireAuthorization()
-        .RequireRateLimiting("PerUserPolicy")
-        .CacheOutput("RecordingsCache");
-
+    // Live Recordings endpoint (requires valid JWT and uses caching)
+    app.MapGet(ClarifyGoApiEndpoints.LiveRecordings.GetAll,
+        async (ILiveRecordingsService service) =>
+            await service.GetLiveRecordingsAsync())
+       .RequireAuthorization()
+       .CacheOutput("RecordingsCache");
 }
 
+// --- Extension Method for OpenAPI ---
+static class ServiceCollectionExtensions
+{
+    public static IServiceCollection AddOpenApi(this IServiceCollection services)
+    {
+        services.AddEndpointsApiExplorer();
+        return services;
+    }
+}

@@ -1,61 +1,44 @@
 namespace backend.Constants;
 
-public static class ClarifyGoApiEndpoints : BaseApiEndpoints
+public static class ClarifyGoApiEndpoints
 {
-    public static class HistoricRecordings : BaseApiEndpoints
+    private const string ApiVersion = "v1.0";
+    
+    public static class HistoricRecordings
     {
-        private const string BasePath = "v1.0/historicrecordings";
+        private const string Base = $"{ApiVersion}/historicrecordings";
         
-        public const string Search = $"{BasePath}/{{startDate}}/{{endDate}}";
-        public const string Delete = $"{BasePath}/{{recordingId}}";
-        public const string ExportMp3 = $"{BasePath}/{{recordingId}}/Mp3";
-        public const string ExportWav = $"{BasePath}/{{recordingId}}/Wav";
+        public const string Search = $"{Base}/{{startDate}}/{{endDate}}";
+        public const string Delete = $"{Base}/{{recordingId}}";
+        public const string ExportMp3 = $"{Base}/{{recordingId}}/Mp3";
+        public const string ExportWav = $"{Base}/{{recordingId}}/Wav";
         
-        public static class Comments : BaseApiEndpoints.Comments
-        {
-            private static readonly (string GetAll, string Add, string Delete) Paths = 
-                EndpointUtilities.CommentEndpoints.GetPaths(BasePath);
-            
-            public static string GetAll => Paths.GetAll;
-            public static string Add => Paths.Add;
-            public static string Delete => Paths.Delete;
-        }
+        public const string GetPostComments = $"{Base}/{{recordingId}}/comments";
+        public const string DeleteComment = $"{Base}/{{recordingId}}/comments/{{commentId}}";
         
-        public static class Tags : BaseApiEndpoints.Tags
-        {
-            private static readonly (string GetAll, string Add, string Remove) Paths = 
-                EndpointUtilities.TagEndpoints.GetPaths(BasePath);
-            
-            public static string GetAll => Paths.GetAll;
-            public static string Add => Paths.Add;
-            public static string Remove => Paths.Remove;
-        }
+        public const string GetTags = $"{Base}/{{recordingId}}/tags";
+        public const string PostDeleteTag = $"{Base}/{{recordingId}}/tags/{{tag}}";
+        
     }
 
     public static class LiveRecordings
     {
-        private const string Base = "v1.0/liverecordings";
+        private const string Base = $"{ApiVersion}/liverecordings";
+        
         public const string GetAll = Base;
         public const string Resume = $"{Base}/{{recorderId}}/{{recordingId}}/resume";
         public const string Pause = $"{Base}/{{recorderId}}/{{recordingId}}/pause";
         
-        public static class Comments
-        {
-            public const string GetAll = $"{Base}/{{recordingId}}/comments";
-            public const string Add = $"{Base}/{{recordingId}}/comments";
-            public const string Delete = $"{Base}/{{recordingId}}/comments/{{commentId}}";
-        }
-        
-        public static class Tags
-        {
-            public const string Add = $"{Base}/{{recordingId}}/tags/{{tag}}";
-            public const string Remove = $"{Base}/{{recordingId}}/tags/{{tag}}";
-        }
+        public const string GetPostComments = $"{Base}/{{recordingId}}/comments";
+        public const string DeleteComment = $"{Base}/{{recordingId}}/comments/{{commentId}}";
+                
+        public const string GetTags = $"{Base}/{{recordingId}}/tags";
+        public const string PostDeleteTag = $"{Base}/{{recordingId}}/tags/{{tag}}";
     }
 
     public static class Tags
     {
-        private const string Base = "v1.0/tags";
+        private const string Base = $"{ApiVersion}/tags";
         public const string MostUsed = $"{Base}/mostused/{{limit}}";
     }
 }
