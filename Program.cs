@@ -58,7 +58,7 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 
 builder.Services.Configure<ApiSettings>(configuration.GetSection("ApiSettings"));
 
-// 3. HTTP Client Configuration
+// 3. HTTP Client Configurations
 var identityServerUri = configuration["ClarifyGoAPI:IdentityServerUri"]
                         ?? throw new InvalidOperationException("Missing Identity Server URI configuration");
 
