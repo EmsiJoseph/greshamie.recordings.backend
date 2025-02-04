@@ -1,4 +1,4 @@
-﻿namespace backend.Models;
+﻿namespace backend.Classes;
 
 public class Comment
 {
