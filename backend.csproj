@@ -16,7 +16,6 @@
         <PackageReference Include="IdentityModel" Version="7.0.0" />
         <PackageReference Include="MediatR" Version="12.4.1" />
         <PackageReference Include="Microsoft.AspNetCore.Antiforgery" Version="2.3.0" />
-        <PackageReference Include="Microsoft.AspNetCore.App" Version="2.2.8" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.1" />
         <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="9.0.1" />
         <PackageReference Include="Microsoft.AspNetCore.JsonPatch" Version="9.0.1" />

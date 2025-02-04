@@ -2,6 +2,7 @@
 {
     public interface ITokenService
     {
-        Task<string> GetAccessTokenAsync();
+        string? GetAccessTokenFromContext();
+        Task<string> GetAccessTokenAsync(string username, string password);
     }
 }

@@ -1,47 +1,46 @@
-﻿using backend.Classes;
-using IdentityModel.Client;
-using Microsoft.Extensions.Options;
+﻿using IdentityModel.Client;
 
 namespace backend.Services.Auth;
 
-public class AuthService : IAuthService
+public class TokenService(
+    HttpClient  httpClient,
+    IConfiguration config,
+    IHttpContextAccessor contextAccessor) : ITokenService
 {
-    private readonly HttpClient _httpClient;
-    private readonly AuthSettings _authSettings;
-    private readonly ApiSettings _apiSettings;
+    private readonly HttpClient _httpClient = httpClient ??
+                                              throw new ArgumentNullException(nameof(httpClient));
 
-    public AuthService(
-        HttpClient httpClient,
-        IOptions<AuthSettings> authSettings,
-        IOptions<ApiSettings> apiSettings)
+    private readonly IConfiguration _config = config ?? throw new ArgumentNullException(nameof(config));
+
+    private readonly IHttpContextAccessor _contextAccessor =
+        contextAccessor ?? throw new ArgumentNullException(nameof(contextAccessor));
+
+
+    public string? GetAccessTokenFromContext()
     {
-        _httpClient = httpClient;
-        _authSettings = authSettings.Value;
-        _apiSettings = apiSettings.Value;
-
-        _httpClient.BaseAddress = new Uri(_apiSettings.IdentityServerUri);
+        return _contextAccessor.HttpContext?.Request.Headers["Authorization"]
+            .ToString().Replace("Bearer ", "");
     }
 
-    public async Task<string> GetAccessTokenAsync()
+    public async Task<string> GetAccessTokenAsync(string username, string password)
     {
-        var discovery = await _httpClient.GetDiscoveryDocumentAsync(new DiscoveryDocumentRequest
-        {
-            Policy = new DiscoveryPolicy { ValidateIssuerName = false }
-        });
-
-        if (discovery.IsError) throw new Exception(discovery.Error);
+        var discovery = await _httpClient.GetDiscoveryDocumentAsync();
+        if (discovery.IsError)
+            throw new Exception($"Discovery failed: {discovery.Error}");
 
         var response = await _httpClient.RequestPasswordTokenAsync(new PasswordTokenRequest
         {
             Address = discovery.TokenEndpoint,
-            ClientId = _authSettings.ClientId,
-            ClientSecret = _authSettings.ClientSecret,
-            Scope = _authSettings.Scope,
-            UserName = "{username}",
-            Password = "{password}"
+            ClientId = _config["AuthSettings:ClientId"] ?? throw new Exception("AuthSettings:ClientId is missing"),
+            ClientSecret = _config["AuthSettings:ClientSecret"],
+            Scope = _config["AuthSettings:Scope"],
+            UserName = username,
+            Password = password
         });
 
-        if (response.IsError) throw new Exception(response.Error);
-        return response.AccessToken;
+        if (response.IsError)
+            throw new Exception($"Token request failed: {response.Error}");
+
+        return response.AccessToken ?? throw new Exception("Access token is missing");
     }
 }

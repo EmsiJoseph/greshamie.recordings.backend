@@ -1,55 +1,93 @@
-﻿using backend.Constants;
+﻿using System.Net;
+using backend.Constants;
 using backend.Models;
 using backend.Services.Auth;
 using IdentityModel.Client;
+using Microsoft.IdentityModel.Tokens;
 
-namespace backend.Services.LiveRecordings;
+namespace backend.Services.ClarifyGoServices.LiveRecordings;
 
-public class LiveRecordingsService : ILiveRecordingsService
+public class LiveRecordingsService(HttpClient httpClient, ITokenService tokenService)
+    : ILiveRecordingsService
 {
-    private readonly HttpClient _httpClient;
-    private readonly IAuthService _authService;
+    private readonly HttpClient _httpClient = httpClient
+                                              ?? throw new ArgumentNullException(nameof(httpClient));
 
-    public LiveRecordingsService(HttpClient httpClient, IAuthService authService)
+    private readonly ITokenService _tokenService = tokenService
+                                                   ?? throw new ArgumentNullException(nameof(tokenService));
+
+    public async Task<IEnumerable<Recording>> GetLiveRecordingsAsync()
     {
-        _httpClient = httpClient;
-        _authService = authService;
-    }
+        var token = _tokenService.GetAccessTokenFromContext();
 
-    public async Task<IEnumerable<LiveRecording>> GetLiveRecordingsAsync()
-    {
-        var accessToken = await _authService.GetAccessTokenAsync();
-        _httpClient.SetBearerToken(accessToken);
+        if (string.IsNullOrEmpty(token))
+        {
+            throw new UnauthorizedAccessException("Missing access token");
+        }
 
-        var response = await _httpClient.GetAsync(ClarifyGoApiEndpoints.LiveRecordings.GetAll);
+        _httpClient.SetBearerToken(token);
+
+        var response = await _httpClient.GetAsync(
+            ClarifyGoApiEndpoints.LiveRecordings.GetAll);
+
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            throw new SecurityTokenExpiredException("Access token has expired");
+        }
+
         response.EnsureSuccessStatusCode();
 
-        return await response.Content.ReadFromJsonAsync<LiveRecording[]>();
+        return await response.Content.ReadFromJsonAsync<IEnumerable<Recording>>() ?? Array.Empty<Recording>();
     }
 
     public async Task ResumeRecordingAsync(string recorderId, string recordingId)
     {
-        var accessToken = await _authService.GetAccessTokenAsync();
-        _httpClient.SetBearerToken(accessToken);
+        var token = _tokenService.GetAccessTokenFromContext();
 
-        var endpoint = ClarifyGoApiEndpoints.LiveRecordings.Resume
+        if (string.IsNullOrEmpty(token))
+        {
+            throw new UnauthorizedAccessException("Missing access token");
+        }
+
+        _httpClient.SetBearerToken(token);
+
+        var endpoint = ClarifyGoApiEndpoints.LiveRecordings.PutResume
             .Replace("{recorderId}", recorderId)
             .Replace("{recordingId}", recordingId);
 
-        var response = await _httpClient.PostAsync(endpoint, null);
+        var response = await _httpClient.PutAsync(endpoint, null);
+
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            throw new SecurityTokenExpiredException("Access token has expired");
+        }
+
         response.EnsureSuccessStatusCode();
     }
-    
+
     public async Task PauseRecordingAsync(string recorderId, string recordingId)
     {
-        var accessToken = await _authService.GetAccessTokenAsync();
-        _httpClient.SetBearerToken(accessToken);
+        var token = _tokenService.GetAccessTokenFromContext();
 
-        var endpoint = ClarifyGoApiEndpoints.LiveRecordings.Pause
+
+        if (string.IsNullOrEmpty(token))
+        {
+            throw new UnauthorizedAccessException("Missing access token");
+        }
+
+        _httpClient.SetBearerToken(token);
+
+        var endpoint = ClarifyGoApiEndpoints.LiveRecordings.PutPause
             .Replace("{recorderId}", recorderId)
             .Replace("{recordingId}", recordingId);
 
-        var response = await _httpClient.PostAsync(endpoint, null);
+        var response = await _httpClient.PutAsync(endpoint, null);
+
+        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        {
+            throw new SecurityTokenExpiredException("Access token has expired");
+        }
+
         response.EnsureSuccessStatusCode();
     }
 }
