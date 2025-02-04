@@ -52,6 +52,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 
+builder.Services.AddScoped<ILiveRecordingsService, LiveRecordingsService>();
+
 // 3. Policies
 ConfigurePolicies(builder.Services);
 
