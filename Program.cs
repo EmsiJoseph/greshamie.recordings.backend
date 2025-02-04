@@ -52,6 +52,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 
+builder.Services.AddScoped<ICommentsService, CommentsService>();
+
 // 3. Policies
 ConfigurePolicies(builder.Services);
 
