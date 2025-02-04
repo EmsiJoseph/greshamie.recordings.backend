@@ -1,6 +1,6 @@
 ﻿namespace backend.Models;
 
-public class RecordingSearchResults
+public class CallType
 {
     
 }

@@ -1,6 +1,6 @@
 ﻿namespace backend.Services.Auth
 {
-    public interface IAuthService
+    public interface ITokenService
     {
         Task<string> GetAccessTokenAsync();
     }
