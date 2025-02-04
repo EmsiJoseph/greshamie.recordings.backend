@@ -5,9 +5,9 @@ using backend.Classes;
 using backend.Constants;
 using Microsoft.IdentityModel.Tokens;
 
-namespace backend.Services.ClarifyGoServices.Comments
+namespace backend.Services.ClarifyGoServices.Tags
 {
-    public class CommentsService(HttpClient httpClient, ITokenService tokenService) : ICommentsService
+    public class TagsService(HttpClient httpClient, ITokenService tokenService) : ITagsService
     {
         private readonly HttpClient _httpClient = httpClient
                                                   ?? throw new ArgumentNullException(nameof(httpClient));
@@ -16,7 +16,7 @@ namespace backend.Services.ClarifyGoServices.Comments
                                                        ?? throw new ArgumentNullException(nameof(tokenService));
 
 
-        public async Task<IEnumerable<Comment>> GetCommentsAsync(string recordingId, bool isLiveRecording = false)
+        public async Task<IEnumerable<Tag>> GetTagsAsync(string recordingId, bool isLiveRecording = false)
         {
             // Retrieve access token and apply it as a Bearer token
             var token = _tokenService.GetAccessTokenFromContext();
@@ -30,8 +30,8 @@ namespace backend.Services.ClarifyGoServices.Comments
 
             // Select the appropriate endpoint based on the recording type using swagger endpoints
             var endpoint = isLiveRecording
-                ? ClarifyGoApiEndpoints.LiveRecordings.GetPostComments.Replace("{recordingId}", recordingId)
-                : ClarifyGoApiEndpoints.HistoricRecordings.GetPostComments.Replace("{recordingId}", recordingId);
+                ? ClarifyGoApiEndpoints.LiveRecordings.GetTags.Replace("{recordingId}", recordingId)
+                : ClarifyGoApiEndpoints.HistoricRecordings.GetTags.Replace("{recordingId}", recordingId);
 
             // Execute the GET request
             var response = await _httpClient.GetAsync(endpoint);
@@ -43,10 +43,10 @@ namespace backend.Services.ClarifyGoServices.Comments
             }
 
             // Deserialize and return the comments
-            return await response.Content.ReadFromJsonAsync<Comment[]>() ?? [];
+            return await response.Content.ReadFromJsonAsync<Tag[]>() ?? [];
         }
 
-        public async Task PostCommentAsync(string recordingId, string comment, bool isLiveRecording = false)
+        public async Task PostTagAsync(string recordingId, string tag, bool isLiveRecording = false)
         {
             // Retrieve access token and apply it as a Bearer token
             var token = _tokenService.GetAccessTokenFromContext();
@@ -59,39 +59,66 @@ namespace backend.Services.ClarifyGoServices.Comments
 
             // Select the correct endpoint for adding a comment based on the recording type
             var endpoint = isLiveRecording
-                ? ClarifyGoApiEndpoints.LiveRecordings.GetPostComments.Replace("{recordingId}", recordingId)
-                : ClarifyGoApiEndpoints.HistoricRecordings.GetPostComments.Replace("{recordingId}", recordingId);
-
-            // Create the payload; assumes the API expects a JSON object with a "comment" property
-            var payload = new { comment };
+                ? ClarifyGoApiEndpoints.LiveRecordings.PostDeleteTag.Replace("{recordingId}", recordingId)
+                    .Replace("{tag}", tag)
+                : ClarifyGoApiEndpoints.HistoricRecordings.PostDeleteTag.Replace("{recordingId}", recordingId)
+                    .Replace("{tag}", tag);
 
             // Execute the POST request to add the comment
-            var response = await _httpClient.PostAsJsonAsync(endpoint, payload);
+            var response = await _httpClient.PostAsync(endpoint, null);
             response.EnsureSuccessStatusCode();
         }
 
-        public async Task DeleteCommentAsync(string recordingId, string commentId, bool isLiveRecording = false)
+        public async Task DeleteTagAsync(string recordingId, string tag, bool isLiveRecording = false)
         {
             // Retrieve access token and apply it as a Bearer token
             var token = _tokenService.GetAccessTokenFromContext();
-            
+
             if (string.IsNullOrEmpty(token))
             {
                 throw new UnauthorizedAccessException("Missing access token");
             }
-            
+
             _httpClient.SetBearerToken(token);
 
             // Select the correct endpoint for deleting a comment based on the recording type
             var endpoint = isLiveRecording
-                ? ClarifyGoApiEndpoints.LiveRecordings.DeleteComment.Replace("{recordingId}", recordingId)
-                    .Replace("{commentId}", commentId)
-                : ClarifyGoApiEndpoints.HistoricRecordings.DeleteComment.Replace("{recordingId}", recordingId)
-                    .Replace("{commentId}", commentId);
-            
+                ? ClarifyGoApiEndpoints.LiveRecordings.PostDeleteTag.Replace("{recordingId}", recordingId)
+                    .Replace("{tag}", tag)
+                : ClarifyGoApiEndpoints.HistoricRecordings.PostDeleteTag.Replace("{recordingId}", recordingId)
+                    .Replace("{tag}", tag);
+
             // Execute the DELETE request to remove the comment
             var response = await _httpClient.DeleteAsync(endpoint);
             response.EnsureSuccessStatusCode();
+        }
+
+        public async Task<IEnumerable<Tag>> GetMostUsedTagsAsync(int limit)
+        {
+            // Retrieve access token and apply it as a Bearer token
+            var token = _tokenService.GetAccessTokenFromContext();
+
+            if (string.IsNullOrEmpty(token))
+            {
+                throw new UnauthorizedAccessException("Missing access token");
+            }
+
+            _httpClient.SetBearerToken(token);
+
+            // Select the appropriate endpoint for retrieving the most used tags
+            var endpoint = ClarifyGoApiEndpoints.Tags.GetMostUsed.Replace("{limit}", limit.ToString());
+
+            // Execute the GET request
+            var response = await _httpClient.GetAsync(endpoint);
+            response.EnsureSuccessStatusCode();
+
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                throw new SecurityTokenExpiredException("Access token has expired");
+            }
+
+            // Deserialize and return the tags
+            return await response.Content.ReadFromJsonAsync<Tag[]>() ?? [];
         }
     }
 }

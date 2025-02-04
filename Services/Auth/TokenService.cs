@@ -24,9 +24,20 @@ public class TokenService(
 
     public async Task<string> GetAccessTokenAsync(string username, string password)
     {
-        var discovery = await _httpClient.GetDiscoveryDocumentAsync();
+        var request = new DiscoveryDocumentRequest
+        {
+            Address = _config["ClarifyGoAPI:IdentityServerUri"] ?? throw new Exception("IdentityServerUri is missing"),
+            Policy = new DiscoveryPolicy
+            {
+                // RequireHttps = false
+                ValidateIssuerName = false
+            }
+        };
+
+        var discovery = await _httpClient.GetDiscoveryDocumentAsync(request);
+        
         if (discovery.IsError)
-            throw new Exception($"Discovery failed: {discovery.Error}");
+            throw new Exception($"Discovery document request failed: {discovery.Error}");
 
         var response = await _httpClient.RequestPasswordTokenAsync(new PasswordTokenRequest
         {

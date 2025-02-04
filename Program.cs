@@ -1,7 +1,9 @@
 using backend.Classes;
 using backend.Constants;
 using backend.Services.Auth;
+using backend.Services.ClarifyGoServices.Comments;
 using backend.Services.ClarifyGoServices.LiveRecordings;
+using backend.Services.ClarifyGoServices.Tags;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
@@ -52,7 +54,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // 2.1. Live Recordings Service
 builder.Services.AddScoped<ILiveRecordingsService, LiveRecordingsService>();
 
-// 2.1. Token Service
+// 2.2 Historic Recordings Service
+
+// 2.3. Comments Service
+builder.Services.AddScoped<ICommentsService, CommentsService>();
+
+// 2.4 Tags Service
+builder.Services.AddScoped<ITagsService, TagsService>();
+
+// 2.5. Token Service
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ITokenService, TokenService>();
 
@@ -129,6 +139,63 @@ app.MapPost(AppApiEndpoints.LiveRecordings.PutPause,
             return Results.Ok();
         })
     .RequireRateLimiting("PerUserPolicy");
+
+// 6.1.4. Get Comments
+app.MapGet(AppApiEndpoints.LiveRecordings.GetPostComments,
+        async (ICommentsService service, string recordingId) =>
+        {
+            bool isLiveRecording = true;
+            await service.GetCommentsAsync(recordingId, isLiveRecording);
+        })
+    .CacheOutput("CommentsCache");
+
+// 6.1.5. Post Comment
+app.MapPost(AppApiEndpoints.LiveRecordings.GetPostComments,
+        async (ICommentsService service, string recordingId, string comment) =>
+        {
+            bool isLiveRecording = true;
+            await service.PostCommentAsync(recordingId, comment, isLiveRecording);
+        })
+    .RequireRateLimiting("PerUserPolicy");
+
+// 6.1.6. Delete Comment
+app.MapDelete(AppApiEndpoints.LiveRecordings.DeleteComment,
+        async (ICommentsService service, string recordingId, string commentId) =>
+        {
+            bool isLiveRecording = true;
+            await service.DeleteCommentAsync(recordingId, commentId, isLiveRecording);
+        })
+    .RequireRateLimiting("PerUserPolicy");
+
+// 6.1.7. Get Tags
+app.MapGet(AppApiEndpoints.LiveRecordings.GetTags,
+        async (ITagsService service, string recordingId) =>
+        {
+            bool isLiveRecording = true;
+            await service.GetTagsAsync(recordingId, isLiveRecording);
+        })
+    .CacheOutput("TagsCache");
+
+// 6.1.8. Post Tag
+app.MapPost(AppApiEndpoints.LiveRecordings.GetTags,
+        async (ITagsService service, string recordingId, string tag) =>
+        {
+            bool isLiveRecording = true;
+            await service.PostTagAsync(recordingId, tag, isLiveRecording);
+        })
+    .RequireRateLimiting("PerUserPolicy");
+
+// 6.1.9. Delete Tag
+app.MapDelete(AppApiEndpoints.LiveRecordings.PostDeleteTag,
+        async (ITagsService service, string recordingId, string tag) =>
+        {
+            bool isLiveRecording = true;
+            await service.DeleteTagAsync(recordingId, tag, isLiveRecording);
+        })
+    .RequireRateLimiting("PerUserPolicy");
+
+// 6.2. Historic Recordings Endpoints
+
 
 
 app.MapControllers();
