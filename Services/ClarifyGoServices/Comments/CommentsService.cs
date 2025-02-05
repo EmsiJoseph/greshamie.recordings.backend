@@ -30,8 +30,8 @@ namespace backend.Services.ClarifyGoServices.Comments
 
             // Select the appropriate endpoint based on the recording type using swagger endpoints
             var endpoint = isLiveRecording
-                ? ClarifyGoApiEndpoints.LiveRecordings.GetPostComments.Replace("{recordingId}", recordingId)
-                : ClarifyGoApiEndpoints.HistoricRecordings.GetPostComments.Replace("{recordingId}", recordingId);
+                ? ClarifyGoApiEndpoints.LiveRecordings.GetComments(recordingId)
+                : ClarifyGoApiEndpoints.HistoricRecordings.GetComments(recordingId);
 
             // Execute the GET request
             var response = await _httpClient.GetAsync(endpoint);
@@ -59,8 +59,8 @@ namespace backend.Services.ClarifyGoServices.Comments
 
             // Select the correct endpoint for adding a comment based on the recording type
             var endpoint = isLiveRecording
-                ? ClarifyGoApiEndpoints.LiveRecordings.GetPostComments.Replace("{recordingId}", recordingId)
-                : ClarifyGoApiEndpoints.HistoricRecordings.GetPostComments.Replace("{recordingId}", recordingId);
+                ? ClarifyGoApiEndpoints.LiveRecordings.AddComment(recordingId, comment)
+                : ClarifyGoApiEndpoints.HistoricRecordings.AddComment(recordingId, comment);
 
             // Create the payload; assumes the API expects a JSON object with a "comment" property
             var payload = new { comment };
@@ -74,21 +74,19 @@ namespace backend.Services.ClarifyGoServices.Comments
         {
             // Retrieve access token and apply it as a Bearer token
             var token = _tokenService.GetAccessTokenFromContext();
-            
+
             if (string.IsNullOrEmpty(token))
             {
                 throw new UnauthorizedAccessException("Missing access token");
             }
-            
+
             _httpClient.SetBearerToken(token);
 
             // Select the correct endpoint for deleting a comment based on the recording type
             var endpoint = isLiveRecording
-                ? ClarifyGoApiEndpoints.LiveRecordings.DeleteComment.Replace("{recordingId}", recordingId)
-                    .Replace("{commentId}", commentId)
-                : ClarifyGoApiEndpoints.HistoricRecordings.DeleteComment.Replace("{recordingId}", recordingId)
-                    .Replace("{commentId}", commentId);
-            
+                ? ClarifyGoApiEndpoints.LiveRecordings.DeleteComment(recordingId, commentId)
+                : ClarifyGoApiEndpoints.HistoricRecordings.DeleteComment(recordingId, commentId);
+
             // Execute the DELETE request to remove the comment
             var response = await _httpClient.DeleteAsync(endpoint);
             response.EnsureSuccessStatusCode();

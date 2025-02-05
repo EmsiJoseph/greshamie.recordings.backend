@@ -30,8 +30,8 @@ namespace backend.Services.ClarifyGoServices.Tags
 
             // Select the appropriate endpoint based on the recording type using swagger endpoints
             var endpoint = isLiveRecording
-                ? ClarifyGoApiEndpoints.LiveRecordings.GetTags.Replace("{recordingId}", recordingId)
-                : ClarifyGoApiEndpoints.HistoricRecordings.GetTags.Replace("{recordingId}", recordingId);
+                ? ClarifyGoApiEndpoints.LiveRecordings.GetTags(recordingId)
+                : ClarifyGoApiEndpoints.HistoricRecordings.GetTags(recordingId);
 
             // Execute the GET request
             var response = await _httpClient.GetAsync(endpoint);
@@ -59,10 +59,8 @@ namespace backend.Services.ClarifyGoServices.Tags
 
             // Select the correct endpoint for adding a comment based on the recording type
             var endpoint = isLiveRecording
-                ? ClarifyGoApiEndpoints.LiveRecordings.PostDeleteTag.Replace("{recordingId}", recordingId)
-                    .Replace("{tag}", tag)
-                : ClarifyGoApiEndpoints.HistoricRecordings.PostDeleteTag.Replace("{recordingId}", recordingId)
-                    .Replace("{tag}", tag);
+                ? ClarifyGoApiEndpoints.LiveRecordings.AddTag(recordingId, tag)
+                : ClarifyGoApiEndpoints.HistoricRecordings.AddTag(recordingId, tag);
 
             // Execute the POST request to add the comment
             var response = await _httpClient.PostAsync(endpoint, null);
@@ -83,10 +81,9 @@ namespace backend.Services.ClarifyGoServices.Tags
 
             // Select the correct endpoint for deleting a comment based on the recording type
             var endpoint = isLiveRecording
-                ? ClarifyGoApiEndpoints.LiveRecordings.PostDeleteTag.Replace("{recordingId}", recordingId)
-                    .Replace("{tag}", tag)
-                : ClarifyGoApiEndpoints.HistoricRecordings.PostDeleteTag.Replace("{recordingId}", recordingId)
-                    .Replace("{tag}", tag);
+                ? ClarifyGoApiEndpoints.LiveRecordings.DeleteTag(recordingId, tag)
+                : ClarifyGoApiEndpoints.HistoricRecordings.DeleteTag(recordingId, tag);
+
 
             // Execute the DELETE request to remove the comment
             var response = await _httpClient.DeleteAsync(endpoint);
@@ -106,7 +103,7 @@ namespace backend.Services.ClarifyGoServices.Tags
             _httpClient.SetBearerToken(token);
 
             // Select the appropriate endpoint for retrieving the most used tags
-            var endpoint = ClarifyGoApiEndpoints.Tags.GetMostUsed.Replace("{limit}", limit.ToString());
+            var endpoint = ClarifyGoApiEndpoints.Tags.MostUsed(limit);
 
             // Execute the GET request
             var response = await _httpClient.GetAsync(endpoint);

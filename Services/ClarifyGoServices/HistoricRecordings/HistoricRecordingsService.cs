@@ -1,11 +1,7 @@
-using System;
-using System.IO;
-using System.Net.Http;
-using System.Threading.Tasks;
+using backend.Classes;
 using backend.Constants;
-using backend.Models;
 
-namespace backend.Services.HistoricRecordings
+namespace backend.Services.ClarifyGoServices.HistoricRecordings
 {
     public class HistoricRecordingsService : IHistoricRecordingsService
     {
@@ -18,12 +14,7 @@ namespace backend.Services.HistoricRecordings
 
         public async Task<RecordingSearchResults> SearchRecordingsAsync(DateTime start, DateTime end)
         {
-            var formattedStart = Uri.EscapeDataString(start.ToUniversalTime().ToString("O"));
-            var formattedEnd = Uri.EscapeDataString(end.ToUniversalTime().ToString("O"));
-
-            var url = ClarifyGoApiEndpoints.HistoricRecordings.Search
-                .Replace("{startDate}", formattedStart)
-                .Replace("{endDate}", formattedEnd);
+            var url = ClarifyGoApiEndpoints.HistoricRecordings.Search(start, end);
 
             var response = await _httpClient.GetAsync(url);
             response.EnsureSuccessStatusCode();
@@ -33,8 +24,7 @@ namespace backend.Services.HistoricRecordings
 
         public async Task DeleteRecordingAsync(string recordingId)
         {
-            var url = ClarifyGoApiEndpoints.HistoricRecordings.Delete
-                .Replace("{recordingId}", recordingId);
+            var url = ClarifyGoApiEndpoints.HistoricRecordings.Delete(recordingId);
 
             var response = await _httpClient.DeleteAsync(url);
             response.EnsureSuccessStatusCode();
@@ -42,8 +32,7 @@ namespace backend.Services.HistoricRecordings
 
         public async Task<Stream> ExportMp3Async(string recordingId)
         {
-            var url = ClarifyGoApiEndpoints.HistoricRecordings.ExportMp3
-                .Replace("{recordingId}", recordingId);
+            var url = ClarifyGoApiEndpoints.HistoricRecordings.ExportMp3(recordingId);
 
             var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
             response.EnsureSuccessStatusCode();
@@ -53,8 +42,7 @@ namespace backend.Services.HistoricRecordings
 
         public async Task<Stream> ExportWavAsync(string recordingId)
         {
-            var url = ClarifyGoApiEndpoints.HistoricRecordings.ExportWav
-                .Replace("{recordingId}", recordingId);
+            var url = ClarifyGoApiEndpoints.HistoricRecordings.ExportWav(recordingId);
 
             var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
             response.EnsureSuccessStatusCode();

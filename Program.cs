@@ -1,7 +1,9 @@
 using backend.Classes;
 using backend.Constants;
+using backend.DTOs;
 using backend.Services.Auth;
 using backend.Services.ClarifyGoServices.Comments;
+using backend.Services.ClarifyGoServices.HistoricRecordings;
 using backend.Services.ClarifyGoServices.LiveRecordings;
 using backend.Services.ClarifyGoServices.Tags;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -55,6 +57,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddScoped<ILiveRecordingsService, LiveRecordingsService>();
 
 // 2.2 Historic Recordings Service
+builder.Services.AddScoped<IHistoricRecordingsService, HistoricRecordingsService>();
 
 // 2.3. Comments Service
 builder.Services.AddScoped<ICommentsService, CommentsService>();
@@ -118,12 +121,12 @@ app.MapGet("/protected", (ITokenService tokenService) =>
 
 // 6.1. Live Recordings Endpoints
 // 6.1.1. Get All Live Recordings
-app.MapGet(AppApiEndpoints.LiveRecordings.GetAll,
+app.MapGet(AppApiEndpoints.Recordings.Live.GetAll,
         async (ILiveRecordingsService service) => await service.GetLiveRecordingsAsync())
     .CacheOutput("RecordingsCache");
 
 // 6.1.2. Resume Recording
-app.MapPost(AppApiEndpoints.LiveRecordings.PutResume,
+app.MapPut(AppApiEndpoints.Recordings.Live.Resume,
         async (ILiveRecordingsService service, string recorderId, string recordingId) =>
         {
             await service.ResumeRecordingAsync(recorderId, recordingId);
@@ -132,7 +135,7 @@ app.MapPost(AppApiEndpoints.LiveRecordings.PutResume,
     .RequireRateLimiting("PerUserPolicy");
 
 // 6.1.3. Pause Recording
-app.MapPost(AppApiEndpoints.LiveRecordings.PutPause,
+app.MapPut(AppApiEndpoints.Recordings.Live.Pause,
         async (ILiveRecordingsService service, string recorderId, string recordingId) =>
         {
             await service.PauseRecordingAsync(recorderId, recordingId);
@@ -141,7 +144,7 @@ app.MapPost(AppApiEndpoints.LiveRecordings.PutPause,
     .RequireRateLimiting("PerUserPolicy");
 
 // 6.1.4. Get Comments
-app.MapGet(AppApiEndpoints.LiveRecordings.GetPostComments,
+app.MapGet(AppApiEndpoints.Recordings.Live.Comments,
         async (ICommentsService service, string recordingId) =>
         {
             bool isLiveRecording = true;
@@ -150,7 +153,7 @@ app.MapGet(AppApiEndpoints.LiveRecordings.GetPostComments,
     .CacheOutput("CommentsCache");
 
 // 6.1.5. Post Comment
-app.MapPost(AppApiEndpoints.LiveRecordings.GetPostComments,
+app.MapPost(AppApiEndpoints.Recordings.Live.Comments,
         async (ICommentsService service, string recordingId, string comment) =>
         {
             bool isLiveRecording = true;
@@ -159,7 +162,7 @@ app.MapPost(AppApiEndpoints.LiveRecordings.GetPostComments,
     .RequireRateLimiting("PerUserPolicy");
 
 // 6.1.6. Delete Comment
-app.MapDelete(AppApiEndpoints.LiveRecordings.DeleteComment,
+app.MapDelete(AppApiEndpoints.Recordings.Live.CommentById,
         async (ICommentsService service, string recordingId, string commentId) =>
         {
             bool isLiveRecording = true;
@@ -168,7 +171,7 @@ app.MapDelete(AppApiEndpoints.LiveRecordings.DeleteComment,
     .RequireRateLimiting("PerUserPolicy");
 
 // 6.1.7. Get Tags
-app.MapGet(AppApiEndpoints.LiveRecordings.GetTags,
+app.MapGet(AppApiEndpoints.Recordings.Live.Tags,
         async (ITagsService service, string recordingId) =>
         {
             bool isLiveRecording = true;
@@ -177,7 +180,7 @@ app.MapGet(AppApiEndpoints.LiveRecordings.GetTags,
     .CacheOutput("TagsCache");
 
 // 6.1.8. Post Tag
-app.MapPost(AppApiEndpoints.LiveRecordings.GetTags,
+app.MapPost(AppApiEndpoints.Recordings.Live.TagOperations,
         async (ITagsService service, string recordingId, string tag) =>
         {
             bool isLiveRecording = true;
@@ -186,7 +189,7 @@ app.MapPost(AppApiEndpoints.LiveRecordings.GetTags,
     .RequireRateLimiting("PerUserPolicy");
 
 // 6.1.9. Delete Tag
-app.MapDelete(AppApiEndpoints.LiveRecordings.PostDeleteTag,
+app.MapDelete(AppApiEndpoints.Recordings.Live.TagOperations,
         async (ITagsService service, string recordingId, string tag) =>
         {
             bool isLiveRecording = true;
@@ -195,7 +198,12 @@ app.MapDelete(AppApiEndpoints.LiveRecordings.PostDeleteTag,
     .RequireRateLimiting("PerUserPolicy");
 
 // 6.2. Historic Recordings Endpoints
-
+app.MapGet(AppApiEndpoints.Recordings.Historic.GetAll,
+        async (
+                IHistoricRecordingsService service,
+                [AsParameters] RecordingFilterDto filter) => 
+            await service.SearchRecordingsAsync(filter))
+    .CacheOutput("RecordingsCache");
 
 
 app.MapControllers();
