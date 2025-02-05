@@ -12,11 +12,19 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
             _httpClient = httpClient;
         }
 
-        public async Task<RecordingSearchResults> SearchRecordingsAsync(DateTime start, DateTime end)
+        public async Task<RecordingSearchResults> SearchRecordingsAsync(
+            DateTime start,
+            DateTime end,
+            RecordingSearchFilters filters = null) // Updated parameter type
         {
             var url = ClarifyGoApiEndpoints.HistoricRecordings.Search(start, end);
 
-            var response = await _httpClient.GetAsync(url);
+            var queryParams = BuildQueryParameters(filters);
+            var fullUrl = queryParams.Any()
+                ? $"{baseUrl}?{string.Join("&", queryParams)}"
+                : baseUrl;
+
+            var response = await _httpClient.GetAsync(fullUrl);
             response.EnsureSuccessStatusCode();
 
             return await response.Content.ReadFromJsonAsync<RecordingSearchResults>();
