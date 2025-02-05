@@ -52,6 +52,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 // 2.1. Live Recordings Service
 builder.Services.AddScoped<ILiveRecordingsService, LiveRecordingsService>();
 
+// 2.1. Comment Service
+builder.Services.AddScoped<ICommentsService, CommentsService>();
+
 // 2.1. Token Service
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ITokenService, TokenService>();

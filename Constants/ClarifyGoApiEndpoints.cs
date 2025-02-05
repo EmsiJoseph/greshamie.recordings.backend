@@ -40,4 +40,12 @@ public static class ClarifyGoApiEndpoints
         private const string Base = $"{ApiVersion}/tags";
         public const string GetMostUsed = $"{Base}/mostused/{{limit}}";
     }
+    public static class Audits
+    {
+        private const string Base = $"AuditReport";
+        public static string Search(string fromDate, string toDate, string eventType = "All+Events", int offset = 0, int maxResults = 10000)
+        {
+            return $"{Base}/Search?fromDate={{fromDate}}&toDate={{toDate}}&eventType={{eventType}}&offset={{offset}}&maxResults={{maxResults}}";
+        }
+    }
 }
