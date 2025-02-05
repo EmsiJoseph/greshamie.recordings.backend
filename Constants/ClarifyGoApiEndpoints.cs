@@ -43,10 +43,7 @@ public static class ClarifyGoApiEndpoints
     public static class Audits
     {
         private const string Base = "AuditReport";
-        public const string LoginUrl = "https://greshamhouseie.clarifygo.com/Account/Login"; // Add this line
-        public static string Search(string fromDate, string toDate, string eventType = "All+Events", int offset = 0, int maxResults = 10000)
-        {
-            return $"{Base}/Search?fromDate={fromDate}&toDate={toDate}&eventType={eventType}&offset={offset}&maxResults={maxResults}";
-        }
+        public const string LoginUrl = "https://greshamhouseie.clarifygo.com/Account/Login";
+        public const string Search = $"{Base}/Search?fromDate={{fromDate}}&toDate={{toDate}}&eventType={{eventType}}&offset={{offset}}&maxResults={{maxResults}}";
     }
 }
