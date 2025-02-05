@@ -53,6 +53,14 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.PropertyNamingPolicy = null;
+        options.JsonSerializerOptions.WriteIndented = true;
+    });
+
+
 // 2. Application Services
 // 2.1. Live Recordings Service
 builder.Services.AddScoped<ILiveRecordingsService, LiveRecordingsService>();
@@ -115,6 +123,7 @@ app.UseCors("ReactClient");
 app.UseOutputCache();
 app.UseRateLimiter();
 
+
 // 6. Endpoints
 app.MapGet("/health", () => Results.Ok());
 
@@ -128,7 +137,7 @@ app.MapGet("/protected", (ITokenService tokenService) =>
 // 6.1. Live Recordings Endpoints
 // 6.1.1. Get All Live Recordings
 app.MapGet(AppApiEndpoints.Recordings.Live.GetAll,
-        async (ILiveRecordingsService service) => await service.GetLiveRecordingsAsync())
+        async (ILiveRecordingsService service) => { return await service.GetLiveRecordingsAsync(); })
     .CacheOutput("RecordingsCache");
 
 // 6.1.2. Resume Recording
@@ -212,7 +221,7 @@ app.MapGet(AppApiEndpoints.Recordings.Historic.GetAll,
             searchFiltersDto.StartDate = DateTime.Now.StartOfWeek(DayOfWeek.Monday);
             searchFiltersDto.EndDate = DateTime.Now;
             Console.WriteLine($"Start Date: {searchFiltersDto.StartDate}, End Date: {searchFiltersDto.EndDate}");
-            await service.SearchRecordingsAsync(searchFiltersDto);
+            return await service.SearchRecordingsAsync(searchFiltersDto);
         }
     )
     .CacheOutput("RecordingsCache");
@@ -220,10 +229,8 @@ app.MapGet(AppApiEndpoints.Recordings.Historic.GetAll,
 // 6.2.2. Get All Historic Recordings with custom start and end dates
 app.MapGet(AppApiEndpoints.Recordings.Historic.Search,
         async (IHistoricRecordingsService service,
-            [AsParameters] RecordingSearchFiltersDto searchFiltersDto) =>
-        {
-            await service.SearchRecordingsAsync(searchFiltersDto);
-        })
+                [AsParameters] RecordingSearchFiltersDto searchFiltersDto) =>
+            await service.SearchRecordingsAsync(searchFiltersDto))
     .CacheOutput("RecordingsCache");
 
 // 6.2.3. Delete Historic Recording

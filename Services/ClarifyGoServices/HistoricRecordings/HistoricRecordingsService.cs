@@ -1,13 +1,23 @@
+using System.Net;
+using System.Text.Json;
 using backend.Classes;
 using backend.Constants;
 using backend.DTOs;
 using backend.Extensions;
+using backend.Models;
+using backend.Services.Auth;
+using IdentityModel.Client;
+using Microsoft.IdentityModel.Tokens;
 
 namespace backend.Services.ClarifyGoServices.HistoricRecordings
 {
-    public class HistoricRecordingsService(HttpClient httpClient) : IHistoricRecordingsService
+    public class HistoricRecordingsService(HttpClient httpClient, ITokenService tokenService)
+        : IHistoricRecordingsService
     {
         private readonly HttpClient _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+
+        private readonly ITokenService _tokenService =
+            tokenService ?? throw new ArgumentNullException(nameof(tokenService));
 
         private List<string> BuildQueryParameters(RecordingSearchFiltersDto? filters)
         {
@@ -31,10 +41,11 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
             }
 
             // Boolean parameters
-            AddQueryParam(queryParams, "filterRecordingByCompletionTime", filters.FilterByRecordingEndTime);
             AddQueryParam(queryParams, "hasScreenRecording", filters.HasScreenRecording);
             AddQueryParam(queryParams, "hasPciEvents", filters.HasPciComplianceEvents);
             AddQueryParam(queryParams, "hasRecordingEvaluation", filters.HasQualityEvaluation);
+            AddQueryParam(queryParams, "filterRecordingByCompletionTime", filters.FilterByRecordingEndTime);
+            AddQueryParam(queryParams, "searchUnallocatedDevices", filters.SearchUnallocatedDevices);
             AddQueryParam(queryParams, "sortDescending", filters.SortDescending);
 
             // Numeric parameters
@@ -101,29 +112,44 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
             return Uri.EscapeDataString($"\"{time.Hours:D2}:{time.Minutes:D2}\"");
         }
 
-        public async Task<RecordingSearchResults> SearchRecordingsAsync(
-            RecordingSearchFiltersDto searchFiltersDto) // Updated parameter type
+        public async Task<IEnumerable<RecordingSearchResult>> SearchRecordingsAsync(
+            RecordingSearchFiltersDto searchFiltersDto)
         {
-            var baseUrl = ClarifyGoApiEndpoints.HistoricRecordings.Search(searchFiltersDto.StartDate,
-                searchFiltersDto.EndDate);
-            
+            var token = _tokenService.GetAccessTokenFromContext();
+
+            if (string.IsNullOrEmpty(token))
+            {
+                throw new UnauthorizedAccessException("Missing access token");
+            }
+
+            _httpClient.SetBearerToken(token);
+
+            var baseUrl =
+                ClarifyGoApiEndpoints.HistoricRecordings.Search(searchFiltersDto.StartDate, searchFiltersDto.EndDate);
             Console.WriteLine($"Base URL: {baseUrl}");
 
             var queryParams = BuildQueryParameters(searchFiltersDto);
             var fullUrl = queryParams.Any()
                 ? $"{baseUrl}?{string.Join("&", queryParams)}"
                 : baseUrl;
-            
-            Console.WriteLine($"Full URL: {fullUrl}");
-            
-            var response = await _httpClient.GetAsync(fullUrl);
-            response.EnsureSuccessStatusCode();
-            
-            Console.WriteLine($"Response: {response}");
 
-            return await response.Content.ReadFromJsonAsync<RecordingSearchResults>() ??
-                   throw new Exception("Failed to deserialize response");
+            Console.WriteLine($"Full URL: {fullUrl}");
+
+            var response = await _httpClient.GetAsync(fullUrl);
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                throw new SecurityTokenExpiredException("Access token has expired");
+            }
+
+            response.EnsureSuccessStatusCode();
+
+            // Deserialize into a RecordingSearchResults object.
+            var searchResultsObj = await response.Content.ReadFromJsonAsync<RecordingSearchResults>();
+
+            // Return the list of individual search results, or an empty list if null.
+            return searchResultsObj?.SearchResults ?? new List<RecordingSearchResult>();
         }
+
 
         public async Task DeleteRecordingAsync(string recordingId)
         {

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Text.Json;
 using System.Threading.Tasks;
 using backend.Classes;
 using backend.DTOs;
@@ -16,7 +17,7 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
         /// <param name="endDate">The end date for the search period.</param>
         /// <param name="searchFiltersDto">Optional frontend-friendly filter criteria.</param>
         /// <returns>A <see cref="RecordingSearchResults"/> object containing the search results.</returns>
-        Task<RecordingSearchResults> SearchRecordingsAsync(
+        Task<IEnumerable<RecordingSearchResult>> SearchRecordingsAsync(
             RecordingSearchFiltersDto searchFiltersDto);
 
         /// <summary>
