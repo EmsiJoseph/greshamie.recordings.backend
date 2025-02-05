@@ -22,7 +22,7 @@ public class TokenService(
             .ToString().Replace("Bearer ", "");
     }
 
-    public async Task<string> GetAccessTokenAsync(string username, string password)
+    public async Task<TokenResponse> GetAccessTokenAsync(string username, string password)
     {
         var request = new DiscoveryDocumentRequest
         {
@@ -39,6 +39,11 @@ public class TokenService(
         if (discovery.IsError)
             throw new Exception($"Discovery document request failed: {discovery.Error}");
 
+        Console.WriteLine($"Scope is: {_config["AuthSettings:Scope"]}");
+        Console.WriteLine($"Cliend id is: {_config["AuthSettings:ClientId"]}");
+        Console.WriteLine($"Client secret is: {_config["AuthSettings:ClientSecret"]}");
+        Console.WriteLine($"Username is: {username}");
+        Console.WriteLine($"Password is: {password}");
         var response = await _httpClient.RequestPasswordTokenAsync(new PasswordTokenRequest
         {
             Address = discovery.TokenEndpoint,
@@ -52,6 +57,6 @@ public class TokenService(
         if (response.IsError)
             throw new Exception($"Token request failed: {response.Error}");
 
-        return response.AccessToken ?? throw new Exception("Access token is missing");
+        return response ?? throw new Exception("Access token is missing");
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using backend.Services.Auth;
+using IdentityModel.Client;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers;
@@ -27,9 +28,11 @@ public class AuthController(ITokenService tokenService, ILogger<AuthController> 
                 return BadRequest(new { message = "Invalid request" });
 
             // Get token from IdentityServer
-            var token = await _tokenService.GetAccessTokenAsync(
+            var response = await _tokenService.GetAccessTokenAsync(
                 request.Username,
                 request.Password);
+
+            var token = response.AccessToken ?? throw new Exception("Access token is missing");
 
             // Set HTTP-only cookie
             Response.Cookies.Append("access_token", token, new CookieOptions
@@ -40,7 +43,7 @@ public class AuthController(ITokenService tokenService, ILogger<AuthController> 
                 Expires = DateTimeOffset.UtcNow.AddMinutes(15)
             });
 
-            return Ok(new { accessToken = token });
+            return Ok(new { accessToken = token, expiresIn = response.ExpiresIn });
         }
         catch (Exception ex)
         {
