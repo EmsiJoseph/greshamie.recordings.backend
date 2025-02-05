@@ -1,12 +1,15 @@
+using backend.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+
 namespace backend.Data;
 
-public class ApplicationDbContext : IdentityDbContext<User, Role, string>
+public class ApplicationDbContext : IdentityDbContext<User>
 {
-    private readonly IConfiguration _configuration;
-
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IConfiguration configuration)
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
         : base(options)
     {
-        _configuration = configuration;
     }
 
+    public DbSet<AuditEntry> AuditEntries { get; set; }
+}

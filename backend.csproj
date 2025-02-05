@@ -18,6 +18,7 @@
         <PackageReference Include="Microsoft.AspNetCore.Antiforgery" Version="2.3.0" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.1" />
         <PackageReference Include="Microsoft.AspNetCore.DataProtection" Version="9.0.1" />
+        <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.1" />
         <PackageReference Include="Microsoft.AspNetCore.JsonPatch" Version="9.0.1" />
         <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" Version="2.3.0" />
         <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="9.0.1" />

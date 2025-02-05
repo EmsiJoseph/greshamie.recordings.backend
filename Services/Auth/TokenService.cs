@@ -39,11 +39,6 @@ public class TokenService(
         if (discovery.IsError)
             throw new Exception($"Discovery document request failed: {discovery.Error}");
 
-        Console.WriteLine($"Scope is: {_config["AuthSettings:Scope"]}");
-        Console.WriteLine($"Cliend id is: {_config["AuthSettings:ClientId"]}");
-        Console.WriteLine($"Client secret is: {_config["AuthSettings:ClientSecret"]}");
-        Console.WriteLine($"Username is: {username}");
-        Console.WriteLine($"Password is: {password}");
         var response = await _httpClient.RequestPasswordTokenAsync(new PasswordTokenRequest
         {
             Address = discovery.TokenEndpoint,

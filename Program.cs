@@ -1,14 +1,19 @@
+using System.Text;
 using backend.Classes;
 using backend.Constants;
+using backend.Data;
 using backend.DTOs;
 using backend.Extensions;
+using backend.Models;
 using backend.Services.Auth;
 using backend.Services.ClarifyGoServices.Comments;
 using backend.Services.ClarifyGoServices.HistoricRecordings;
 using backend.Services.ClarifyGoServices.LiveRecordings;
 using backend.Services.ClarifyGoServices.Tags;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,31 +32,48 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
+// builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+//     .AddJwtBearer(options =>
+//     {
+//         options.Authority = configuration["ClarifyGoAPI:IdentityServerUri"];
+//         options.TokenValidationParameters = new TokenValidationParameters
+//         {
+//             ValidateAudience = false,
+//             ValidateIssuer = true,
+//             ValidIssuer = configuration["ClarifyGoAPI:IdentityServerUri"],
+//             ValidateLifetime = true
+//         };
+//
+//         options.Events = new JwtBearerEvents
+//         {
+//             OnAuthenticationFailed = context =>
+//             {
+//                 if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
+//                 {
+//                     context.Response.Headers.Append("Token-Expired", "true");
+//                 }
+//
+//                 return Task.CompletedTask;
+//             }
+//         };
+//     });
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        options.Authority = configuration["ClarifyGoAPI:IdentityServerUri"];
         options.TokenValidationParameters = new TokenValidationParameters
         {
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
+                builder.Configuration["Jwt:Key"]!)),
+            ValidateIssuer = false,
             ValidateAudience = false,
-            ValidateIssuer = true,
-            ValidIssuer = configuration["ClarifyGoAPI:IdentityServerUri"],
-            ValidateLifetime = true
-        };
-
-        options.Events = new JwtBearerEvents
-        {
-            OnAuthenticationFailed = context =>
-            {
-                if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
-                {
-                    context.Response.Headers.Append("Token-Expired", "true");
-                }
-
-                return Task.CompletedTask;
-            }
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero
         };
     });
+
+builder.Services.AddAuthorization();
 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -59,6 +81,28 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.PropertyNamingPolicy = null;
         options.JsonSerializerOptions.WriteIndented = true;
     });
+
+// Add db connection
+var connection = String.Empty;
+
+if (builder.Environment.IsDevelopment())
+
+{
+    connection = builder.Configuration.GetConnectionString("DefaultConnection") ??
+                 throw new InvalidOperationException(
+                     "Connection string 'DefaultConnection' not found.");
+}
+else
+{
+    connection = configuration["ConnectionStrings:DefaultConnection"];
+}
+
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseSqlServer(connection));
+
+builder.Services.AddIdentity<User, IdentityRole>()
+    .AddEntityFrameworkStores<ApplicationDbContext>()
+    .AddDefaultTokenProviders();
 
 
 // 2. Application Services
