@@ -20,23 +20,43 @@ namespace backend.Services.ClarifyGoAutoLogin
 
         public async Task<bool> LoginAsync(string username, string password)
         {
-            var loginData = new FormUrlEncodedContent(new[]
+            try
             {
-                new KeyValuePair<string, string>("Username", username),
-                new KeyValuePair<string, string>("Password", password),
-                new KeyValuePair<string, string>("RememberMe", "true")  // If available
-            });
+                var loginData = new FormUrlEncodedContent(new[]
+                {
+            new KeyValuePair<string, string>("Username", username),
+            new KeyValuePair<string, string>("Password", password),
+            new KeyValuePair<string, string>("RememberMe", "true")  // If available
+        });
 
-            var response = await _httpClient.PostAsync(ClarifyGoApiEndpoints.Audits.LoginUrl, loginData);
+                var request = new HttpRequestMessage(HttpMethod.Post, ClarifyGoApiEndpoints.Audits.LoginUrl)
+                {
+                    Content = loginData
+                };
+                request.Headers.Add("User-Agent", "Mozilla/5.0"); // Mimic a browser request if needed
 
-            if (response.IsSuccessStatusCode)
+                var response = await _httpClient.SendAsync(request);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    _isLoggedIn = true;
+                    Console.WriteLine("Login successful, session established.");
+                    return true;
+                }
+
+                // Log response for debugging
+                string errorResponse = await response.Content.ReadAsStringAsync();
+                Console.WriteLine($"Login failed: {response.StatusCode} - {errorResponse}");
+            }
+            catch (HttpRequestException ex)
             {
-                _isLoggedIn = true;
-                Console.WriteLine("Login successful, session established.");
-                return true;
+                Console.WriteLine($"HTTP Request error: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Unexpected error: {ex.Message}");
             }
 
-            Console.WriteLine($"Login failed: {response.StatusCode}");
             return false;
         }
 
