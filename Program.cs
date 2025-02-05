@@ -4,6 +4,7 @@ using backend.Constants;
 using backend.Data;
 using backend.DTOs;
 using backend.Extensions;
+using backend.Middleware;
 using backend.Models;
 using backend.Services.Auth;
 using backend.Services.ClarifyGoServices.Comments;
@@ -104,6 +105,8 @@ builder.Services.AddIdentity<User, IdentityRole>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
+builder.Services.AddTransient<ClarifyGoTokenHandler>();
+
 
 // 2. Application Services
 // 2.1. Live Recordings Service
@@ -137,14 +140,25 @@ builder.Services.AddHttpClient<ITokenService, TokenService>(client =>
 });
 
 builder.Services.AddHttpClient<ILiveRecordingsService, LiveRecordingsService>(client =>
-{
-    client.BaseAddress = new Uri(apiBaseUri);
-});
+    {
+        client.BaseAddress = new Uri(apiBaseUri);
+    })
+    .AddHttpMessageHandler<ClarifyGoTokenHandler>();
 
 builder.Services.AddHttpClient<IHistoricRecordingsService, HistoricRecordingsService>(client =>
-{
-    client.BaseAddress = new Uri(apiBaseUri);
-});
+    {
+        client.BaseAddress = new Uri(apiBaseUri);
+    })
+    .AddHttpMessageHandler<ClarifyGoTokenHandler>();
+
+builder.Services.AddHttpClient<ICommentsService, CommentsService>(client =>
+    {
+        client.BaseAddress = new Uri(apiBaseUri);
+    })
+    .AddHttpMessageHandler<ClarifyGoTokenHandler>();
+
+builder.Services.AddHttpClient<ITagsService, TagsService>(client => { client.BaseAddress = new Uri(apiBaseUri); })
+    .AddHttpMessageHandler<ClarifyGoTokenHandler>();
 
 // 4. Security Configuration
 builder.Services.AddCors(options =>

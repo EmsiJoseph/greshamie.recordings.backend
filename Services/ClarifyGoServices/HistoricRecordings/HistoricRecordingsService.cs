@@ -1,10 +1,7 @@
 using System.Net;
-using System.Text.Json;
 using backend.Classes;
 using backend.Constants;
 using backend.DTOs;
-using backend.Extensions;
-using backend.Models;
 using backend.Services.Auth;
 using IdentityModel.Client;
 using Microsoft.IdentityModel.Tokens;

@@ -1,13 +1,9 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
 using backend.Models;
 using backend.Services.Auth;
-using IdentityModel.Client;
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
 
 namespace backend.Controllers
 {
@@ -19,17 +15,20 @@ namespace backend.Controllers
         private readonly ILogger<AuthController> _logger;
         private readonly UserManager<User> _userManager;
         private readonly SignInManager<User> _signInManager;
+        private readonly IDataProtector _protector;
 
         public AuthController(
             ITokenService tokenService,
             ILogger<AuthController> logger,
             UserManager<User> userManager,
-            SignInManager<User> signInManager)
+            SignInManager<User> signInManager,
+            IDataProtectionProvider dataProtectionProvider)
         {
             _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
             _signInManager = signInManager ?? throw new ArgumentNullException(nameof(signInManager));
+            _protector = dataProtectionProvider.CreateProtector("ClarifyGoAccessTokenProtector");
         }
 
         [HttpPost("login")]
@@ -54,6 +53,10 @@ namespace backend.Controllers
                     return Unauthorized(new { message = "Invalid credentials" });
                 }
 
+                // Encrypt the token before storing it.
+                var encryptedToken = _protector.Protect(tokenResponse.AccessToken);
+                var tokenExpiry = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn);
+
                 // Do not return the ClarifyGo token to the client.
                 // Instead, store it in the Identity user record.
                 var user = await _userManager.FindByNameAsync(request.Username);
@@ -62,9 +65,8 @@ namespace backend.Controllers
                     user = new User
                     {
                         UserName = request.Username,
-                        Email = $"{request.Username}@example.com",
-                        ClarifyGoAccessToken = tokenResponse.AccessToken,
-                        ClarifyGoAccessTokenExpiry = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn)
+                        ClarifyGoAccessToken = encryptedToken,
+                        ClarifyGoAccessTokenExpiry = tokenExpiry
                     };
 
                     var createResult = await _userManager.CreateAsync(user, request.Password);
@@ -77,8 +79,8 @@ namespace backend.Controllers
                 else
                 {
                     // Update token info for an existing user.
-                    user.ClarifyGoAccessToken = tokenResponse.AccessToken;
-                    user.ClarifyGoAccessTokenExpiry = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn);
+                    user.ClarifyGoAccessToken = encryptedToken;
+                    user.ClarifyGoAccessTokenExpiry = tokenExpiry;
                     await _userManager.UpdateAsync(user);
                 }
 
