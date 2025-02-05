@@ -1,6 +1,7 @@
 using backend.Classes;
 using backend.Constants;
 using backend.DTOs;
+using backend.Extensions;
 using backend.Services.Auth;
 using backend.Services.ClarifyGoServices.Comments;
 using backend.Services.ClarifyGoServices.HistoricRecordings;
@@ -84,6 +85,11 @@ builder.Services.AddHttpClient<ITokenService, TokenService>(client =>
 });
 
 builder.Services.AddHttpClient<ILiveRecordingsService, LiveRecordingsService>(client =>
+{
+    client.BaseAddress = new Uri(apiBaseUri);
+});
+
+builder.Services.AddHttpClient<IHistoricRecordingsService, HistoricRecordingsService>(client =>
 {
     client.BaseAddress = new Uri(apiBaseUri);
 });
@@ -198,12 +204,35 @@ app.MapDelete(AppApiEndpoints.Recordings.Live.TagOperations,
     .RequireRateLimiting("PerUserPolicy");
 
 // 6.2. Historic Recordings Endpoints
+// 6.2.1. Get All Historic Recordings with default start and end dates
 app.MapGet(AppApiEndpoints.Recordings.Historic.GetAll,
-        async (
-                IHistoricRecordingsService service,
-                [AsParameters] RecordingFilterDto filter) => 
-            await service.SearchRecordingsAsync(filter))
+        async (IHistoricRecordingsService service,
+            [AsParameters] RecordingSearchFiltersDto searchFiltersDto) =>
+        {
+            searchFiltersDto.StartDate = DateTime.Now.StartOfWeek(DayOfWeek.Monday);
+            searchFiltersDto.EndDate = DateTime.Now;
+            Console.WriteLine($"Start Date: {searchFiltersDto.StartDate}, End Date: {searchFiltersDto.EndDate}");
+            await service.SearchRecordingsAsync(searchFiltersDto);
+        }
+    )
     .CacheOutput("RecordingsCache");
+
+// 6.2.2. Get All Historic Recordings with custom start and end dates
+app.MapGet(AppApiEndpoints.Recordings.Historic.Search,
+        async (IHistoricRecordingsService service,
+            [AsParameters] RecordingSearchFiltersDto searchFiltersDto) =>
+        {
+            await service.SearchRecordingsAsync(searchFiltersDto);
+        })
+    .CacheOutput("RecordingsCache");
+
+// 6.2.3. Delete Historic Recording
+app.MapDelete(AppApiEndpoints.Recordings.Historic.Delete,
+        async (IHistoricRecordingsService service, string recordingId) =>
+        {
+            await service.DeleteRecordingAsync(recordingId);
+        })
+    .RequireRateLimiting("PerUserPolicy");
 
 
 app.MapControllers();

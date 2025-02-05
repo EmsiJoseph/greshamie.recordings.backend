@@ -16,6 +16,8 @@ public static class AppApiEndpoints
             
             public static string GetAll = HistoricBase;
             
+            public static string Search = $"{HistoricBase}/search";
+            
             public static string Delete = $"{HistoricBase}/{{recordingId}}";
 
 

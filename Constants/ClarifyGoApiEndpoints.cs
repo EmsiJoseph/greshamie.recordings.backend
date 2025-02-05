@@ -17,11 +17,11 @@ namespace backend.Constants
             private const string Base = $"{ApiBase}/{Version}/historicrecordings";
 
             // Builds the URL to search historic recordings using start and end dates.
-            public static string Search(DateTime startDate, DateTime endDate)
+            public static string Search(DateTime? startDate, DateTime? endDate)
             {
                 // Format dates as ISO 8601 UTC strings.
-                string start = startDate.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
-                string end = endDate.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
+                string start = startDate?.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ") ?? string.Empty;
+                string end = endDate?.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ") ?? string.Empty;
                 return $"{Base}/{start}/{end}";
             }
 
