@@ -22,11 +22,22 @@ public class TokenService(
             .ToString().Replace("Bearer ", "");
     }
 
-    public async Task<string> GetAccessTokenAsync(string username, string password)
+    public async Task<TokenResponse> GetAccessTokenAsync(string username, string password)
     {
-        var discovery = await _httpClient.GetDiscoveryDocumentAsync();
+        var request = new DiscoveryDocumentRequest
+        {
+            Address = _config["ClarifyGoAPI:IdentityServerUri"] ?? throw new Exception("IdentityServerUri is missing"),
+            Policy = new DiscoveryPolicy
+            {
+                // RequireHttps = false
+                ValidateIssuerName = false
+            }
+        };
+
+        var discovery = await _httpClient.GetDiscoveryDocumentAsync(request);
+        
         if (discovery.IsError)
-            throw new Exception($"Discovery failed: {discovery.Error}");
+            throw new Exception($"Discovery document request failed: {discovery.Error}");
 
         var response = await _httpClient.RequestPasswordTokenAsync(new PasswordTokenRequest
         {
@@ -41,6 +52,6 @@ public class TokenService(
         if (response.IsError)
             throw new Exception($"Token request failed: {response.Error}");
 
-        return response.AccessToken ?? throw new Exception("Access token is missing");
+        return response ?? throw new Exception("Access token is missing");
     }
 }

@@ -28,7 +28,7 @@ public class LiveRecordingsService(HttpClient httpClient, ITokenService tokenSer
         _httpClient.SetBearerToken(token);
 
         var response = await _httpClient.GetAsync(
-            ClarifyGoApiEndpoints.LiveRecordings.GetAll);
+            ClarifyGoApiEndpoints.LiveRecordings.GetAll());
 
         if (response.StatusCode == HttpStatusCode.Unauthorized)
         {
@@ -51,9 +51,7 @@ public class LiveRecordingsService(HttpClient httpClient, ITokenService tokenSer
 
         _httpClient.SetBearerToken(token);
 
-        var endpoint = ClarifyGoApiEndpoints.LiveRecordings.PutResume
-            .Replace("{recorderId}", recorderId)
-            .Replace("{recordingId}", recordingId);
+        var endpoint = ClarifyGoApiEndpoints.LiveRecordings.Resume(recorderId, recordingId);
 
         var response = await _httpClient.PutAsync(endpoint, null);
 
@@ -76,11 +74,9 @@ public class LiveRecordingsService(HttpClient httpClient, ITokenService tokenSer
         }
 
         _httpClient.SetBearerToken(token);
-
-        var endpoint = ClarifyGoApiEndpoints.LiveRecordings.PutPause
-            .Replace("{recorderId}", recorderId)
-            .Replace("{recordingId}", recordingId);
-
+        
+        var endpoint = ClarifyGoApiEndpoints.LiveRecordings.Pause(recorderId, recordingId);
+        
         var response = await _httpClient.PutAsync(endpoint, null);
 
         if (response.StatusCode == HttpStatusCode.Unauthorized)

@@ -1,11 +1,10 @@
 ﻿using backend.Classes;
-using backend.Models;
 
-namespace backend.Services.Comments;
+namespace backend.Services.ClarifyGoServices.Comments;
 
 public interface ICommentsService
 {
-    Task<IEnumerable<Comment>> GetCommentsAsync(string recordingId, bool isLiveRecording);
-    Task AddCommentAsync(string recordingId, string comment, bool isLiveRecording);
-    Task DeleteCommentAsync(string recordingId, string commentId, bool isLiveRecording);
+    Task<IEnumerable<Comment>> GetCommentsAsync(string recordingId, bool isLiveRecording = false);
+    Task PostCommentAsync(string recordingId, string comment, bool isLiveRecording = false);
+    Task DeleteCommentAsync(string recordingId, string commentId, bool isLiveRecording = false);
 }
