@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace backend.Models
 {
-    public class AuditEvent
+    public class CallType
     {
         [Key] public int Id { get; set; }
 

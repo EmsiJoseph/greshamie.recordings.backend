@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace backend.Classes;
 
-public class ClarifyGoRecordingRaw
+public class ClarifyGoHistoricRecordingRaw
 {
     // May be null.
     [JsonPropertyName("accountId")] public string? AccountId { get; set; }

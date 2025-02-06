@@ -1,9 +1,11 @@
 using System.Net;
+using System.Text.Json;
 using backend.Services.Auth;
 using IdentityModel.Client;
 using backend.Classes;
 using backend.Constants;
 using Microsoft.IdentityModel.Tokens;
+using backend.Exceptions;
 
 namespace backend.Services.ClarifyGoServices.Tags
 {
@@ -18,24 +20,45 @@ namespace backend.Services.ClarifyGoServices.Tags
 
         public async Task<IEnumerable<Tag>> GetTagsAsync(string recordingId, bool isLiveRecording = false)
         {
-            await _tokenService.SetBearerTokenAsync(_httpClient);
-
-            // Select the appropriate endpoint based on the recording type using swagger endpoints
-            var endpoint = isLiveRecording
-                ? ClarifyGoApiEndpoints.LiveRecordings.GetTags(recordingId)
-                : ClarifyGoApiEndpoints.HistoricRecordings.GetTags(recordingId);
-
-            // Execute the GET request
-            var response = await _httpClient.GetAsync(endpoint);
-            response.EnsureSuccessStatusCode();
-
-            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            try
             {
-                throw new SecurityTokenExpiredException("Access token has expired");
-            }
+                await _tokenService.SetBearerTokenAsync(_httpClient);
 
-            // Deserialize and return the comments
-            return await response.Content.ReadFromJsonAsync<Tag[]>() ?? [];
+                var endpoint = isLiveRecording
+                    ? ClarifyGoApiEndpoints.LiveRecordings.GetTags(recordingId)
+                    : ClarifyGoApiEndpoints.HistoricRecordings.GetTags(recordingId);
+
+                var response = await _httpClient.GetAsync(endpoint);
+
+                if (response.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    throw new ServiceException("Unauthorized access to tags", 401);
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    throw new ServiceException($"Tags service error: {error}", (int)response.StatusCode);
+                }
+
+                return await response.Content.ReadFromJsonAsync<Tag[]>() ?? [];
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new ServiceException($"Network error: {ex.Message}", 503);
+            }
+            catch (JsonException ex)
+            {
+                throw new ServiceException($"Invalid response format: {ex.Message}", 502);
+            }
+            catch (ServiceException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new ServiceException($"Unexpected error: {ex.Message}");
+            }
         }
 
         public async Task PostTagAsync(string recordingId, string tag, bool isLiveRecording = false)
