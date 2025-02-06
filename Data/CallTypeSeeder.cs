@@ -3,40 +3,28 @@ using backend.Models;
 
 namespace backend.Data
 {
-    public static class AuditEventSeeder
+    public static class CallTypeSeeder
     {
         public static void Seed(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<AuditEvent>().HasData(
-                new AuditEvent
+            modelBuilder.Entity<CallType>().HasData(
+                new CallType
+                {
+                    Id = 0,
+                    Name = "Incoming",
+                    Description = "An inbound call."
+                },
+                new CallType
                 {
                     Id = 1,
-                    Name = "UserLoggedIn",
-                    Description = "A user successfully logged in."
+                    Name = "Outgoing",
+                    Description = "An outbound call."
                 },
-                new AuditEvent
+                new CallType
                 {
                     Id = 2,
-                    Name = "UserLoggedOut",
-                    Description = "A user logged out."
-                },
-                new AuditEvent
-                {
-                    Id = 3,
-                    Name = "RecordPlayed",
-                    Description = "A new record was played."
-                },
-                new AuditEvent
-                {
-                    Id = 4,
-                    Name = "RecordExported",
-                    Description = "An existing record was exported."
-                },
-                new AuditEvent
-                {
-                    Id = 5,
-                    Name = "RecordDeleted",
-                    Description = "A record was deleted."
+                    Name = "Internal",
+                    Description = "An internal call."
                 }
             );
         }

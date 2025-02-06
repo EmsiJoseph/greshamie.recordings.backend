@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 namespace backend.Controllers
@@ -34,6 +35,11 @@ namespace backend.Controllers
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
             _protector = dataProtectionProvider.CreateProtector("ClarifyGoAccessTokenProtector");
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+        }
+
+        private string GenerateRefreshToken()
+        {
+            return Convert.ToBase64String(Guid.NewGuid().ToByteArray());
         }
 
         [HttpPost("login")]
@@ -87,6 +93,8 @@ namespace backend.Controllers
                     // Update token info for an existing user.
                     user.ClarifyGoAccessToken = encryptedToken;
                     user.ClarifyGoAccessTokenExpiry = tokenExpiry;
+                    user.RefreshToken = GenerateRefreshToken();
+                    user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
                     await _userManager.UpdateAsync(user);
                 }
 
@@ -95,9 +103,13 @@ namespace backend.Controllers
 
                 return Ok(new
                 {
-                    user_name = user.UserName,
-                    access_token = jwtToken.Token,
-                    expires_in = jwtToken.ExpiresIn
+                    user = new { user_name = user.UserName },
+                    access_token = new
+                    {
+                        value = jwtToken.Token,
+                        expires_in = jwtToken.ExpiresIn
+                    },
+                    refresh_token = user.RefreshToken
                 });
             }
             catch (Exception ex)
@@ -105,6 +117,38 @@ namespace backend.Controllers
                 _logger.LogError(ex, "Login failed for user: {Username}", request.Username);
                 return Unauthorized(new { message = "Invalid credentials" });
             }
+        }
+
+        [HttpPost("refresh")]
+        public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
+        {
+            if (string.IsNullOrEmpty(request.RefreshToken))
+            {
+                return BadRequest(new { message = "Refresh token is required" });
+            }
+
+            var user = await _userManager.Users
+                .FirstOrDefaultAsync(u => u.RefreshToken == request.RefreshToken);
+
+            if (user == null ||
+                user.RefreshTokenExpiry == null ||
+                user.RefreshTokenExpiry < DateTime.UtcNow)
+            {
+                return Unauthorized(new { message = "Invalid refresh token" });
+            }
+
+            // Generate new tokens
+            var jwtToken = GenerateJwtToken(user);
+            user.RefreshToken = GenerateRefreshToken();
+            user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
+            await _userManager.UpdateAsync(user);
+
+            return Ok(new
+            {
+                access_token = jwtToken.Token,
+                refresh_token = user.RefreshToken,
+                expires_in = jwtToken.ExpiresIn
+            });
         }
 
         private JwtTokenResult GenerateJwtToken(User user)
@@ -153,5 +197,10 @@ namespace backend.Controllers
     {
         public string Token { get; set; } = string.Empty;
         public int ExpiresIn { get; set; }
+    }
+
+    public class RefreshTokenRequest
+    {
+        [Required] public string RefreshToken { get; set; } = string.Empty;
     }
 }
