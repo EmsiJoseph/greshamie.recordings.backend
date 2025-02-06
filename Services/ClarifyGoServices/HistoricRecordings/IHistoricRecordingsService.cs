@@ -27,6 +27,7 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
 
         /// <summary>
         /// Exports the specified recording as an MP3.
+        /// Player Command
         /// </summary>
         Task<Stream> ExportMp3Async(string recordingId);
 

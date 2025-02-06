@@ -3,12 +3,15 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using backend.Models;
+using backend.Services.Audits;
+using backend.Constants;
 using backend.Services.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+
 
 namespace backend.Controllers
 {
@@ -21,19 +24,22 @@ namespace backend.Controllers
         private readonly UserManager<User> _userManager;
         private readonly IDataProtector _protector;
         private readonly IConfiguration _configuration;
+        private readonly IAuditService _auditService;
 
         public AuthController(
             ITokenService tokenService,
             ILogger<AuthController> logger,
             UserManager<User> userManager,
             IDataProtectionProvider dataProtectionProvider,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IAuditService auditService)
         {
             _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
             _protector = dataProtectionProvider.CreateProtector("ClarifyGoAccessTokenProtector");
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
+            _auditService = auditService;
         }
 
         [HttpPost("login")]
@@ -76,6 +82,7 @@ namespace backend.Controllers
                     };
 
                     var createResult = await _userManager.CreateAsync(user, request.Password);
+
                     if (!createResult.Succeeded)
                     {
                         return StatusCode(StatusCodes.Status500InternalServerError,
@@ -87,12 +94,14 @@ namespace backend.Controllers
                     // Update token info for an existing user.
                     user.ClarifyGoAccessToken = encryptedToken;
                     user.ClarifyGoAccessTokenExpiry = tokenExpiry;
+
                     await _userManager.UpdateAsync(user);
                 }
 
                 // Generate a JWT token for our backend to return to the client.
                 var jwtToken = GenerateJwtToken(user);
-
+                await _auditService.LogAuditEntryAsync(user.Id, AuditEventTypes.UserLoggedIn,
+                    "User logged in successfully.");
                 return Ok(new
                 {
                     user_name = user.UserName,
@@ -140,18 +149,65 @@ namespace backend.Controllers
                 ExpiresIn = (int)(expires - DateTime.UtcNow).TotalSeconds
             };
         }
-    }
 
-    public class LoginRequest
-    {
-        [Required] public string? Username { get; set; }
+        [HttpPost("logout")]
+        [AllowAnonymous]
+        public async Task<IActionResult> Logout()
+        {
+            // Retrieve the token from the Authorization header.
+            // The expected format is: "Bearer {token}"
+            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
+            if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
+            {
+                return BadRequest(new { message = "Authorization header with Bearer token is required." });
+            }
 
-        [Required] public string? Password { get; set; }
-    }
+            // Extract the token (removing the "Bearer " prefix).
+            var token = authHeader.Substring("Bearer ".Length).Trim();
 
-    public class JwtTokenResult
-    {
-        public string Token { get; set; } = string.Empty;
-        public int ExpiresIn { get; set; }
+            // Use JwtSecurityTokenHandler to read (decode) the token without validating lifetime.
+            var tokenHandler = new JwtSecurityTokenHandler();
+            JwtSecurityToken jwtToken;
+            try
+            {
+                jwtToken = tokenHandler.ReadJwtToken(token);
+            }
+            catch (Exception)
+            {
+                return BadRequest(new { message = "Invalid token." });
+            }
+
+            // Attempt to get the user identifier from the token claims.
+            // Here we assume that the user id is stored in the JWT 'sub' (subject) claim.
+            var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub);
+            if (userIdClaim == null)
+            {
+                return BadRequest(new { message = "User identifier (sub claim) not found in token." });
+            }
+
+            string userId = userIdClaim.Value;
+
+            // Log the logout event using your audit service and the predefined constant.
+            await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.UserLoggedOut, "User logged out.");
+
+            // Optionally, if you are maintaining a token revocation list or performing cleanup, do it here.
+
+            // Inform the client that logout was successful.
+            return Ok(new { message = "Logged out successfully." });
+        }
     }
+}
+
+
+public class LoginRequest
+{
+    [Required] public string? Username { get; set; }
+
+    [Required] public string? Password { get; set; }
+}
+
+public class JwtTokenResult
+{
+    public string Token { get; set; } = string.Empty;
+    public int ExpiresIn { get; set; }
 }
