@@ -118,6 +118,7 @@ namespace backend.Services.Auth
             if (response.IsError)
                 throw new Exception($"Token request failed: {response.Error}");
 
+            Console.WriteLine("Token: " + response.AccessToken);
             return response ?? throw new Exception("Access token is missing");
         }
     }

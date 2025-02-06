@@ -39,7 +39,7 @@ namespace backend.DTOs
 
         // Only include recordings where the call direction matches this value.
         // Possible values: "incoming", "outgoing", "internal", "external".
-        public string? CallDirection { get; set; } = "internal";
+        public string? CallDirection { get; set; }
 
         // Only include recordings involving the specified device number.
         // Can be a single value, a range, a comma-separated list, or a wildcarded string.

@@ -16,6 +16,7 @@ public class ApplicationDbContext : IdentityDbContext<User>
         base.OnModelCreating(modelBuilder);
 
         AuditEventSeeder.Seed(modelBuilder);
+        CallTypeSeeder.Seed(modelBuilder);
     }
 
     public DbSet<AuditEntry> AuditEntries { get; set; }
