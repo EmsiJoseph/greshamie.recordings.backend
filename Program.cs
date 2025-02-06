@@ -1,3 +1,4 @@
+using System.IO;
 using System.Text;
 using backend.Classes;
 using backend.Constants;
@@ -300,6 +301,27 @@ app.MapDelete(AppApiEndpoints.Recordings.Historic.Delete,
         })
     .RequireRateLimiting("PerUserPolicy")
     .RequireAuthorization();
+
+// 6.2.4. Export Historic Recording Mp3
+app.MapGet(AppApiEndpoints.Recordings.Historic.ExportMp3,
+        async (IHistoricRecordingsService service, string recordingId) =>
+        {
+            var stream = await service.ExportMp3Async(recordingId);
+            return Results.File(stream, "audio/mpeg", $"recordingId.mp3");
+        })
+    .CacheOutput("RecordingsCache")
+    .RequireAuthorization();
+
+// 6.2.5. Export Historic Recording Wav
+app.MapGet(AppApiEndpoints.Recordings.Historic.ExportWav,
+        async (IHistoricRecordingsService service, string recordingId) =>
+        {
+            var stream = await service.ExportWavAsync(recordingId);
+            return Results.File(stream, "audio/wav", $"recordingId.mp3");
+        })
+    .CacheOutput("RecordingsCache")
+    .RequireAuthorization();
+
 
 app.UseAuthorization();
 app.MapControllers();
