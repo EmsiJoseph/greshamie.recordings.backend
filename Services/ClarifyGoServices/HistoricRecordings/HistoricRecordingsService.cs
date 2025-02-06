@@ -112,7 +112,7 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
         public async Task<IEnumerable<RecordingSearchResult>> SearchRecordingsAsync(
             RecordingSearchFiltersDto searchFiltersDto)
         {
-            await _tokenService.SetBearerTokenAsync();
+            await _tokenService.SetBearerTokenAsync(_httpClient);
 
 
             var baseUrl =
@@ -144,7 +144,7 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
 
         public async Task DeleteRecordingAsync(string recordingId)
         {
-            await _tokenService.SetBearerTokenAsync();
+            await _tokenService.SetBearerTokenAsync(_httpClient);
 
             var url = ClarifyGoApiEndpoints.HistoricRecordings.Delete(recordingId);
 
@@ -154,7 +154,7 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
 
         public async Task<Stream> ExportMp3Async(string recordingId)
         {
-            await _tokenService.SetBearerTokenAsync();
+            await _tokenService.SetBearerTokenAsync(_httpClient);
 
             var url = ClarifyGoApiEndpoints.HistoricRecordings.ExportMp3(recordingId);
 
@@ -166,7 +166,7 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
 
         public async Task<Stream> ExportWavAsync(string recordingId)
         {
-            await _tokenService.SetBearerTokenAsync();
+            await _tokenService.SetBearerTokenAsync(_httpClient);
 
             var url = ClarifyGoApiEndpoints.HistoricRecordings.ExportWav(recordingId);
 

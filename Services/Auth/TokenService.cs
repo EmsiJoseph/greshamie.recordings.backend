@@ -1,4 +1,6 @@
 ﻿using System;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using backend.Models;
 using IdentityModel.Client;
@@ -33,20 +35,26 @@ namespace backend.Services.Auth
 
         private readonly ILogger<TokenService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-        public async Task SetBearerTokenAsync()
+        public async Task SetBearerTokenAsync(HttpClient httpClientFromExternalService)
         {
-            // Get the current user from the HTTP context.
             var userClaims = _httpContextAccessor.HttpContext?.User;
             if (userClaims == null)
             {
                 throw new Exception("User not found in context.");
             }
 
-            var user = await _userManager.GetUserAsync(userClaims);
+            // Extract the user name
+            var userName = userClaims.FindFirstValue(ClaimTypes.Name);
+            if (string.IsNullOrEmpty(userName))
+            {
+                throw new Exception("User name not found in token.");
+            }
+
+            // Find the user by ID instead of using GetUserAsync
+            var user = await _userManager.FindByNameAsync(userName);
             if (user == null)
             {
-                // No user was found; do nothing.
-                return;
+                throw new Exception($"User with ID {userName} not found.");
             }
 
             // If the token has expired, do nothing.
@@ -66,11 +74,10 @@ namespace backend.Services.Auth
                 var token = _protector.Unprotect(user.ClarifyGoAccessToken);
 
                 // Set the token as a Bearer token on the HttpClient.
-                _httpClient.SetBearerToken(token);
+                httpClientFromExternalService.SetBearerToken(token);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error setting bearer token for user {UserId}", user.Id);
             }
         }
 
