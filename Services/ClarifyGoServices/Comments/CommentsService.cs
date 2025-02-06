@@ -18,15 +18,7 @@ namespace backend.Services.ClarifyGoServices.Comments
 
         public async Task<IEnumerable<Comment>> GetCommentsAsync(string recordingId, bool isLiveRecording = false)
         {
-            // Retrieve access token and apply it as a Bearer token
-            var token = _tokenService.GetAccessTokenFromContext();
-
-            if (string.IsNullOrEmpty(token))
-            {
-                throw new UnauthorizedAccessException("Missing access token");
-            }
-
-            _httpClient.SetBearerToken(token);
+            await _tokenService.SetBearerTokenAsync();
 
             // Select the appropriate endpoint based on the recording type using swagger endpoints
             var endpoint = isLiveRecording
@@ -48,14 +40,7 @@ namespace backend.Services.ClarifyGoServices.Comments
 
         public async Task PostCommentAsync(string recordingId, string comment, bool isLiveRecording = false)
         {
-            // Retrieve access token and apply it as a Bearer token
-            var token = _tokenService.GetAccessTokenFromContext();
-            if (string.IsNullOrEmpty(token))
-            {
-                throw new UnauthorizedAccessException("Missing access token");
-            }
-
-            _httpClient.SetBearerToken(token);
+            await _tokenService.SetBearerTokenAsync();
 
             // Select the correct endpoint for adding a comment based on the recording type
             var endpoint = isLiveRecording
@@ -72,15 +57,7 @@ namespace backend.Services.ClarifyGoServices.Comments
 
         public async Task DeleteCommentAsync(string recordingId, string commentId, bool isLiveRecording = false)
         {
-            // Retrieve access token and apply it as a Bearer token
-            var token = _tokenService.GetAccessTokenFromContext();
-
-            if (string.IsNullOrEmpty(token))
-            {
-                throw new UnauthorizedAccessException("Missing access token");
-            }
-
-            _httpClient.SetBearerToken(token);
+            await _tokenService.SetBearerTokenAsync();
 
             // Select the correct endpoint for deleting a comment based on the recording type
             var endpoint = isLiveRecording

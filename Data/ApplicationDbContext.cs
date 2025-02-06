@@ -11,5 +11,12 @@ public class ApplicationDbContext : IdentityDbContext<User>
     {
     }
 
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        AuditEventSeeder.Seed(modelBuilder);
+    }
+
     public DbSet<AuditEntry> AuditEntries { get; set; }
 }

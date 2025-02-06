@@ -1,15 +1,15 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace backend.Models;
-
-public class AuditEntry
+namespace backend.Models
 {
-    public int Id { get; set; }
-    [Required] public string? UserId { get; set; }
-    [Required] public string? ActionId { get; set; }
-    public DateTime Timestamp { get; set; } = DateTime.Now;
-    public string? Details { get; set; }
-    [ForeignKey("UserId")] public virtual User? User { get; set; }
-    [ForeignKey("ActionId")] public virtual AuditAction? Action { get; set; }
+    [Table("AuditEvents")]
+    public class AuditEvent
+    {
+        [Key] public int Id { get; set; }
+
+        [Required] [MaxLength(50)] public string Name { get; set; } = string.Empty;
+
+        [Required] [MaxLength(100)] public string Description { get; set; } = string.Empty;
+    }
 }
