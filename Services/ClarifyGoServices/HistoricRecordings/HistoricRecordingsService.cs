@@ -112,14 +112,8 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
         public async Task<IEnumerable<RecordingSearchResult>> SearchRecordingsAsync(
             RecordingSearchFiltersDto searchFiltersDto)
         {
-            var token = _tokenService.GetAccessTokenFromContext();
+            await _tokenService.SetBearerTokenAsync();
 
-            if (string.IsNullOrEmpty(token))
-            {
-                throw new UnauthorizedAccessException("Missing access token");
-            }
-
-            _httpClient.SetBearerToken(token);
 
             var baseUrl =
                 ClarifyGoApiEndpoints.HistoricRecordings.Search(searchFiltersDto.StartDate, searchFiltersDto.EndDate);
@@ -150,6 +144,8 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
 
         public async Task DeleteRecordingAsync(string recordingId)
         {
+            await _tokenService.SetBearerTokenAsync();
+
             var url = ClarifyGoApiEndpoints.HistoricRecordings.Delete(recordingId);
 
             var response = await _httpClient.DeleteAsync(url);
@@ -158,6 +154,8 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
 
         public async Task<Stream> ExportMp3Async(string recordingId)
         {
+            await _tokenService.SetBearerTokenAsync();
+
             var url = ClarifyGoApiEndpoints.HistoricRecordings.ExportMp3(recordingId);
 
             var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
@@ -168,6 +166,8 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
 
         public async Task<Stream> ExportWavAsync(string recordingId)
         {
+            await _tokenService.SetBearerTokenAsync();
+
             var url = ClarifyGoApiEndpoints.HistoricRecordings.ExportWav(recordingId);
 
             var response = await _httpClient.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
