@@ -18,7 +18,7 @@ namespace backend.Services.ClarifyGoServices.Comments
 
         public async Task<IEnumerable<Comment>> GetCommentsAsync(string recordingId, bool isLiveRecording = false)
         {
-            await _tokenService.SetBearerTokenAsync();
+            await _tokenService.SetBearerTokenAsync(_httpClient);
 
             // Select the appropriate endpoint based on the recording type using swagger endpoints
             var endpoint = isLiveRecording
@@ -40,7 +40,7 @@ namespace backend.Services.ClarifyGoServices.Comments
 
         public async Task PostCommentAsync(string recordingId, string comment, bool isLiveRecording = false)
         {
-            await _tokenService.SetBearerTokenAsync();
+            await _tokenService.SetBearerTokenAsync(_httpClient);
 
             // Select the correct endpoint for adding a comment based on the recording type
             var endpoint = isLiveRecording
@@ -57,7 +57,7 @@ namespace backend.Services.ClarifyGoServices.Comments
 
         public async Task DeleteCommentAsync(string recordingId, string commentId, bool isLiveRecording = false)
         {
-            await _tokenService.SetBearerTokenAsync();
+            await _tokenService.SetBearerTokenAsync(_httpClient);
 
             // Select the correct endpoint for deleting a comment based on the recording type
             var endpoint = isLiveRecording

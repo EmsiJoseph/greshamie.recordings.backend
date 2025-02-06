@@ -18,7 +18,7 @@ namespace backend.Services.ClarifyGoServices.Tags
 
         public async Task<IEnumerable<Tag>> GetTagsAsync(string recordingId, bool isLiveRecording = false)
         {
-            await _tokenService.SetBearerTokenAsync();
+            await _tokenService.SetBearerTokenAsync(_httpClient);
 
             // Select the appropriate endpoint based on the recording type using swagger endpoints
             var endpoint = isLiveRecording
@@ -40,7 +40,7 @@ namespace backend.Services.ClarifyGoServices.Tags
 
         public async Task PostTagAsync(string recordingId, string tag, bool isLiveRecording = false)
         {
-            await _tokenService.SetBearerTokenAsync();
+            await _tokenService.SetBearerTokenAsync(_httpClient);
 
             // Select the correct endpoint for adding a comment based on the recording type
             var endpoint = isLiveRecording
@@ -54,7 +54,7 @@ namespace backend.Services.ClarifyGoServices.Tags
 
         public async Task DeleteTagAsync(string recordingId, string tag, bool isLiveRecording = false)
         {
-            await _tokenService.SetBearerTokenAsync();
+            await _tokenService.SetBearerTokenAsync(_httpClient);
 
             // Select the correct endpoint for deleting a comment based on the recording type
             var endpoint = isLiveRecording
@@ -69,7 +69,7 @@ namespace backend.Services.ClarifyGoServices.Tags
 
         public async Task<IEnumerable<Tag>> GetMostUsedTagsAsync(int limit)
         {
-            await _tokenService.SetBearerTokenAsync();
+            await _tokenService.SetBearerTokenAsync(_httpClient);
 
             // Select the appropriate endpoint for retrieving the most used tags
             var endpoint = ClarifyGoApiEndpoints.Tags.MostUsed(limit);

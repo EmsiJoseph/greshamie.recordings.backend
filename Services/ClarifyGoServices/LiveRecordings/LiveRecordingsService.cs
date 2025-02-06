@@ -18,7 +18,7 @@ public class LiveRecordingsService(HttpClient httpClient, ITokenService tokenSer
 
     public async Task<IEnumerable<Recording>> GetLiveRecordingsAsync()
     {
-        await _tokenService.SetBearerTokenAsync();
+        await _tokenService.SetBearerTokenAsync(_httpClient);
 
         var response = await _httpClient.GetAsync(
             ClarifyGoApiEndpoints.LiveRecordings.GetAll());
@@ -35,7 +35,7 @@ public class LiveRecordingsService(HttpClient httpClient, ITokenService tokenSer
 
     public async Task ResumeRecordingAsync(string recorderId, string recordingId)
     {
-        await _tokenService.SetBearerTokenAsync();
+        await _tokenService.SetBearerTokenAsync(_httpClient);
 
         var endpoint = ClarifyGoApiEndpoints.LiveRecordings.Resume(recorderId, recordingId);
 
@@ -51,7 +51,7 @@ public class LiveRecordingsService(HttpClient httpClient, ITokenService tokenSer
 
     public async Task PauseRecordingAsync(string recorderId, string recordingId)
     {
-        await _tokenService.SetBearerTokenAsync();
+        await _tokenService.SetBearerTokenAsync(_httpClient);
 
         var endpoint = ClarifyGoApiEndpoints.LiveRecordings.Pause(recorderId, recordingId);
 

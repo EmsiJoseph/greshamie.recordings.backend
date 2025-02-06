@@ -19,7 +19,6 @@ namespace backend.Controllers
         private readonly ITokenService _tokenService;
         private readonly ILogger<AuthController> _logger;
         private readonly UserManager<User> _userManager;
-        private readonly SignInManager<User> _signInManager;
         private readonly IDataProtector _protector;
         private readonly IConfiguration _configuration;
 
@@ -27,14 +26,12 @@ namespace backend.Controllers
             ITokenService tokenService,
             ILogger<AuthController> logger,
             UserManager<User> userManager,
-            SignInManager<User> signInManager,
             IDataProtectionProvider dataProtectionProvider,
             IConfiguration configuration)
         {
             _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
-            _signInManager = signInManager ?? throw new ArgumentNullException(nameof(signInManager));
             _protector = dataProtectionProvider.CreateProtector("ClarifyGoAccessTokenProtector");
             _configuration = configuration ?? throw new ArgumentNullException(nameof(configuration));
         }
@@ -93,10 +90,6 @@ namespace backend.Controllers
                     await _userManager.UpdateAsync(user);
                 }
 
-                // Sign in the user via Identity (this is optional if you’re solely using JWTs,
-                // but you might use it internally)
-                await _signInManager.SignInAsync(user, isPersistent: false);
-
                 // Generate a JWT token for our backend to return to the client.
                 var jwtToken = GenerateJwtToken(user);
 
@@ -119,8 +112,8 @@ namespace backend.Controllers
             // Create claims for the token.
             var claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id), // or use user.Id.ToString()
-                new Claim(JwtRegisteredClaimNames.UniqueName, user.UserName),
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+                new(JwtRegisteredClaimNames.UniqueName, user.UserName),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
@@ -128,8 +121,8 @@ namespace backend.Controllers
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            // Set token expiration. You can adjust the expiration time as needed.
-            var expires = DateTime.UtcNow.AddMinutes(15);
+            // Set token expiration.
+            var expires = DateTime.UtcNow.AddMinutes(60);
 
             var token = new JwtSecurityToken(
                 issuer: _configuration["Jwt:Issuer"],
