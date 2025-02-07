@@ -19,7 +19,7 @@ public class ApplicationDbContext : IdentityDbContext<User>
         CallTypeSeeder.Seed(modelBuilder);
     }
 
-    public DbSet<AuditEntry> AuditEntries { get; set; }
+    public DbSet<Models.AuditEntry> AuditEntries { get; set; }
     public DbSet<AuditEvent> AuditEvents { get; set; }
     public DbSet<CallType> CallTypes { get; set; }
 }
