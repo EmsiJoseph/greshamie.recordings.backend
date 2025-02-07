@@ -72,7 +72,6 @@ namespace backend.Controllers
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return (tokenHandler.WriteToken(token), (int)(tokenDescriptor.Expires.Value - DateTime.UtcNow).TotalSeconds);
         }
-
         [HttpPost("login")]
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
@@ -115,6 +114,11 @@ namespace backend.Controllers
                     }
                 }
 
+                // Save ClarifyGo access token and expiry to user record
+                user.ClarifyGoAccessToken = tokenResponse.AccessToken;  // Assuming tokenResponse contains the access token
+                user.ClarifyGoAccessTokenExpiry = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn);  // Assuming the expires_in field is in seconds
+                await _userManager.UpdateAsync(user);  // Update user record with new access token and expiry
+
                 // Generate JWT token
                 var (jwtToken, expiresIn) = GenerateJwtToken(user);
 
@@ -134,6 +138,7 @@ namespace backend.Controllers
                 return Unauthorized(new { message = "Invalid credentials" });
             }
         }
+
 
         [HttpPost("refresh")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
@@ -215,14 +220,16 @@ namespace backend.Controllers
             // Log the logout event using your audit service and the predefined constant.
             await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.UserLoggedOut, "User logged out.");
 
-            // Optionally, invalidate the refresh token if it exists in the database.
+            // Optionally, invalidate the refresh token and ClarifyGo access token if they exist in the database.
             var user = await _userManager.FindByIdAsync(userId);
             if (user != null)
             {
                 user.RefreshToken = null;
                 user.RefreshTokenExpiry = null;
+                user.ClarifyGoAccessToken = null;           // Remove the ClarifyGo Access Token
+                user.ClarifyGoAccessTokenExpiry = null;     // Remove the ClarifyGo Access Token Expiry
                 await _userManager.UpdateAsync(user);
-                _logger.LogInformation("Refresh token invalidated.");
+                _logger.LogInformation("Refresh token and ClarifyGo access token invalidated.");
             }
 
             _logger.LogInformation("Logout successful.");
