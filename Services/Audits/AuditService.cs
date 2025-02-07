@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using backend.Data;
+﻿using backend.Data;
+using backend.Exceptions;
 using backend.Models;
 using Microsoft.EntityFrameworkCore;
 
+namespace backend.Services.Audits   
 {
     public class AuditService : IAuditService
     {
@@ -12,31 +11,52 @@ using Microsoft.EntityFrameworkCore;
 
         public AuditService(ApplicationDbContext context)
         {
+            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         public async Task LogAuditEntryAsync(string userId, int eventId, string? details = null)
         {
-            if (string.IsNullOrWhiteSpace(userId))
+            try
             {
-                throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
+                }
+
+                var auditEntry = new AuditEntry
+                {
+                    UserId = userId,
+                    EventId = eventId,
+                    Timestamp = DateTime.UtcNow,
+                    Details = details
+                };
+
+                await _context.AuditEntries.AddAsync(auditEntry);
+                await _context.SaveChangesAsync();
             }
-
-            var auditEntry = new AuditEntry
+            catch (DbUpdateException ex)
             {
-                UserId = userId,
-                EventId = eventId,
-                Timestamp = DateTime.UtcNow,
-                Details = details
-            };
-
-            await _context.AuditEntries.AddAsync(auditEntry);
-            await _context.SaveChangesAsync();
+                throw new ServiceException("Failed to save audit entry to database", 500);
+            }
+            catch (Exception ex)
+            {
+                throw new ServiceException($"Unexpected error logging audit entry: {ex.Message}", 500);
+            }
         }
 
         public async Task<List<AuditEntry>> GetAuditEntriesAsync()
         {
-            return await _context.AuditEntries
-                .ToListAsync();
+            try
+            {
+                return await _context.AuditEntries
+                    .Include(ae => ae.User)
+                    .Include(ae => ae.Event)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new ServiceException($"Failed to retrieve audit entries: {ex.Message}", 500);
+            }
         }
 
         public async Task<AuditEntry> GetAuditEntryByIdAsync(int id)
