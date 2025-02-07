@@ -1,11 +1,10 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
-namespace backend.Models
+namespace backend.Data.Models
 {
-    public class CallType
+    public class AuditEvent
     {
-        [Key] public int? Id { get; set; }
+        [Key] public int Id { get; set; }
 
         [Required] [MaxLength(50)] public string Name { get; set; } = string.Empty;
 

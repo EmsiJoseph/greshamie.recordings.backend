@@ -1,7 +1,7 @@
+using backend.Data.Models;
 using Microsoft.EntityFrameworkCore;
-using backend.Models;
 
-namespace backend.Data
+namespace backend.Data.Seeds
 {
     public static class CallTypeSeeder
     {
