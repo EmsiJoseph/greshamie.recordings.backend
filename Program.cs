@@ -1,11 +1,11 @@
 using System.Text;
-using backend.Classes;
 using backend.Constants;
 using backend.Data;
 using backend.DTOs;
 using backend.Extensions;
+using backend.Middleware;
 using backend.Models;
-using backend.Services;
+using backend.Services.Audits;
 using backend.Services.Auth;
 using backend.Services.ClarifyGoServices.Comments;
 using backend.Services.ClarifyGoServices.HistoricRecordings;
@@ -34,20 +34,24 @@ builder.Services.AddRateLimiter(options =>
     });
 });
 
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-                builder.Configuration["Jwt:Key"]!)),
-            ValidateIssuer = false,
-            ValidateAudience = false,
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
-        };
-    });
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
+            builder.Configuration["Jwt:Key"]!)),
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
+        ClockSkew = TimeSpan.Zero
+    };
+});
 
 builder.Services.AddAuthorization();
 
@@ -76,7 +80,7 @@ else
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connection));
 
-builder.Services.AddIdentity<User, IdentityRole>()
+builder.Services.AddIdentityCore<User>(options => { })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
@@ -98,7 +102,7 @@ builder.Services.AddScoped<ITagsService, TagsService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ITokenService, TokenService>();
 
-// 2.6. Audit Service
+// 2.6 Audit Service
 builder.Services.AddScoped<IAuditService, AuditService>();
 
 // 3. HTTP Client Configurations
@@ -146,15 +150,38 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // 5. Middleware Pipeline
-// Add the Https Redirection Middleware in production
 // app.UseHttpsRedirection();
 app.UseCors("ReactClient");
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseOutputCache();
 app.UseRateLimiter();
-
+app.UseMiddleware<GlobalExceptionHandler>();
 
 // 6. Endpoints
-app.MapGet("/health", () => Results.Ok());
+// Unprotected endpoint
+app.MapGet("/unprotected", () => Results.Ok("No auth required"));
+
+// Protected endpoint
+app.MapGet("/protected", (HttpContext context) =>
+{
+    var user = context.User;
+    return user?.Identity?.IsAuthenticated == true
+        ? Results.Ok($"Hello, {user.Identity.Name}")
+        : Results.Unauthorized();
+}).RequireAuthorization(new AuthorizeAttribute { AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme });
+
+app.MapGet("/debug-claims", (HttpContext context) =>
+{
+    if (context.User.Identity?.IsAuthenticated == true)
+    {
+        var claims = context.User.Claims.Select(c => new { c.Type, c.Value });
+        return Results.Ok(claims);
+    }
+
+    return Results.Unauthorized();
+}).RequireAuthorization();
+
 
 // 6.1. Live Recordings Endpoints
 // 6.1.1. Get All Live Recordings
@@ -252,6 +279,7 @@ app.MapGet(AppApiEndpoints.Recordings.Historic.GetAll,
             searchFiltersDto.StartDate = DateTime.Now.StartOfWeek(DayOfWeek.Monday);
             searchFiltersDto.EndDate = DateTime.Now;
             Console.WriteLine($"Start Date: {searchFiltersDto.StartDate}, End Date: {searchFiltersDto.EndDate}");
+            
             return await service.SearchRecordingsAsync(searchFiltersDto);
         }
     )
@@ -275,6 +303,6 @@ app.MapDelete(AppApiEndpoints.Recordings.Historic.Delete,
     .RequireRateLimiting("PerUserPolicy")
     .RequireAuthorization();
 
-
+app.UseAuthorization();
 app.MapControllers();
 app.Run();
