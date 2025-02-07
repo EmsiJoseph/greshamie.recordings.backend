@@ -2,6 +2,7 @@ using System.Text;
 using backend.Data;
 using backend.Middleware;
 using backend.Models;
+using backend.Services.Audits;
 using backend.Services.Auth;
 using backend.Services.ClarifyGoServices.Comments;
 using backend.Services.ClarifyGoServices.HistoricRecordings;
@@ -96,6 +97,9 @@ builder.Services.AddScoped<ITagsService, TagsService>();
 // 2.5. Token Service
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ITokenService, TokenService>();
+
+// 2.6 Audit Service
+builder.Services.AddScoped<IAuditService, AuditService>();
 
 
 // 3. HTTP Client Configurations
