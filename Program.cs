@@ -1,7 +1,7 @@
 using System.Text;
 using backend.Data;
+using backend.Data.Models;
 using backend.Middleware;
-using backend.Models;
 using backend.Services.Audits;
 using backend.Services.Auth;
 using backend.Services.ClarifyGoServices.Comments;

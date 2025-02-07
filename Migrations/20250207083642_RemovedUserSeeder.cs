@@ -3,10 +3,12 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
+#pragma warning disable CA1814 // Prefer jagged arrays over multidimensional
+
 namespace backend.Migrations
 {
     /// <inheritdoc />
-    public partial class Init : Migration
+    public partial class RemovedUserSeeder : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -16,6 +18,11 @@ namespace backend.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    Level = table.Column<int>(type: "int", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     ConcurrencyStamp = table.Column<string>(type: "nvarchar(max)", nullable: true)
@@ -32,6 +39,8 @@ namespace backend.Migrations
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     ClarifyGoAccessToken = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     ClarifyGoAccessTokenExpiry = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    RefreshToken = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    RefreshTokenExpiry = table.Column<DateTime>(type: "datetime2", nullable: true),
                     UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
@@ -50,6 +59,35 @@ namespace backend.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AspNetUsers", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "AuditEvents",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AuditEvents", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CallTypes",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    NormalizedName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CallTypes", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -165,9 +203,9 @@ namespace backend.Migrations
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    Action = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    EventId = table.Column<int>(type: "int", nullable: false),
                     Timestamp = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Details = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                    Details = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true)
                 },
                 constraints: table =>
                 {
@@ -178,12 +216,56 @@ namespace backend.Migrations
                         principalTable: "AspNetUsers",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_AuditEntries_AuditEvents_EventId",
+                        column: x => x.EventId,
+                        principalTable: "AuditEvents",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.InsertData(
+                table: "AspNetRoles",
+                columns: new[] { "Id", "ConcurrencyStamp", "CreatedAt", "Description", "IsActive", "Level", "Name", "NormalizedName", "UpdatedAt" },
+                values: new object[,]
+                {
+                    { "0054ea5e-7751-4e14-b49d-33b6a8418a19", null, new DateTime(2025, 2, 7, 8, 36, 41, 610, DateTimeKind.Utc).AddTicks(4261), "User of Gresham Recordings", true, 90, "User", "USER", new DateTime(2025, 2, 7, 8, 36, 41, 610, DateTimeKind.Utc).AddTicks(4262) },
+                    { "952d75bb-1e47-4e65-b0ee-3502849a8cbd", null, new DateTime(2025, 2, 7, 8, 36, 41, 610, DateTimeKind.Utc).AddTicks(3066), "Administrator of Gresham Recordings", true, 90, "Admin", "ADMIN", new DateTime(2025, 2, 7, 8, 36, 41, 610, DateTimeKind.Utc).AddTicks(3072) }
+                });
+
+            migrationBuilder.InsertData(
+                table: "AuditEvents",
+                columns: new[] { "Id", "Description", "Name" },
+                values: new object[,]
+                {
+                    { 1, "A user successfully logged in.", "UserLoggedIn" },
+                    { 2, "A user logged out.", "UserLoggedOut" },
+                    { 3, "A new record was played.", "RecordPlayed" },
+                    { 4, "An existing record was exported.", "RecordExported" },
+                    { 5, "A record was deleted.", "RecordDeleted" }
+                });
+
+            migrationBuilder.InsertData(
+                table: "CallTypes",
+                columns: new[] { "Id", "Description", "Name", "NormalizedName" },
+                values: new object[,]
+                {
+                    { 1, "An inbound call.", "incoming", "INCOMING" },
+                    { 2, "An outbound call.", "outgoing", "OUTGOING" },
+                    { 3, "An internal call.", "internal", "INTERNAL" }
                 });
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
                 table: "AspNetRoleClaims",
                 column: "RoleId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AspNetRoles_Name",
+                table: "AspNetRoles",
+                column: "Name",
+                unique: true,
+                filter: "[Name] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "RoleNameIndex",
@@ -220,6 +302,11 @@ namespace backend.Migrations
                 filter: "[NormalizedUserName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
+                name: "IX_AuditEntries_EventId",
+                table: "AuditEntries",
+                column: "EventId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_AuditEntries_UserId",
                 table: "AuditEntries",
                 column: "UserId");
@@ -247,10 +334,16 @@ namespace backend.Migrations
                 name: "AuditEntries");
 
             migrationBuilder.DropTable(
+                name: "CallTypes");
+
+            migrationBuilder.DropTable(
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");
+
+            migrationBuilder.DropTable(
+                name: "AuditEvents");
         }
     }
 }

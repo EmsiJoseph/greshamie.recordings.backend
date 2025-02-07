@@ -1,7 +1,7 @@
+using backend.Data.Models;
 using Microsoft.EntityFrameworkCore;
-using backend.Models;
 
-namespace backend.Data
+namespace backend.Data.Seeds
 {
     public static class CallTypeSeeder
     {
@@ -10,20 +10,26 @@ namespace backend.Data
             modelBuilder.Entity<CallType>().HasData(
                 new CallType
                 {
-                    Id = 0,
-                    Name = "Incoming",
+                    Id = 1,
+                    Name = "incoming",
+                    NormalizedName = "INCOMING",
+                    IdFromClarify = 0,
                     Description = "An inbound call."
                 },
                 new CallType
                 {
-                    Id = 1,
-                    Name = "Outgoing",
+                    Id = 2,
+                    Name = "outgoing",
+                    NormalizedName = "OUTGOING",
+                    IdFromClarify = 1,
                     Description = "An outbound call."
                 },
                 new CallType
                 {
-                    Id = 2,
-                    Name = "Internal",
+                    Id = 3,
+                    Name = "internal",
+                    NormalizedName = "INTERNAL",
+                    IdFromClarify = 2,
                     Description = "An internal call."
                 }
             );

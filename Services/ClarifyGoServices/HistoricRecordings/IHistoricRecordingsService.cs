@@ -4,7 +4,6 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using backend.Classes;
 using backend.DTOs;
-using backend.Models;
 
 namespace backend.Services.ClarifyGoServices.HistoricRecordings
 {

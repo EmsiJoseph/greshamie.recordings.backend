@@ -1,9 +1,10 @@
 ﻿using backend.Data;
+using backend.Data.Models;
 using backend.Exceptions;
-using backend.Models;
+using backend.DTOs;
 using Microsoft.EntityFrameworkCore;
 
-namespace backend.Services.Audits   
+namespace backend.Services.Audits
 {
     public class AuditService : IAuditService
     {
@@ -44,14 +45,22 @@ namespace backend.Services.Audits
             }
         }
 
-        public async Task<List<AuditEntry>> GetAuditEntriesAsync()
+        public async Task<List<AuditEntryDto>> GetAuditEntriesAsync()
         {
             try
             {
-                return await _context.AuditEntries
+                var entries = await _context.AuditEntries
                     .Include(ae => ae.User)
                     .Include(ae => ae.Event)
                     .ToListAsync();
+                return entries.Select(ae => new AuditEntryDto
+                {
+                    Id = ae.Id,
+                    Username = ae.User.UserName,
+                    EventName = ae.Event.Name,
+                    Timestamp = ae.Timestamp,
+                    Details = ae.Details,
+                }).ToList();
             }
             catch (Exception ex)
             {
@@ -59,63 +68,81 @@ namespace backend.Services.Audits
             }
         }
 
-        public async Task<AuditEntry> GetAuditEntryByIdAsync(int id)
+        public async Task<AuditEntryDto> GetAuditEntryByIdAsync(int id)
         {
-            var auditEntry = await _context.AuditEntries
-                .Include(ae => ae.User)
-                .Include(ae => ae.Event)
-                .FirstOrDefaultAsync(ae => ae.Id == id);
-
-            if (auditEntry == null)
+            try
             {
-                throw new KeyNotFoundException($"Audit entry with ID {id} not found.");
+                var entry = await _context.AuditEntries
+                    .Include(ae => ae.User)
+                    .Include(ae => ae.Event)
+                    .FirstOrDefaultAsync(ae => ae.Id == id);
+
+                if (entry == null)
+                {
+                    throw new ServiceException($"Audit entry with ID {id} not found.");
+                }
+
+                return new AuditEntryDto
+                {
+                    Id = entry.Id,
+                    Username = entry.User.UserName,
+                    EventName = entry.Event.Name,
+                    Timestamp = entry.Timestamp,
+                    Details = entry.Details,
+                };
             }
-
-            return auditEntry;
+            catch (Exception ex)
+            {
+                throw new ServiceException($"Failed to retrieve audit entry: {ex.Message}", 500);
+            }
         }
 
-        public async Task<List<AuditEntry>> GetAuditEntriesByEventTypeAsync(int eventType)
-        {
-            return await _context.AuditEntries
-                .Include(ae => ae.User)
-                .Include(ae => ae.Event)
-                .Where(ae => ae.EventId == eventType)
-                .ToListAsync();
-        }
-
-        public async Task<List<AuditEntry>> GetAuditEntriesFilteredAsync(
+        public async Task<List<AuditEntryDto>> GetAuditEntriesFilteredAsync(
             int? eventType = null,
             string? userId = null,
             DateTime? startDate = null,
             DateTime? endDate = null)
         {
-            // Start with the base query.
-            IQueryable<AuditEntry> query = _context.AuditEntries
-                .Include(ae => ae.User)
-                .Include(ae => ae.Event);
-
-            // Apply filters only if they are provided.
-            if (eventType.HasValue)
+            try
             {
-                query = query.Where(ae => ae.EventId == eventType.Value);
-            }
+                var entries = _context.AuditEntries
+                    .Include(ae => ae.User)
+                    .Include(ae => ae.Event)
+                    .AsQueryable();
 
-            if (!string.IsNullOrWhiteSpace(userId))
+                if (eventType.HasValue)
+                {
+                    entries = entries.Where(ae => ae.EventId == eventType.Value);
+                }
+
+                if (!string.IsNullOrWhiteSpace(userId))
+                {
+                    entries = entries.Where(ae => ae.UserId == userId);
+                }
+
+                if (startDate.HasValue)
+                {
+                    entries = entries.Where(ae => ae.Timestamp >= startDate.Value);
+                }
+
+                if (endDate.HasValue)
+                {
+                    entries = entries.Where(ae => ae.Timestamp <= endDate.Value);
+                }
+
+                return await entries.Select(ae => new AuditEntryDto
+                {
+                    Id = ae.Id,
+                    Username = ae.User.UserName,
+                    EventName = ae.Event.Name,
+                    Timestamp = ae.Timestamp,
+                    Details = ae.Details,
+                }).ToListAsync();
+            }
+            catch (Exception ex)
             {
-                query = query.Where(ae => ae.UserId == userId);
+                throw new ServiceException($"Failed to retrieve audit entries: {ex.Message}", 500);
             }
-
-            if (startDate.HasValue)
-            {
-                query = query.Where(ae => ae.Timestamp >= startDate.Value);
-            }
-
-            if (endDate.HasValue)
-            {
-                query = query.Where(ae => ae.Timestamp <= endDate.Value);
-            }
-
-            return await query.ToListAsync();
         }
     }
 }

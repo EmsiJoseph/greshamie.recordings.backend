@@ -2,9 +2,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using backend.Models;
 using backend.Services.Audits;
 using backend.Constants;
+using backend.Data.Models;
 using backend.Services.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
@@ -75,6 +75,7 @@ namespace backend.Controllers
                 var encryptedToken = _protector.Protect(tokenResponse.AccessToken);
                 var tokenExpiry = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn);
 
+
                 // Find or create the Identity user.
                 var user = await _userManager.FindByNameAsync(request.Username);
                 if (user == null)
@@ -88,6 +89,8 @@ namespace backend.Controllers
                     };
 
                     var createResult = await _userManager.CreateAsync(user, request.Password);
+
+                    await _userManager.AddToRoleAsync(user, RolesConstants.User);
 
                     if (!createResult.Succeeded)
                     {
@@ -104,6 +107,7 @@ namespace backend.Controllers
                     user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
                     await _userManager.UpdateAsync(user);
                 }
+
                 // Generate a JWT token for our backend to return to the client.
                 var jwtToken = GenerateJwtToken(user);
                 await _auditService.LogAuditEntryAsync(user.Id, AuditEventTypes.UserLoggedIn,
@@ -246,7 +250,6 @@ namespace backend.Controllers
 }
 
 
-
 public class LoginRequest
 {
     [Required] public string? Username { get; set; }
@@ -259,4 +262,3 @@ public class JwtTokenResult
     public string Token { get; set; } = string.Empty;
     public int ExpiresIn { get; set; }
 }
-
