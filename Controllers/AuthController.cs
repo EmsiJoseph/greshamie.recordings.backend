@@ -2,6 +2,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using backend.Models;
 using backend.Services.Audits;
 using backend.Constants;
 using backend.Data.Models;
@@ -12,7 +13,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-
+using Azure.Core;
+using backend.Services;
 
 namespace backend.Controllers
 {
@@ -48,15 +50,40 @@ namespace backend.Controllers
             return Convert.ToBase64String(Guid.NewGuid().ToByteArray());
         }
 
+        // Method to generate JWT token
+        private (string Token, int ExpiresIn) GenerateJwtToken(User user)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]); // Ensure this is set in appsettings.json
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(new[]
+                {
+                    new Claim(JwtRegisteredClaimNames.Sub, user.Id),  // Ensure `sub` claim exists
+                    new Claim(JwtRegisteredClaimNames.UniqueName, user.UserName),
+                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                }),
+                Expires = DateTime.UtcNow.AddHours(int.Parse(_configuration["Jwt:ExpiryHours"])),
+                Issuer = _configuration["Jwt:Issuer"],
+                Audience = _configuration["Jwt:Audience"],
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return (tokenHandler.WriteToken(token), (int)(tokenDescriptor.Expires.Value - DateTime.UtcNow).TotalSeconds);
+        }
         [HttpPost("login")]
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
+            // Validate model state
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
             }
 
+            // Check for valid username and password
             if (string.IsNullOrEmpty(request.Username) || string.IsNullOrEmpty(request.Password))
             {
                 return BadRequest(new { message = "Invalid request" });
@@ -71,21 +98,13 @@ namespace backend.Controllers
                     return Unauthorized(new { message = "Invalid credentials" });
                 }
 
-                // Encrypt the ClarifyGo token before storing it.
-                var encryptedToken = _protector.Protect(tokenResponse.AccessToken);
-                var tokenExpiry = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn);
-
-
-                // Find or create the Identity user.
+               // Find or create the Identity user.
                 var user = await _userManager.FindByNameAsync(request.Username);
                 if (user == null)
                 {
                     user = new User
                     {
-                        UserName = request.Username,
-                        // Store the encrypted ClarifyGo token.
-                        ClarifyGoAccessToken = encryptedToken,
-                        ClarifyGoAccessTokenExpiry = tokenExpiry
+                        UserName = request.Username
                     };
 
                     var createResult = await _userManager.CreateAsync(user, request.Password);
@@ -98,27 +117,29 @@ namespace backend.Controllers
                             new { message = "User creation failed." });
                     }
                 }
-                else
-                {
-                    // Update token info for an existing user.
-                    user.ClarifyGoAccessToken = encryptedToken;
-                    user.ClarifyGoAccessTokenExpiry = tokenExpiry;
-                    user.RefreshToken = GenerateRefreshToken();
-                    user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
-                    await _userManager.UpdateAsync(user);
-                }
 
-                // Generate a JWT token for our backend to return to the client.
-                var jwtToken = GenerateJwtToken(user);
-                await _auditService.LogAuditEntryAsync(user.Id, AuditEventTypes.UserLoggedIn,
-                    "User logged in successfully.");
+                // Save ClarifyGo access token and expiry to user record
+                user.ClarifyGoAccessToken = tokenResponse.AccessToken;  // Assuming tokenResponse contains the access token
+                user.ClarifyGoAccessTokenExpiry = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn);  // Assuming the expires_in field is in seconds
+
+                // Generate a random refresh token
+                var refreshToken = GenerateRefreshToken();
+                user.RefreshToken = refreshToken;
+                user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(30);  // Set refresh token expiry, for example, 30 days
+
+                // Update user record with new access token, refresh token, and expiry
+                await _userManager.UpdateAsync(user);
+
+                // Generate JWT token
+                var (jwtToken, expiresIn) = GenerateJwtToken(user);
+
                 return Ok(new
                 {
                     user = new { user_name = user.UserName },
-                    accessToken = new
+                    access_token = new
                     {
-                        value = jwtToken.Token,
-                        expiresIn = jwtToken.ExpiresIn
+                        value = jwtToken,
+                        expires_in = expiresIn
                     },
                     refreshToken = user.RefreshToken
                 });
@@ -156,57 +177,27 @@ namespace backend.Controllers
 
             return Ok(new
             {
-                accessToken = jwtToken.Token,
-                refreshToken = user.RefreshToken,
-                expiresIn = jwtToken.ExpiresIn
+                access_token = jwtToken.Token,
+                refresh_token = user.RefreshToken,
+                expires_in = jwtToken.ExpiresIn
             });
         }
-
-        private JwtTokenResult GenerateJwtToken(User user)
-        {
-            // Create claims for the token.
-            var claims = new List<Claim>
-            {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-                new(JwtRegisteredClaimNames.UniqueName, user.UserName),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-            };
-
-            // Get settings from configuration.
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            // Set token expiration.
-            var expires = DateTime.UtcNow.AddMinutes(60);
-
-            var token = new JwtSecurityToken(
-                issuer: _configuration["Jwt:Issuer"],
-                audience: _configuration["Jwt:Audience"],
-                claims: claims,
-                expires: expires,
-                signingCredentials: creds
-            );
-
-            var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
-
-            return new JwtTokenResult
-            {
-                Token = tokenString,
-                ExpiresIn = (int)(expires - DateTime.UtcNow).TotalSeconds
-            };
-        }
-
         [HttpPost("logout")]
         [AllowAnonymous]
         public async Task<IActionResult> Logout()
         {
+            // Log request to verify it hits the method
+            _logger.LogInformation("Logout request received.");
+
             // Retrieve the token from the Authorization header.
-            // The expected format is: "Bearer {token}"
             var authHeader = Request.Headers["Authorization"].FirstOrDefault();
             if (string.IsNullOrEmpty(authHeader) || !authHeader.StartsWith("Bearer "))
             {
+                _logger.LogError("Authorization header missing or malformed.");
                 return BadRequest(new { message = "Authorization header with Bearer token is required." });
             }
+
+            _logger.LogInformation("Authorization header found, extracting token...");
 
             // Extract the token (removing the "Bearer " prefix).
             var token = authHeader.Substring("Bearer ".Length).Trim();
@@ -218,47 +209,61 @@ namespace backend.Controllers
             {
                 jwtToken = tokenHandler.ReadJwtToken(token);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger.LogError("Token parsing failed: " + ex.Message);
                 return BadRequest(new { message = "Invalid token." });
             }
 
+            _logger.LogInformation("Token parsed successfully.");
+
             // Attempt to get the user identifier from the token claims.
-            // Here we assume that the user id is stored in the JWT 'sub' (subject) claim.
             var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub);
             if (userIdClaim == null)
             {
+                _logger.LogError("User identifier (sub claim) not found in token.");
                 return BadRequest(new { message = "User identifier (sub claim) not found in token." });
             }
 
             string userId = userIdClaim.Value;
+            _logger.LogInformation($"User ID extracted: {userId}");
 
             // Log the logout event using your audit service and the predefined constant.
             await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.UserLoggedOut, "User logged out.");
 
-            // Optionally, if you are maintaining a token revocation list or performing cleanup, do it here.
+            // Optionally, invalidate the refresh token and ClarifyGo access token if they exist in the database.
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user != null)
+            {
+                user.RefreshToken = null;
+                user.RefreshTokenExpiry = null;
+                user.ClarifyGoAccessToken = null;           // Remove the ClarifyGo Access Token
+                user.ClarifyGoAccessTokenExpiry = null;     // Remove the ClarifyGo Access Token Expiry
+                await _userManager.UpdateAsync(user);
+                _logger.LogInformation("Refresh token and ClarifyGo access token invalidated.");
+            }
 
-            // Inform the client that logout was successful.
+            _logger.LogInformation("Logout successful.");
             return Ok(new { message = "Logged out successfully." });
         }
+
     }
 
     public class RefreshTokenRequest
     {
         [Required] public string RefreshToken { get; set; } = string.Empty;
     }
+
+    public class LoginRequest
+    {
+        [Required] public string? Username { get; set; }
+        [Required] public string? Password { get; set; }
+    }
+
+    public class JwtTokenResult
+    {
+        public string Token { get; set; } = string.Empty;
+        public int ExpiresIn { get; set; }
+    }
 }
 
-
-public class LoginRequest
-{
-    [Required] public string? Username { get; set; }
-
-    [Required] public string? Password { get; set; }
-}
-
-public class JwtTokenResult
-{
-    public string Token { get; set; } = string.Empty;
-    public int ExpiresIn { get; set; }
-}
