@@ -1,8 +1,10 @@
-﻿using backend.Data;
+﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using backend.Data;
 using backend.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace backend.Services.Audits   
 {
     public class AuditService : IAuditService
     {
@@ -10,7 +12,6 @@ namespace backend.Services.Audits
 
         public AuditService(ApplicationDbContext context)
         {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
         }
 
         public async Task LogAuditEntryAsync(string userId, int eventId, string? details = null)
@@ -35,8 +36,6 @@ namespace backend.Services.Audits
         public async Task<List<AuditEntry>> GetAuditEntriesAsync()
         {
             return await _context.AuditEntries
-                .Include(ae => ae.User)
-                .Include(ae => ae.Event)
                 .ToListAsync();
         }
 

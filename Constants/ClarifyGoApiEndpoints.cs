@@ -113,4 +113,10 @@ namespace backend.Constants
                 $"{Base}/mostused/{limit}";
         }
     }
+    public static class Audits
+    {
+        private const string Base = "AuditReport";
+        public const string LoginUrl = "https://greshamhouseie.clarifygo.com/Account/Login";
+        public const string Search = $"{Base}/Search?fromDate={{fromDate}}&toDate={{toDate}}&eventType={{eventType}}&offset={{offset}}&maxResults={{maxResults}}";
+    }
 }
