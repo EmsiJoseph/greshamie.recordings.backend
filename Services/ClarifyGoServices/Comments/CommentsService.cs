@@ -1,9 +1,11 @@
 using System.Net;
+using System.Text.Json;
 using backend.Services.Auth;
 using IdentityModel.Client;
 using backend.Classes;
 using backend.Constants;
 using Microsoft.IdentityModel.Tokens;
+using backend.Exceptions;
 
 namespace backend.Services.ClarifyGoServices.Comments
 {
@@ -18,29 +20,50 @@ namespace backend.Services.ClarifyGoServices.Comments
 
         public async Task<IEnumerable<Comment>> GetCommentsAsync(string recordingId, bool isLiveRecording = false)
         {
-            await _tokenService.SetBearerTokenAsync();
-
-            // Select the appropriate endpoint based on the recording type using swagger endpoints
-            var endpoint = isLiveRecording
-                ? ClarifyGoApiEndpoints.LiveRecordings.GetComments(recordingId)
-                : ClarifyGoApiEndpoints.HistoricRecordings.GetComments(recordingId);
-
-            // Execute the GET request
-            var response = await _httpClient.GetAsync(endpoint);
-            response.EnsureSuccessStatusCode();
-
-            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            try
             {
-                throw new SecurityTokenExpiredException("Access token has expired");
-            }
+                await _tokenService.SetBearerTokenAsync(_httpClient);
 
-            // Deserialize and return the comments
-            return await response.Content.ReadFromJsonAsync<Comment[]>() ?? [];
+                var endpoint = isLiveRecording
+                    ? ClarifyGoApiEndpoints.LiveRecordings.GetComments(recordingId)
+                    : ClarifyGoApiEndpoints.HistoricRecordings.GetComments(recordingId);
+
+                var response = await _httpClient.GetAsync(endpoint);
+
+                if (response.StatusCode == HttpStatusCode.Unauthorized)
+                {
+                    throw new ServiceException("Unauthorized access to comments", 401);
+                }
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    throw new ServiceException($"Comments service error: {error}", (int)response.StatusCode);
+                }
+
+                return await response.Content.ReadFromJsonAsync<Comment[]>() ?? [];
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new ServiceException($"Network error: {ex.Message}", 503);
+            }
+            catch (JsonException ex)
+            {
+                throw new ServiceException($"Invalid response format: {ex.Message}", 502);
+            }
+            catch (ServiceException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                throw new ServiceException($"Unexpected error: {ex.Message}");
+            }
         }
 
         public async Task PostCommentAsync(string recordingId, string comment, bool isLiveRecording = false)
         {
-            await _tokenService.SetBearerTokenAsync();
+            await _tokenService.SetBearerTokenAsync(_httpClient);
 
             // Select the correct endpoint for adding a comment based on the recording type
             var endpoint = isLiveRecording
@@ -57,7 +80,7 @@ namespace backend.Services.ClarifyGoServices.Comments
 
         public async Task DeleteCommentAsync(string recordingId, string commentId, bool isLiveRecording = false)
         {
-            await _tokenService.SetBearerTokenAsync();
+            await _tokenService.SetBearerTokenAsync(_httpClient);
 
             // Select the correct endpoint for deleting a comment based on the recording type
             var endpoint = isLiveRecording
