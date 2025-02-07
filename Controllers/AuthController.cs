@@ -111,12 +111,12 @@ namespace backend.Controllers
                 return Ok(new
                 {
                     user = new { user_name = user.UserName },
-                    access_token = new
+                    accessToken = new
                     {
                         value = jwtToken.Token,
-                        expires_in = jwtToken.ExpiresIn
+                        expiresIn = jwtToken.ExpiresIn
                     },
-                    refresh_token = user.RefreshToken
+                    refreshToken = user.RefreshToken
                 });
             }
             catch (Exception ex)
@@ -152,9 +152,9 @@ namespace backend.Controllers
 
             return Ok(new
             {
-                access_token = jwtToken.Token,
-                refresh_token = user.RefreshToken,
-                expires_in = jwtToken.ExpiresIn
+                accessToken = jwtToken.Token,
+                refreshToken = user.RefreshToken,
+                expiresIn = jwtToken.ExpiresIn
             });
         }
 

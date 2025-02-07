@@ -117,18 +117,22 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
             try
             {
                 await _tokenService.SetBearerTokenAsync(_httpClient);
-                
+
+                // Get base URL without query parameters
                 var baseUrl = ClarifyGoApiEndpoints.HistoricRecordings.Search(
-                    searchFiltersDto.StartDate, 
+                    searchFiltersDto.StartDate,
                     searchFiltersDto.EndDate);
 
                 var queryParams = BuildQueryParameters(searchFiltersDto);
+
+                // Always use ? for the first parameter
                 var fullUrl = queryParams.Any()
                     ? $"{baseUrl}?{string.Join("&", queryParams)}"
                     : baseUrl;
 
+
                 var response = await _httpClient.GetAsync(fullUrl);
-                
+
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
                 {
                     throw new ServiceException("Unauthorized access to recording service", 401);
