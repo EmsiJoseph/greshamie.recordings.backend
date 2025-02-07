@@ -2,7 +2,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using backend.Models;
+using backend.Data.Models;
 using IdentityModel.Client;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;

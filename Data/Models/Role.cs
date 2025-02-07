@@ -3,14 +3,13 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
-namespace Shine.Data.Models
+namespace backend.Data.Models
+
 {
     [Index(nameof(Name), IsUnique = true)]
     public class Role : IdentityRole
     {
-        [MaxLength(100)]
-        [Required]
-        public string? Description { get; set; }
+        [MaxLength(100)] [Required] public string? Description { get; set; }
 
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
