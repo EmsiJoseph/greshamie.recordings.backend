@@ -8,11 +8,11 @@ namespace backend.DTOs
         [JsonPropertyName("id")] 
         public int Id { get; set; }
 
-        [JsonPropertyName("user")] 
-        public string UserId { get; set; }
+        [JsonPropertyName("userName")] 
+        public string Username { get; set; }
 
-        [JsonPropertyName("event")] 
-        public string EventName { get; set; } // Only event name, no ID
+        [JsonPropertyName("eventName")] 
+        public string EventName { get; set; }
 
         [JsonPropertyName("timestamp")] 
         public DateTime Timestamp { get; set; }

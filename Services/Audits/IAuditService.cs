@@ -1,4 +1,5 @@
-﻿using backend.Models;
+﻿using backend.DTOs;
+using backend.Models;
 
 namespace backend.Services.Audits
 {
@@ -16,21 +17,14 @@ namespace backend.Services.Audits
         /// Retrieves all audit entries.
         /// </summary>
         /// <returns>A list of audit entries.</returns>
-        Task<List<Models.AuditEntry>> GetAuditEntriesAsync();
+        Task<List<AuditEntryDto>> GetAuditEntriesAsync();
 
         /// <summary>
         /// Retrieves a specific audit entry by its identifier.
         /// </summary>
         /// <param name="id">The audit entry identifier.</param>
         /// <returns>The audit entry.</returns>
-        Task<Models.AuditEntry> GetAuditEntryByIdAsync(int id);
-
-        /// <summary>
-        /// Retrieves audit entries filtered by the specified event type.
-        /// </summary>
-        /// <param name="eventType">The audit event type (using the seeded event ID) to filter by.</param>
-        /// <returns>A list of audit entries matching the specified event type.</returns>
-        Task<List<Models.AuditEntry>> GetAuditEntriesByEventTypeAsync(int eventType);
+        Task<AuditEntryDto> GetAuditEntryByIdAsync(int id);
 
         /// <summary>
         /// Retrieves audit entries based on optional filter parameters.
@@ -41,7 +35,7 @@ namespace backend.Services.Audits
         /// <param name="startDate">Optional start date filter for the timestamp.</param>
         /// <param name="endDate">Optional end date filter for the timestamp.</param>
         /// <returns>A list of audit entries that match the provided filters.</returns>
-        Task<List<Models.AuditEntry>> GetAuditEntriesFilteredAsync(
+        Task<List<AuditEntryDto>> GetAuditEntriesFilteredAsync(
             int? eventType = null,
             string? userId = null,
             DateTime? startDate = null,

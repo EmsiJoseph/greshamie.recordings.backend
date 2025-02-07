@@ -1,4 +1,5 @@
 using backend.Models;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -6,9 +7,12 @@ namespace backend.Data;
 
 public class ApplicationDbContext : IdentityDbContext<User>
 {
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
-        : base(options)
+    private readonly RoleManager<IdentityRole> _roleManager;
+
+    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, RoleManager<IdentityRole> roleManager) :
+        base(options)
     {
+        _roleManager = roleManager;
     }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -17,6 +21,7 @@ public class ApplicationDbContext : IdentityDbContext<User>
 
         AuditEventSeeder.Seed(modelBuilder);
         CallTypeSeeder.Seed(modelBuilder);
+        RoleSeeder.Seed(_roleManager);
     }
 
     public DbSet<Models.AuditEntry> AuditEntries { get; set; }
