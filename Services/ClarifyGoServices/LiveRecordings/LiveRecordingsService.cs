@@ -61,33 +61,69 @@ public class LiveRecordingsService(HttpClient httpClient, ITokenService tokenSer
 
     public async Task ResumeRecordingAsync(string recorderId, string recordingId)
     {
-        await _tokenService.SetBearerTokenAsync(_httpClient);
-
-        var endpoint = ClarifyGoApiEndpoints.LiveRecordings.Resume(recorderId, recordingId);
-
-        var response = await _httpClient.PutAsync(endpoint, null);
-
-        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        try
         {
-            throw new SecurityTokenExpiredException("Access token has expired");
-        }
+            await _tokenService.SetBearerTokenAsync(_httpClient);
 
-        response.EnsureSuccessStatusCode();
+            var endpoint = ClarifyGoApiEndpoints.LiveRecordings.Resume(recorderId, recordingId);
+            var response = await _httpClient.PutAsync(endpoint, null);
+
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                throw new ServiceException("Unauthorized access to resume recording", 401);
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                throw new ServiceException($"Resume recording error: {error}", (int)response.StatusCode);
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new ServiceException($"Network error: {ex.Message}", 503);
+        }
+        catch (ServiceException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new ServiceException($"Unexpected error: {ex.Message}");
+        }
     }
 
     public async Task PauseRecordingAsync(string recorderId, string recordingId)
     {
-        await _tokenService.SetBearerTokenAsync(_httpClient);
-
-        var endpoint = ClarifyGoApiEndpoints.LiveRecordings.Pause(recorderId, recordingId);
-
-        var response = await _httpClient.PutAsync(endpoint, null);
-
-        if (response.StatusCode == HttpStatusCode.Unauthorized)
+        try
         {
-            throw new SecurityTokenExpiredException("Access token has expired");
-        }
+            await _tokenService.SetBearerTokenAsync(_httpClient);
 
-        response.EnsureSuccessStatusCode();
+            var endpoint = ClarifyGoApiEndpoints.LiveRecordings.Pause(recorderId, recordingId);
+            var response = await _httpClient.PutAsync(endpoint, null);
+
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                throw new ServiceException("Unauthorized access to pause recording", 401);
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                throw new ServiceException($"Pause recording error: {error}", (int)response.StatusCode);
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new ServiceException($"Network error: {ex.Message}", 503);
+        }
+        catch (ServiceException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new ServiceException($"Unexpected error: {ex.Message}");
+        }
     }
 }

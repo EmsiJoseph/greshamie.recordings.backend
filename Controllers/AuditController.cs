@@ -1,11 +1,14 @@
 using System;
 using System.Threading.Tasks;
+using backend.Exceptions;
 using backend.Services;
 using backend.Services.Audits;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace backend.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class AuditController : ControllerBase
@@ -23,8 +26,19 @@ namespace backend.Controllers
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
-            var entries = await _auditService.GetAuditEntriesAsync();
-            return Ok(entries);
+            try
+            {
+                var entries = await _auditService.GetAuditEntriesAsync();
+                return Ok(entries);
+            }
+            catch (ServiceException ex)
+            {
+                return StatusCode(ex.StatusCode, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An unexpected error occurred while retrieving audit entries" });
+            }
         }
 
         /// <summary>
@@ -42,6 +56,14 @@ namespace backend.Controllers
             {
                 return NotFound(new { message = ex.Message });
             }
+            catch (ServiceException ex)
+            {
+                return StatusCode(ex.StatusCode, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An unexpected error occurred while retrieving the audit entry" });
+            }
         }
 
         /// <summary>
@@ -51,8 +73,19 @@ namespace backend.Controllers
         [HttpGet("by-event")]
         public async Task<IActionResult> GetByEventType([FromQuery] int eventType)
         {
-            var entries = await _auditService.GetAuditEntriesByEventTypeAsync(eventType);
-            return Ok(entries);
+            try
+            {
+                var entries = await _auditService.GetAuditEntriesByEventTypeAsync(eventType);
+                return Ok(entries);
+            }
+            catch (ServiceException ex)
+            {
+                return StatusCode(ex.StatusCode, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An unexpected error occurred while retrieving audit entries by event type" });
+            }
         }
 
         /// <summary>
@@ -66,8 +99,19 @@ namespace backend.Controllers
             [FromQuery] DateTime? startDate,
             [FromQuery] DateTime? endDate)
         {
-            var entries = await _auditService.GetAuditEntriesFilteredAsync(eventType, userId, startDate, endDate);
-            return Ok(entries);
+            try
+            {
+                var entries = await _auditService.GetAuditEntriesFilteredAsync(eventType, userId, startDate, endDate);
+                return Ok(entries);
+            }
+            catch (ServiceException ex)
+            {
+                return StatusCode(ex.StatusCode, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An unexpected error occurred while retrieving filtered audit entries" });
+            }
         }
     }
 }
