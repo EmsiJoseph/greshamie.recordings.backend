@@ -117,7 +117,14 @@ namespace backend.Controllers
                 // Save ClarifyGo access token and expiry to user record
                 user.ClarifyGoAccessToken = tokenResponse.AccessToken;  // Assuming tokenResponse contains the access token
                 user.ClarifyGoAccessTokenExpiry = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn);  // Assuming the expires_in field is in seconds
-                await _userManager.UpdateAsync(user);  // Update user record with new access token and expiry
+
+                // Generate a random refresh token
+                var refreshToken = GenerateRefreshToken();
+                user.RefreshToken = refreshToken;
+                user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(30);  // Set refresh token expiry, for example, 30 days
+
+                // Update user record with new access token, refresh token, and expiry
+                await _userManager.UpdateAsync(user);
 
                 // Generate JWT token
                 var (jwtToken, expiresIn) = GenerateJwtToken(user);
@@ -129,7 +136,8 @@ namespace backend.Controllers
                     {
                         value = jwtToken,
                         expires_in = expiresIn
-                    }
+                    },
+                    refresh_token = refreshToken  // Include the refresh token in the response
                 });
             }
             catch (Exception ex)
