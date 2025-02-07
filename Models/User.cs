@@ -7,5 +7,8 @@ namespace backend.Models
         public string? ClarifyGoAccessToken { get; set; }
 
         public DateTime? ClarifyGoAccessTokenExpiry { get; set; }
+
+        public string? RefreshToken { get; set; }
+        public DateTime? RefreshTokenExpiry { get; set; }
     }
 }

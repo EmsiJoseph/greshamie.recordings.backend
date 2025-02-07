@@ -1,11 +1,12 @@
 using System.IO;
 using System.Text;
-using backend.Classes;
 using backend.Constants;
 using backend.Data;
 using backend.DTOs;
 using backend.Extensions;
+using backend.Middleware;
 using backend.Models;
+using backend.Services;
 using backend.Services.Auth;
 using backend.Services.ClarifyGoServices.Comments;
 using backend.Services.ClarifyGoServices.HistoricRecordings;
@@ -80,9 +81,7 @@ else
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connection));
 
-builder.Services.AddIdentityCore<User>(options =>
-    {
-    })
+builder.Services.AddIdentityCore<User>(options => { })
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
@@ -150,13 +149,13 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // 5. Middleware Pipeline
-// Add the Https Redirection Middleware in production
 // app.UseHttpsRedirection();
 app.UseCors("ReactClient");
 app.UseAuthentication();
-
+app.UseAuthorization();
 app.UseOutputCache();
 app.UseRateLimiter();
+app.UseMiddleware<GlobalExceptionHandler>();
 
 // 6. Endpoints
 // Unprotected endpoint
@@ -279,6 +278,7 @@ app.MapGet(AppApiEndpoints.Recordings.Historic.GetAll,
             searchFiltersDto.StartDate = DateTime.Now.StartOfWeek(DayOfWeek.Monday);
             searchFiltersDto.EndDate = DateTime.Now;
             Console.WriteLine($"Start Date: {searchFiltersDto.StartDate}, End Date: {searchFiltersDto.EndDate}");
+            
             return await service.SearchRecordingsAsync(searchFiltersDto);
         }
     )
