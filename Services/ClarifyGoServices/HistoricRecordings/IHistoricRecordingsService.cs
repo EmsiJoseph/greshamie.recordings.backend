@@ -16,8 +16,8 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
         /// <param name="startDate">The start date for the search period.</param>
         /// <param name="endDate">The end date for the search period.</param>
         /// <param name="searchFiltersDto">Optional frontend-friendly filter criteria.</param>
-        /// <returns>A <see cref="RecordingSearchResults"/> object containing the search results.</returns>
-        Task<IEnumerable<RecordingSearchResult>> SearchRecordingsAsync(
+        /// <returns>A <see cref="HistoricRecordingSearchResults"/> object containing the search results.</returns>
+        Task<IEnumerable<HistoricRecordingSearchResult>> SearchRecordingsAsync(
             RecordingSearchFiltersDto searchFiltersDto);
 
         /// <summary>
@@ -27,6 +27,7 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
 
         /// <summary>
         /// Exports the specified recording as an MP3.
+        /// Player Command
         /// </summary>
         Task<Stream> ExportMp3Async(string recordingId);
 

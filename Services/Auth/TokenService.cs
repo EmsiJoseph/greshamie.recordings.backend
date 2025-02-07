@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using backend.Exceptions;
 
 namespace backend.Services.Auth
 {
@@ -37,50 +38,55 @@ namespace backend.Services.Auth
 
         public async Task SetBearerTokenAsync(HttpClient httpClientFromExternalService)
         {
-            var userClaims = _httpContextAccessor.HttpContext?.User;
-            if (userClaims == null)
-            {
-                throw new Exception("User not found in context.");
-            }
-
-            // Extract the user name
-            var userName = userClaims.FindFirstValue(ClaimTypes.Name);
-            if (string.IsNullOrEmpty(userName))
-            {
-                throw new Exception("User name not found in token.");
-            }
-
-            // Find the user by ID instead of using GetUserAsync
-            var user = await _userManager.FindByNameAsync(userName);
-            if (user == null)
-            {
-                throw new Exception($"User with ID {userName} not found.");
-            }
-
-            // If the token has expired, do nothing.
-            if (user.ClarifyGoAccessTokenExpiry < DateTime.UtcNow)
-            {
-                return;
-            }
-
             try
             {
-                if (string.IsNullOrEmpty(user.ClarifyGoAccessToken))
+                var userClaims = _httpContextAccessor.HttpContext?.User;
+                if (userClaims == null)
                 {
-                    return;
+                    throw new ServiceException("User not found in context", 401);
                 }
 
-                // Unprotect (decrypt) the stored token.
-                var token = _protector.Unprotect(user.ClarifyGoAccessToken);
+                var userName = userClaims.FindFirstValue(ClaimTypes.Name);
+                if (string.IsNullOrEmpty(userName))
+                {
+                    throw new ServiceException("User name not found in token", 401);
+                }
 
-                // Set the token as a Bearer token on the HttpClient.
-                httpClientFromExternalService.SetBearerToken(token);
+                var user = await _userManager.FindByNameAsync(userName);
+                if (user == null)
+                {
+                    throw new ServiceException($"User not found: {userName}", 401);
+                }
+
+                if (user.ClarifyGoAccessTokenExpiry < DateTime.UtcNow)
+                {
+                    throw new ServiceException("Access token has expired", 401);
+                }
+
+                try
+                {
+                    if (string.IsNullOrEmpty(user.ClarifyGoAccessToken))
+                    {
+                        throw new ServiceException("No access token available", 401);
+                    }
+
+                    var token = _protector.Unprotect(user.ClarifyGoAccessToken);
+                    httpClientFromExternalService.SetBearerToken(token);
+                }
+                catch (Exception ex)
+                {
+                    throw new ServiceException($"Token processing error: {ex.Message}", 500);
+                }
+            }
+            catch (ServiceException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
+                throw new ServiceException($"Unexpected error: {ex.Message}");
             }
         }
-
 
         public async Task<TokenResponse> GetAccessTokenFromClarifyGo(string username, string password)
         {
