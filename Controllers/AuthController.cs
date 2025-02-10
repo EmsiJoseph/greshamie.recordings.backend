@@ -5,7 +5,6 @@ using System.Text;
 using backend.Models;
 using backend.Services.Audits;
 using backend.Constants;
-using backend.Data.Models;
 using backend.Services.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
@@ -101,14 +100,14 @@ namespace backend.Controllers
 
             try
             {
-                // Get token from ClarifyGo
+                // Get token from ClarifyGo (replace with actual service)
                 var tokenResponse = await _tokenService.GetAccessTokenFromClarifyGo(request.Username, request.Password);
                 if (tokenResponse.IsError)
                 {
                     return Unauthorized(new { message = "Invalid credentials" });
                 }
 
-               // Find or create the Identity user.
+                // Create or update user and generate JWT token
                 var user = await _userManager.FindByNameAsync(request.Username);
                 if (user == null)
                 {
@@ -118,9 +117,6 @@ namespace backend.Controllers
                     };
 
                     var createResult = await _userManager.CreateAsync(user, request.Password);
-
-                    await _userManager.AddToRoleAsync(user, RolesConstants.User);
-
                     if (!createResult.Succeeded)
                     {
                         return StatusCode(StatusCodes.Status500InternalServerError,
@@ -146,12 +142,12 @@ namespace backend.Controllers
                 return Ok(new
                 {
                     user = new { user_name = user.UserName },
-                    access_token = new
+                    accessToken = new
                     {
                         value = jwtToken,
                         expires_in = expiresIn
                     },
-                    refreshToken = user.RefreshToken
+                    refresh_token = user.RefreshToken
                 });
             }
             catch (Exception ex)
@@ -160,6 +156,7 @@ namespace backend.Controllers
                 return Unauthorized(new { message = "Invalid credentials" });
             }
         }
+
 
         [HttpPost("refresh")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
@@ -187,9 +184,9 @@ namespace backend.Controllers
 
             return Ok(new
             {
-                access_token = jwtToken.Token,
-                refresh_token = user.RefreshToken,
-                expires_in = jwtToken.ExpiresIn
+                accessToken = jwtToken.Token,
+                refreshToken = user.RefreshToken,
+                expiresIn = jwtToken.ExpiresIn
             });
         }
         [HttpPost("logout")]
@@ -245,19 +242,11 @@ namespace backend.Controllers
 
                 await _userManager.UpdateAsync(user);
 
-                // Log audit entry
-                await _auditService.LogAuditEntryAsync(user.Id, AuditEventTypes.UserLoggedOut, "User logged out.");
+            // Optionally, if you are maintaining a token revocation list or performing cleanup, do it here.
 
-                _logger.LogInformation("User tokens invalidated successfully.");
-                return Ok(new { message = "Logged out successfully." });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error processing logout: {ex.Message}");
-                return BadRequest(new { message = "Invalid token format." });
-            }
+            // Inform the client that logout was successful.
+            return Ok(new { message = "Logged out successfully." });
         }
-
     }
 
     public class RefreshTokenRequest
@@ -277,4 +266,3 @@ namespace backend.Controllers
         public int ExpiresIn { get; set; }
     }
 }
-
