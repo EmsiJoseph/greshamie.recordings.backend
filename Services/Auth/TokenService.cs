@@ -46,16 +46,16 @@ namespace backend.Services.Auth
                     throw new ServiceException("User not found in context", 401);
                 }
 
-                var userName = userClaims.FindFirstValue(ClaimTypes.Name);
-                if (string.IsNullOrEmpty(userName))
+                var userId = userClaims.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
                 {
                     throw new ServiceException("User name not found in token", 401);
                 }
 
-                var user = await _userManager.FindByNameAsync(userName);
+                var user = await _userManager.FindByIdAsync(userId);
                 if (user == null)
                 {
-                    throw new ServiceException($"User not found: {userName}", 401);
+                    throw new ServiceException($"User not found: {userId}", 401);
                 }
 
                 if (user.ClarifyGoAccessTokenExpiry < DateTime.UtcNow)

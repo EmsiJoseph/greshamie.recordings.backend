@@ -1,5 +1,6 @@
 using System.Text.Json;
 using backend.Classes;
+using backend.Constants;
 using backend.Data;
 using backend.DTOs;
 using backend.Exceptions;
@@ -138,7 +139,8 @@ public class RecordingController : ControllerBase
             return StatusCode(500, new { message = "An unexpected error occurred" });
         }
     }
-
+    
+    [Authorize(Roles = $"{RolesConstants.Admin}")]
     [HttpDelete("{recordingId}")]
     public async Task<IActionResult> DeleteRecording(string recordingId)
     {
@@ -162,6 +164,13 @@ public class RecordingController : ControllerBase
             _logger.LogError(ex, "Unexpected error while deleting recording {RecordingId}", recordingId);
             return StatusCode(500, new { message = "An unexpected error occurred" });
         }
+    }
+    
+    [Authorize(Roles = $"{RolesConstants.Admin}")]
+    [HttpGet("admin-only")]
+    public IActionResult AdminOnly()
+    {
+        return Ok("Admin only");
     }
 
 
