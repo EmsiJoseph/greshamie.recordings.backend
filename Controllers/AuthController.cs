@@ -2,9 +2,9 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using backend.Models;
 using backend.Services.Audits;
 using backend.Constants;
+using backend.Data.Models;
 using backend.Services.Auth;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.DataProtection;
@@ -14,8 +14,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Azure.Core;
 using backend.Services;
-using System.Security.Cryptography;
-using backend.Data.Models;
 
 namespace backend.Controllers
 {
@@ -51,36 +49,39 @@ namespace backend.Controllers
             return Convert.ToBase64String(Guid.NewGuid().ToByteArray());
         }
 
-        private (string Token, int ExpiresIn) GenerateJwtToken(User user)
+        // Method to generate JWT token
+        private JwtTokenResult GenerateJwtToken(User user)
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]); // Static key from config
-
-            // Generate additional entropy using cryptographic randomness
-            var randomBytes = new byte[32];
-            using (var rng = RandomNumberGenerator.Create())
+            // Create claims for the token.
+            var claims = new List<Claim>
             {
-                rng.GetBytes(randomBytes);
-            }
-            var randomKeyPart = Convert.ToBase64String(randomBytes); // Extra randomness
-
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Subject = new ClaimsIdentity(new[]
-                {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-            new Claim(JwtRegisteredClaimNames.UniqueName, user.UserName),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()), // Already used
-            new Claim("custom_nonce", randomKeyPart) // Extra randomness
-        }),
-                Expires = DateTime.UtcNow.AddHours(int.Parse(_configuration["Jwt:ExpiryHours"])),
-                Issuer = _configuration["Jwt:Issuer"],
-                Audience = _configuration["Jwt:Audience"],
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+                new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+                new(JwtRegisteredClaimNames.UniqueName, user.UserName),
+                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return (tokenHandler.WriteToken(token), (int)(tokenDescriptor.Expires.Value - DateTime.UtcNow).TotalSeconds);
+            // Get settings from configuration.
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            // Set token expiration.
+            var expires = DateTime.UtcNow.AddMinutes(60);
+
+            var token = new JwtSecurityToken(
+                issuer: _configuration["Jwt:Issuer"],
+                audience: _configuration["Jwt:Audience"],
+                claims: claims,
+                expires: expires,
+                signingCredentials: creds
+            );
+
+            var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
+
+            return new JwtTokenResult
+            {
+                Token = tokenString,
+                ExpiresIn = (int)(expires - DateTime.UtcNow).TotalSeconds
+            };
         }
 
         [HttpPost("login")]
@@ -101,14 +102,14 @@ namespace backend.Controllers
 
             try
             {
-                // Get token from ClarifyGo (replace with actual service)
+                // Get token from ClarifyGo
                 var tokenResponse = await _tokenService.GetAccessTokenFromClarifyGo(request.Username, request.Password);
                 if (tokenResponse.IsError)
                 {
                     return Unauthorized(new { message = "Invalid credentials" });
                 }
 
-                // Create or update user and generate JWT token
+                // Find or create the Identity user.
                 var user = await _userManager.FindByNameAsync(request.Username);
                 if (user == null)
                 {
@@ -118,6 +119,9 @@ namespace backend.Controllers
                     };
 
                     var createResult = await _userManager.CreateAsync(user, request.Password);
+
+                    await _userManager.AddToRoleAsync(user, RolesConstants.User);
+
                     if (!createResult.Succeeded)
                     {
                         return StatusCode(StatusCodes.Status500InternalServerError,
@@ -126,31 +130,29 @@ namespace backend.Controllers
                 }
 
                 // Save ClarifyGo access token and expiry to user record
-                user.ClarifyGoAccessToken = tokenResponse.AccessToken;  // Assuming tokenResponse contains the access token
-                user.ClarifyGoAccessTokenExpiry = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn);  // Assuming the expires_in field is in seconds
+                user.ClarifyGoAccessToken = _protector.Protect(tokenResponse.AccessToken);
+                user.ClarifyGoAccessTokenExpiry = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn);
 
                 // Generate a random refresh token
                 var refreshToken = GenerateRefreshToken();
                 user.RefreshToken = refreshToken;
-                user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(30);  // Set refresh token expiry, for example, 30 days
+                user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(30);
 
                 // Update user record with new access token, refresh token, and expiry
                 await _userManager.UpdateAsync(user);
 
                 // Generate JWT token
-                var (jwtToken, expiresIn) = GenerateJwtToken(user);
-
-                await _auditService.LogAuditEntryAsync(user.Id, AuditEventTypes.UserLoggedIn, "User logged in successfully.");
+                var jwtToken = GenerateJwtToken(user);
 
                 return Ok(new
                 {
                     user = new { user_name = user.UserName },
-                    accessToken = new
+                    access_token = new
                     {
-                        value = jwtToken,
-                        expires_in = expiresIn
+                        value = jwtToken.Token,
+                        expires_in = jwtToken.ExpiresIn
                     },
-                    refresh_token = user.RefreshToken
+                    refreshToken = user.RefreshToken
                 });
             }
             catch (Exception ex)
@@ -159,7 +161,6 @@ namespace backend.Controllers
                 return Unauthorized(new { message = "Invalid credentials" });
             }
         }
-
 
         [HttpPost("refresh")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
@@ -187,15 +188,17 @@ namespace backend.Controllers
 
             return Ok(new
             {
-                accessToken = jwtToken.Token,
-                refreshToken = user.RefreshToken,
-                expiresIn = jwtToken.ExpiresIn
+                access_token = jwtToken.Token,
+                refresh_token = user.RefreshToken,
+                expires_in = jwtToken.ExpiresIn
             });
         }
+
         [HttpPost("logout")]
         [AllowAnonymous]
         public async Task<IActionResult> Logout()
         {
+            // Log request to verify it hits the method
             _logger.LogInformation("Logout request received.");
 
             // Retrieve the token from the Authorization header.
@@ -208,73 +211,69 @@ namespace backend.Controllers
 
             _logger.LogInformation("Authorization header found, extracting token...");
 
-            // Extract the Bearer token (removing the "Bearer " prefix).
+            // Extract the token (removing the "Bearer " prefix).
             var token = authHeader.Substring("Bearer ".Length).Trim();
 
+            // Use JwtSecurityTokenHandler to read (decode) the token without validating lifetime.
+            var tokenHandler = new JwtSecurityTokenHandler();
+            JwtSecurityToken jwtToken;
             try
             {
-                var tokenHandler = new JwtSecurityTokenHandler();
-                var jwtToken = tokenHandler.ReadJwtToken(token);
-
-                // Extract the user ID from the `sub` claim
-                var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub);
-                if (userIdClaim == null)
-                {
-                    _logger.LogError("User ID (sub claim) not found in token.");
-                    return BadRequest(new { message = "User identifier not found in token." });
-                }
-
-                string userId = userIdClaim.Value;
-                _logger.LogInformation($"Extracted User ID: {userId}");
-
-                // Find the user by ID
-                var user = await _userManager.FindByIdAsync(userId);
-                if (user == null)
-                {
-                    _logger.LogError("No user found with the extracted User ID.");
-                    return Unauthorized(new { message = "Invalid user." });
-                }
-
-                _logger.LogInformation("User found. Wiping token-related fields.");
-
-                // Wipe the token-related values
-                user.ClarifyGoAccessToken = null;
-                user.ClarifyGoAccessTokenExpiry = null;
-                user.RefreshToken = null;
-                user.RefreshTokenExpiry = null;
-
-                await _userManager.UpdateAsync(user);
-
-                // Log the logout event
-                await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.UserLoggedOut, "User logged out.");
-
-                _logger.LogInformation("Logout process completed successfully.");
-
-                return Ok(new { message = "Logged out successfully." });
+                jwtToken = tokenHandler.ReadJwtToken(token);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error occurred during logout.");
-                return StatusCode(500, new { message = "An error occurred while logging out." });
+                _logger.LogError("Token parsing failed: " + ex.Message);
+                return BadRequest(new { message = "Invalid token." });
             }
-        }
 
+            _logger.LogInformation("Token parsed successfully.");
 
-        public class RefreshTokenRequest
-        {
-            [Required] public string RefreshToken { get; set; } = string.Empty;
-        }
+            // Attempt to get the user identifier from the token claims.
+            var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub);
+            if (userIdClaim == null)
+            {
+                _logger.LogError("User identifier (sub claim) not found in token.");
+                return BadRequest(new { message = "User identifier (sub claim) not found in token." });
+            }
 
-        public class LoginRequest
-        {
-            [Required] public string? Username { get; set; }
-            [Required] public string? Password { get; set; }
-        }
+            string userId = userIdClaim.Value;
+            _logger.LogInformation($"User ID extracted: {userId}");
 
-        public class JwtTokenResult
-        {
-            public string Token { get; set; } = string.Empty;
-            public int ExpiresIn { get; set; }
+            // Log the logout event using your audit service and the predefined constant.
+            await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.UserLoggedOut, "User logged out.");
+
+            // Optionally, invalidate the refresh token and ClarifyGo access token if they exist in the database.
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user != null)
+            {
+                user.RefreshToken = null;
+                user.RefreshTokenExpiry = null;
+                user.ClarifyGoAccessToken = null; // Remove the ClarifyGo Access Token
+                user.ClarifyGoAccessTokenExpiry = null; // Remove the ClarifyGo Access Token Expiry
+                await _userManager.UpdateAsync(user);
+                _logger.LogInformation("Refresh token and ClarifyGo access token invalidated.");
+            }
+
+            _logger.LogInformation("Logout successful.");
+            return Ok(new { message = "Logged out successfully." });
         }
+    }
+
+    public class RefreshTokenRequest
+    {
+        [Required] public string RefreshToken { get; set; } = string.Empty;
+    }
+
+    public class LoginRequest
+    {
+        [Required] public string? Username { get; set; }
+        [Required] public string? Password { get; set; }
+    }
+
+    public class JwtTokenResult
+    {
+        public string Token { get; set; } = string.Empty;
+        public int ExpiresIn { get; set; }
     }
 }
