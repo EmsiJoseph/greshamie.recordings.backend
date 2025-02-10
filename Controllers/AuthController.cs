@@ -231,7 +231,7 @@ namespace backend.Controllers
                     return Unauthorized(new { message = "Invalid user." });
                 }
 
-                _logger.LogInformation($"User found. Wiping token-related fields.");
+                _logger.LogInformation("User found. Wiping token-related fields.");
 
                 // Wipe the token-related values
                 user.ClarifyGoAccessToken = null;
@@ -241,27 +241,36 @@ namespace backend.Controllers
 
                 await _userManager.UpdateAsync(user);
 
-            // Optionally, if you are maintaining a token revocation list or performing cleanup, do it here.
+                // Log the logout event
+                await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.UserLoggedOut, "User logged out.");
 
-            // Inform the client that logout was successful.
-            return Ok(new { message = "Logged out successfully." });
+                _logger.LogInformation("Logout process completed successfully.");
+
+                return Ok(new { message = "Logged out successfully." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error occurred during logout.");
+                return StatusCode(500, new { message = "An error occurred while logging out." });
+            }
         }
-    }
 
-    public class RefreshTokenRequest
-    {
-        [Required] public string RefreshToken { get; set; } = string.Empty;
-    }
 
-    public class LoginRequest
-    {
-        [Required] public string? Username { get; set; }
-        [Required] public string? Password { get; set; }
-    }
+        public class RefreshTokenRequest
+        {
+            [Required] public string RefreshToken { get; set; } = string.Empty;
+        }
 
-    public class JwtTokenResult
-    {
-        public string Token { get; set; } = string.Empty;
-        public int ExpiresIn { get; set; }
+        public class LoginRequest
+        {
+            [Required] public string? Username { get; set; }
+            [Required] public string? Password { get; set; }
+        }
+
+        public class JwtTokenResult
+        {
+            public string Token { get; set; } = string.Empty;
+            public int ExpiresIn { get; set; }
+        }
     }
 }
