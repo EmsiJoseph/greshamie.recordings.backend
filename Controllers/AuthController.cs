@@ -167,6 +167,7 @@ namespace backend.Controllers
         }
 
         [HttpPost("refresh")]
+        [AllowAnonymous]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
         {
             if (string.IsNullOrEmpty(request.RefreshToken))
