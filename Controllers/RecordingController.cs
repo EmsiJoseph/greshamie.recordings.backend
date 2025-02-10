@@ -149,7 +149,11 @@ public class RecordingController : ControllerBase
                 return BadRequest(new { message = "Recording ID is required" });
             }
 
-            await _historicRecordingsService.DeleteRecordingAsync(recordingId);
+            bool results = await _historicRecordingsService.DeleteRecordingAsync(recordingId);
+            if (!results)
+            {
+                return NotFound(new { message = "Recording not found" });
+            }
 
             return NoContent();
         }
@@ -159,6 +163,7 @@ public class RecordingController : ControllerBase
             return StatusCode(500, new { message = "An unexpected error occurred" });
         }
     }
+
 
     [HttpGet("{recordingId}/mp3")]
     public async Task<IActionResult> GetRecording(string recordingId)

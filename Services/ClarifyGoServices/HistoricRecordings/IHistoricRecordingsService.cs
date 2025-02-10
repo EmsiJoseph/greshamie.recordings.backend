@@ -22,7 +22,7 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
         /// <summary>
         /// Deletes a recording specified by its ID.
         /// </summary>
-        Task DeleteRecordingAsync(string recordingId);
+        Task<bool> DeleteRecordingAsync(string recordingId);
 
         /// <summary>
         /// Exports the specified recording as an MP3.
