@@ -72,6 +72,7 @@ namespace backend.Services.Auth
 
                     var token = _protector.Unprotect(user.ClarifyGoAccessToken);
                     httpClientFromExternalService.SetBearerToken(token);
+                    Console.WriteLine($"Token set: {token}");
                 }
                 catch (Exception ex)
                 {
