@@ -2,7 +2,6 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using backend.Models;
 using backend.Services.Audits;
 using backend.Constants;
 using backend.Services.Auth;
@@ -15,6 +14,7 @@ using Microsoft.IdentityModel.Tokens;
 using Azure.Core;
 using backend.Services;
 using System.Security.Cryptography;
+using backend.Models;
 
 namespace backend.Controllers
 {
@@ -81,7 +81,6 @@ namespace backend.Controllers
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return (tokenHandler.WriteToken(token), (int)(tokenDescriptor.Expires.Value - DateTime.UtcNow).TotalSeconds);
         }
-
         [HttpPost("login")]
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
@@ -125,13 +124,13 @@ namespace backend.Controllers
                 }
 
                 // Save ClarifyGo access token and expiry to user record
-                user.ClarifyGoAccessToken = tokenResponse.AccessToken;  // Assuming tokenResponse contains the access token
-                user.ClarifyGoAccessTokenExpiry = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn);  // Assuming the expires_in field is in seconds
+                user.ClarifyGoAccessToken = tokenResponse.AccessToken;
+                user.ClarifyGoAccessTokenExpiry = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn);
 
                 // Generate a random refresh token
                 var refreshToken = GenerateRefreshToken();
                 user.RefreshToken = refreshToken;
-                user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(30);  // Set refresh token expiry, for example, 30 days
+                user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(30);
 
                 // Update user record with new access token, refresh token, and expiry
                 await _userManager.UpdateAsync(user);
@@ -139,14 +138,23 @@ namespace backend.Controllers
                 // Generate JWT token
                 var (jwtToken, expiresIn) = GenerateJwtToken(user);
 
+                // Protect the JWT token using the protector
+                var protectedJwtToken = _protector.Protect(jwtToken);
+
+                // Store the protected token in the user record (e.g., in a column like `ProtectedJwtToken`)
+                user.ClarifyGoAccessToken = protectedJwtToken; // Store the protected JWT token
+                await _userManager.UpdateAsync(user); // Save the protected token in the database
+
+                // Log audit event
                 await _auditService.LogAuditEntryAsync(user.Id, AuditEventTypes.UserLoggedIn, "User logged in successfully.");
 
+                // Return the response, with the protected token (encrypted)
                 return Ok(new
                 {
                     user = new { user_name = user.UserName },
                     accessToken = new
                     {
-                        value = jwtToken,
+                        value = protectedJwtToken, // Return the encrypted token to the client
                         expires_in = expiresIn
                     },
                     refresh_token = user.RefreshToken
@@ -158,6 +166,9 @@ namespace backend.Controllers
                 return Unauthorized(new { message = "Invalid credentials" });
             }
         }
+
+
+
 
 
         [HttpPost("refresh")]
@@ -212,8 +223,12 @@ namespace backend.Controllers
 
             try
             {
+                // Decrypt the JWT token using the protector
+                var decryptedToken = _protector.Unprotect(token); // Decrypt the token
+
+                // Now handle the decrypted token
                 var tokenHandler = new JwtSecurityTokenHandler();
-                var jwtToken = tokenHandler.ReadJwtToken(token);
+                var jwtToken = tokenHandler.ReadJwtToken(decryptedToken); // Read the decrypted token
 
                 // Extract the user ID from the `sub` claim
                 var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub);
@@ -257,6 +272,7 @@ namespace backend.Controllers
                 return StatusCode(500, new { message = "An error occurred while logging out." });
             }
         }
+
 
 
         public class RefreshTokenRequest
