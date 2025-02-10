@@ -136,7 +136,7 @@ namespace backend.Controllers
                 // Generate a random refresh token
                 var refreshToken = GenerateRefreshToken();
                 user.RefreshToken = refreshToken;
-                user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(30);
+                user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(1);
 
                 // Update user record with new access token, refresh token, and expiry
                 await _userManager.UpdateAsync(user);
@@ -146,13 +146,17 @@ namespace backend.Controllers
 
                 return Ok(new
                 {
-                    user = new { user_name = user.UserName },
-                    access_token = new
+                    user = new { userName = user.UserName },
+                    accessToken = new
                     {
                         value = jwtToken.Token,
-                        expires_in = jwtToken.ExpiresIn
+                        expiresIn = jwtToken.ExpiresIn
                     },
-                    refreshToken = user.RefreshToken
+                    refreshToken = new
+                    {
+                        value = user.RefreshToken,
+                        expiresIn = user.RefreshTokenExpiry
+                    }
                 });
             }
             catch (Exception ex)
@@ -188,9 +192,17 @@ namespace backend.Controllers
 
             return Ok(new
             {
-                access_token = jwtToken.Token,
-                refresh_token = user.RefreshToken,
-                expires_in = jwtToken.ExpiresIn
+                user = new { userName = user.UserName },
+                accessToken = new
+                {
+                    value = jwtToken.Token,
+                    expiresIn = jwtToken.ExpiresIn
+                },
+                refreshToken = new
+                {
+                    value = user.RefreshToken,
+                    expiresIn = user.RefreshTokenExpiry
+                }
             });
         }
 
