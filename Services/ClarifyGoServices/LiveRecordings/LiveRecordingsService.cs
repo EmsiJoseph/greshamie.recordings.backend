@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using System.Text.Json;
 using backend.Constants;
+using backend.DTOs;
 using backend.Models;
 using backend.Services.Auth;
 using IdentityModel.Client;
@@ -18,7 +19,7 @@ public class LiveRecordingsService(HttpClient httpClient, ITokenService tokenSer
     private readonly ITokenService _tokenService = tokenService
                                                    ?? throw new ArgumentNullException(nameof(tokenService));
 
-    public async Task<IEnumerable<Recording>> GetLiveRecordingsAsync()
+    public async Task<IEnumerable<RecordingDto>> GetLiveRecordingsAsync()
     {
         try
         {
@@ -37,8 +38,8 @@ public class LiveRecordingsService(HttpClient httpClient, ITokenService tokenSer
                 throw new ServiceException($"Live recording service error: {error}", (int)response.StatusCode);
             }
 
-            return await response.Content.ReadFromJsonAsync<IEnumerable<Recording>>() 
-                   ?? Array.Empty<Recording>();
+            return await response.Content.ReadFromJsonAsync<IEnumerable<RecordingDto>>() 
+                   ?? Array.Empty<RecordingDto>();
         }
         catch (HttpRequestException ex)
         {

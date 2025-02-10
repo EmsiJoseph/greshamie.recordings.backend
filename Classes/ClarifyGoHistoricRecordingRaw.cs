@@ -40,7 +40,7 @@ public class ClarifyGoHistoricRecordingRaw
     // This property is left as object, since its structure is not defined.
     [JsonPropertyName("pbxAccounts")] public object? PbxAccounts { get; set; }
 
-    [JsonPropertyName("callType")] public int CallType { get; set; }
+    [JsonPropertyName("callType")] public int? CallType { get; set; }
 
     [JsonPropertyName("calledParty")] public string? CalledParty { get; set; }
 

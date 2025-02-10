@@ -142,12 +142,12 @@ namespace backend.Controllers
                 return Ok(new
                 {
                     user = new { user_name = user.UserName },
-                    access_token = new
+                    accessToken = new
                     {
                         value = jwtToken,
                         expires_in = expiresIn
                     },
-                    refresh_token = refreshToken  // Include the refresh token in the response
+                    refresh_token = user.RefreshToken
                 });
             }
             catch (Exception ex)
@@ -184,9 +184,9 @@ namespace backend.Controllers
 
             return Ok(new
             {
-                access_token = jwtToken.Token,
-                refresh_token = user.RefreshToken,
-                expires_in = jwtToken.ExpiresIn
+                accessToken = jwtToken.Token,
+                refreshToken = user.RefreshToken,
+                expiresIn = jwtToken.ExpiresIn
             });
         }
         [HttpPost("logout")]

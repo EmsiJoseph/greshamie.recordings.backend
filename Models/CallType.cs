@@ -5,7 +5,7 @@ namespace backend.Models
 {
     public class CallType
     {
-        [Key] public int Id { get; set; }
+        [Key] public int? Id { get; set; }
 
         [Required] [MaxLength(50)] public string Name { get; set; } = string.Empty;
 
