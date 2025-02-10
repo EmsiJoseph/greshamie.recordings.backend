@@ -2,7 +2,6 @@
 using System.Text.Json;
 using backend.Constants;
 using backend.DTOs;
-using backend.Models;
 using backend.Services.Auth;
 using IdentityModel.Client;
 using Microsoft.IdentityModel.Tokens;

@@ -4,7 +4,6 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using backend.Classes;
 using backend.DTOs;
-using backend.Models;
 
 namespace backend.Services.ClarifyGoServices.HistoricRecordings
 {
@@ -23,7 +22,7 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
         /// <summary>
         /// Deletes a recording specified by its ID.
         /// </summary>
-        Task DeleteRecordingAsync(string recordingId);
+        Task<bool> DeleteRecordingAsync(string recordingId);
 
         /// <summary>
         /// Exports the specified recording as an MP3.

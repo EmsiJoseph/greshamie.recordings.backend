@@ -165,14 +165,38 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
             }
         }
 
-        public async Task DeleteRecordingAsync(string recordingId)
+        public async Task<bool> DeleteRecordingAsync(string recordingId)
         {
-            await _tokenService.SetBearerTokenAsync(_httpClient);
+            try
+            {
+                await _tokenService.SetBearerTokenAsync(_httpClient);
 
-            var url = ClarifyGoApiEndpoints.HistoricRecordings.Delete(recordingId);
+                var url = ClarifyGoApiEndpoints.HistoricRecordings.Delete(recordingId);
 
-            var response = await _httpClient.DeleteAsync(url);
-            response.EnsureSuccessStatusCode();
+                var response = await _httpClient.DeleteAsync(url);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return true;
+                }
+                else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                {
+                    return false;
+                }
+                else
+                {
+                    var error = await response.Content.ReadAsStringAsync();
+                    throw new HttpRequestException($"Failed to delete recording. Status code: {response.StatusCode}. Error: {error}");
+                }
+            }
+            catch (HttpRequestException ex)
+            {
+                throw new ServiceException($"Network error: {ex.Message}");
+            }
+            catch (Exception ex)
+            {
+                throw new ServiceException($"Unexpected error: {ex.Message}");
+            }
         }
 
         public async Task<Stream> ExportMp3Async(string recordingId)

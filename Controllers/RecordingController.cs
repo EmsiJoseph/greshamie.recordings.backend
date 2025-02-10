@@ -4,13 +4,11 @@ using backend.Data;
 using backend.DTOs;
 using backend.Exceptions;
 using backend.Extensions;
-using backend.Models;
 using backend.Services.ClarifyGoServices.HistoricRecordings;
 using backend.Services.ClarifyGoServices.LiveRecordings;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
-using Microsoft.EntityFrameworkCore;
 
 namespace backend.Controllers;
 
@@ -54,8 +52,10 @@ public class RecordingController : ControllerBase
                 Receiver = x.CalledParty,
                 StartDateTime = x.MediaStartedTime,
                 EndDateTime = x.MediaCompletedTime,
-                CallType =
-                    x.CallType != null ? _context.CallTypes.Find(x.CallType)?.Name ?? string.Empty : string.Empty,
+                CallType = x.CallType != null
+                    ? _context.CallTypes.FirstOrDefault(ct => ct.IdFromClarify == x.CallType)?.NormalizedName ??
+                      string.Empty
+                    : string.Empty,
                 IsLive = false, // TODO: Change this to dynamic if we know the shape of the live recordings
                 DurationSeconds = x.MediaStartedTime != null && x.MediaCompletedTime != null
                     ? (int)(x.MediaCompletedTime - x.MediaStartedTime).Value.TotalSeconds
@@ -149,7 +149,11 @@ public class RecordingController : ControllerBase
                 return BadRequest(new { message = "Recording ID is required" });
             }
 
-            await _historicRecordingsService.DeleteRecordingAsync(recordingId);
+            bool results = await _historicRecordingsService.DeleteRecordingAsync(recordingId);
+            if (!results)
+            {
+                return NotFound(new { message = "Recording not found" });
+            }
 
             return NoContent();
         }
@@ -159,6 +163,7 @@ public class RecordingController : ControllerBase
             return StatusCode(500, new { message = "An unexpected error occurred" });
         }
     }
+
 
     [HttpGet("{recordingId}/mp3")]
     public async Task<IActionResult> GetRecording(string recordingId)
@@ -209,5 +214,4 @@ public class RecordingController : ControllerBase
             return StatusCode(500, new { message = "An unexpected error occurred" });
         }
     }
-    
 }
