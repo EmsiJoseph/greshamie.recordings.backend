@@ -27,4 +27,5 @@ public class ApplicationDbContext : IdentityDbContext<User>
     public DbSet<Models.AuditEntry> AuditEntries { get; set; }
     public DbSet<AuditEvent> AuditEvents { get; set; }
     public DbSet<CallType> CallTypes { get; set; }
+    public DbSet<SyncedRecording> SyncedRecordings { get; set; }
 }
