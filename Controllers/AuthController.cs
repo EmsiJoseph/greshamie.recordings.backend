@@ -123,8 +123,9 @@ namespace backend.Controllers
                     }
                 }
 
-                // Save ClarifyGo access token and expiry to user record
-                user.ClarifyGoAccessToken = tokenResponse.AccessToken;
+                // Protect and save ClarifyGo access token and expiry to user record
+                var protectedClarifyGoAccessToken = _protector.Protect(tokenResponse.AccessToken);
+                user.ClarifyGoAccessToken = protectedClarifyGoAccessToken;
                 user.ClarifyGoAccessTokenExpiry = DateTime.UtcNow.AddSeconds(tokenResponse.ExpiresIn);
 
                 // Generate a random refresh token
@@ -141,20 +142,20 @@ namespace backend.Controllers
                 // Protect the JWT token using the protector
                 var protectedJwtToken = _protector.Protect(jwtToken);
 
-                // Store the protected token in the user record (e.g., in a column like `ProtectedJwtToken`)
+                // Store the protected JWT token in the user record
                 user.ClarifyGoAccessToken = protectedJwtToken; // Store the protected JWT token
                 await _userManager.UpdateAsync(user); // Save the protected token in the database
 
-                // Log audit event
+                // Log the user login activity
                 await _auditService.LogAuditEntryAsync(user.Id, AuditEventTypes.UserLoggedIn, "User logged in successfully.");
 
-                // Return the response, with the protected token (encrypted)
+                // Return the response, including the raw JWT token in the response
                 return Ok(new
                 {
                     user = new { user_name = user.UserName },
                     accessToken = new
                     {
-                        value = protectedJwtToken, // Return the encrypted token to the client
+                        value = jwtToken, // You can still return the raw token if needed
                         expires_in = expiresIn
                     },
                     refresh_token = user.RefreshToken
@@ -166,6 +167,7 @@ namespace backend.Controllers
                 return Unauthorized(new { message = "Invalid credentials" });
             }
         }
+
 
 
 
