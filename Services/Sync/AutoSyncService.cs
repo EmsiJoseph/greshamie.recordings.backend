@@ -11,33 +11,36 @@ using backend.DTOs;
 using backend.Models;
 using Microsoft.EntityFrameworkCore;
 using backend.Services.Storage;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace backend.Services.Sync
 {
-    public class AutoSyncService(
-        ILogger<AutoSyncService> logger,
-        ITokenService tokenService,
-        IHistoricRecordingsService historicRecordingsService,
-        IConfiguration config,
-        ApplicationDbContext dbContext,
-        HttpClient httpClient,
-        IBlobStorageService blobStorageService)
-        : IAutoSyncService
+    public class AutoSyncService : IAutoSyncService
     {
         private Timer _timer;
-        private readonly HttpClient _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
-        private readonly ITokenService _tokenService =
-            tokenService ?? throw new ArgumentNullException(nameof(tokenService));
-        private readonly ILogger<AutoSyncService> logger;
-        private readonly IHistoricRecordingsService historicRecordingsService;
-        private readonly IConfiguration config;
-        private readonly ApplicationDbContext dbContext;
-        private readonly IBlobStorageService _blobStorageService;
-        
-        public Task StartAsync(CancellationToken cancellationToken)
-        
+        private readonly ILogger<AutoSyncService> _logger;
+        private readonly ITokenService _tokenService;
+        private readonly IHistoricRecordingsService _historicRecordingsService;
+        private readonly IConfiguration _config;
+        private readonly IServiceScopeFactory _scopeFactory;
+
+        public AutoSyncService(
+            ILogger<AutoSyncService> logger,
+            ITokenService tokenService,
+            IHistoricRecordingsService historicRecordingsService,
+            IConfiguration config,
+            IServiceScopeFactory scopeFactory)
         {
-            logger.LogInformation("Auto Sync Service is starting.");
+            _logger = logger;
+            _tokenService = tokenService;
+            _historicRecordingsService = historicRecordingsService;
+            _config = config;
+            _scopeFactory = scopeFactory;
+        }
+
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            _logger.LogInformation("Auto Sync Service is starting.");
             _timer = new Timer(AutoSync, null, TimeSpan.Zero, TimeSpan.FromDays(1));
             return Task.CompletedTask;
         }
@@ -46,71 +49,76 @@ namespace backend.Services.Sync
         {
             try
             {
-                var adminUsername = config["AdminCredentials:Username"];
-                var adminPassword = config["AdminCredentials:Password"];
+                var adminUsername = _config["AdminCredentials:Username"];
+                var adminPassword = _config["AdminCredentials:Password"];
                 await _tokenService.SetBearerTokenWithPasswordAsync(adminUsername, adminPassword, _httpClient);
-                
 
                 var yesterday = DateTime.UtcNow.AddDays(-1).Date;
                 var today = DateTime.UtcNow.Date;
                 await SynchronizeRecordingsAsync(yesterday, today);
 
-                logger.LogInformation("Sync complete");
+                _logger.LogInformation("Sync complete");
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "An error occurred during synchronization.");
+                _logger.LogError(ex, "An error occurred during synchronization.");
             }
         }
 
         public async Task SynchronizeRecordingsAsync(DateTime fromDate, DateTime toDate)
         {
-            // Create search filters and retrieve recordings data from Clarify Go.
-            var searchFilters = new RecordingSearchFiltersDto
+            using (var scope = _scopeFactory.CreateScope())
             {
-                StartDate = fromDate,
-                EndDate = toDate
-            };
+                var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                var blobStorageService = scope.ServiceProvider.GetRequiredService<IBlobStorageService>();
 
-            var results = await historicRecordingsService.SearchRecordingsAsync(searchFilters);
-
-            // Process each recording in the returned list.
-            foreach (var result in results)
-            {
-                var (Id, MediaStartedTime) = (result.HistoricRecording.Id, result.HistoricRecording.MediaStartedTime);
-                // If the recording already exists, skip it.
-                if (await dbContext.SyncedRecordings.AnyAsync(r => r.Id == Id))
+                // Create search filters and retrieve recordings data from Clarify Go.
+                var searchFilters = new RecordingSearchFiltersDto
                 {
-                    logger.LogInformation($"Skipping already synced recording: {Id}");
-                    continue;
-                }
-
-                // Format the file name based on the recording date and ID.
-                var fileName = $"{MediaStartedTime:yyyy/MM/dd}/{Id}.mp3";
-
-                // Export the recording as an MP3 stream.
-                using var mp3Stream = await historicRecordingsService.ExportMp3Async(Id);
-
-                // Upload the MP3 file to blob storage.
-                var blobUrl = await _blobStorageService.UploadFileAsync(mp3Stream, "greshamrecordings", fileName);
-
-                // Save the new record to the SyncedRecordings table.
-                var syncedRecording = new SyncedRecording
-                {
-                    Id = Id,
-                    BlobUrl = blobUrl,
-                    RecordingDate = MediaStartedTime?.Date ?? DateTime.UtcNow,
-                    CreatedAt = DateTime.UtcNow
+                    StartDate = fromDate,
+                    EndDate = toDate
                 };
 
-                dbContext.SyncedRecordings.Add(syncedRecording);
-                await dbContext.SaveChangesAsync();
+                var results = await _historicRecordingsService.SearchRecordingsAsync(searchFilters);
+
+                // Process each recording in the returned list.
+                foreach (var result in results)
+                {
+                    var (Id, MediaStartedTime) = (result.HistoricRecording.Id, result.HistoricRecording.MediaStartedTime);
+                    // If the recording already exists, skip it.
+                    if (await dbContext.SyncedRecordings.AnyAsync(r => r.Id == Id))
+                    {
+                        _logger.LogInformation($"Skipping already synced recording: {Id}");
+                        continue;
+                    }
+
+                    // Format the file name based on the recording date and ID.
+                    var fileName = $"{MediaStartedTime:yyyy/MM/dd}/{Id}.mp3";
+
+                    // Export the recording as an MP3 stream.
+                    using var mp3Stream = await _historicRecordingsService.ExportMp3Async(Id);
+
+                    // Upload the MP3 file to blob storage.
+                    var blobUrl = await blobStorageService.UploadFileAsync(mp3Stream, "greshamrecordings", fileName);
+
+                    // Save the new record to the SyncedRecordings table.
+                    var syncedRecording = new SyncedRecording
+                    {
+                        Id = Id,
+                        BlobUrl = blobUrl,
+                        RecordingDate = MediaStartedTime?.Date ?? DateTime.UtcNow,
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    dbContext.SyncedRecordings.Add(syncedRecording);
+                    await dbContext.SaveChangesAsync();
+                }
             }
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
-            logger.LogInformation("Auto Sync Service is stopping.");
+            _logger.LogInformation("Auto Sync Service is stopping.");
             _timer?.Change(Timeout.Infinite, 0);
             return Task.CompletedTask;
         }
