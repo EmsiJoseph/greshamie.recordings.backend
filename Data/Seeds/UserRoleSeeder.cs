@@ -36,6 +36,7 @@ namespace backend.Data
             {
                 Id = adminUserId,
                 UserName = adminUserName,
+                NormalizedUserName = adminUserName.ToUpperInvariant(),
                 SecurityStamp = Guid.NewGuid().ToString(),
                 ConcurrencyStamp = Guid.NewGuid().ToString(),
                 PasswordHash = hasher.HashPassword(null, adminPassword)

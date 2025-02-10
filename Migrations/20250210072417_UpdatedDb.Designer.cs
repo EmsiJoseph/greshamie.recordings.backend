@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using backend.Data;
 
@@ -11,9 +12,11 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250210072417_UpdatedDb")]
+    partial class UpdatedDb
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -111,8 +114,8 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            UserId = "ba9f0fd7-febb-4016-990e-2fe1159a6fc8",
-                            RoleId = "7195bb7d-4b88-4749-9eb2-3768ef599058"
+                            UserId = "21bacca7-2dee-4ef8-a41d-121acf3c8717",
+                            RoleId = "73b9cc76-5efb-4804-8090-9e23daef9fe4"
                         });
                 });
 
@@ -330,25 +333,25 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "7195bb7d-4b88-4749-9eb2-3768ef599058",
-                            CreatedAt = new DateTime(2025, 2, 10, 7, 44, 24, 360, DateTimeKind.Utc).AddTicks(7881),
+                            Id = "73b9cc76-5efb-4804-8090-9e23daef9fe4",
+                            CreatedAt = new DateTime(2025, 2, 10, 7, 24, 17, 166, DateTimeKind.Utc).AddTicks(8016),
                             Description = "Administrator",
                             IsActive = true,
                             Level = 100,
                             Name = "Admin",
                             NormalizedName = "ADMIN",
-                            UpdatedAt = new DateTime(2025, 2, 10, 7, 44, 24, 360, DateTimeKind.Utc).AddTicks(7885)
+                            UpdatedAt = new DateTime(2025, 2, 10, 7, 24, 17, 166, DateTimeKind.Utc).AddTicks(8019)
                         },
                         new
                         {
-                            Id = "de0addf8-9690-44de-a108-f8882c9dc9f2",
-                            CreatedAt = new DateTime(2025, 2, 10, 7, 44, 24, 360, DateTimeKind.Utc).AddTicks(8892),
+                            Id = "1b352a78-3d5d-45b1-bce4-5f35cffaade3",
+                            CreatedAt = new DateTime(2025, 2, 10, 7, 24, 17, 166, DateTimeKind.Utc).AddTicks(8875),
                             Description = "User",
                             IsActive = true,
                             Level = 90,
                             Name = "User",
                             NormalizedName = "USER",
-                            UpdatedAt = new DateTime(2025, 2, 10, 7, 44, 24, 360, DateTimeKind.Utc).AddTicks(8892)
+                            UpdatedAt = new DateTime(2025, 2, 10, 7, 24, 17, 166, DateTimeKind.Utc).AddTicks(8875)
                         });
                 });
 
@@ -431,15 +434,14 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "ba9f0fd7-febb-4016-990e-2fe1159a6fc8",
+                            Id = "21bacca7-2dee-4ef8-a41d-121acf3c8717",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "c546c281-c759-4041-921d-49e5b2cf3e9b",
+                            ConcurrencyStamp = "14488aef-d849-4563-9e3f-862e410f718b",
                             EmailConfirmed = false,
                             LockoutEnabled = false,
-                            NormalizedUserName = "GHIE-API",
-                            PasswordHash = "AQAAAAIAAYagAAAAEA7lAehUHMNhhazdeLapuE/DPFF4YRXocnEbTVraDAMnnDvwsHUjriFPA6NLiNO8jg==",
+                            PasswordHash = "AQAAAAIAAYagAAAAECr/Lj6miUiTrqPOhzdA7zWj3jheHIKP7meNCsFxdYdrbrN0Z9cP2eScw+q54n1KFA==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "b1abee8a-9103-4d35-968d-57b350e23f75",
+                            SecurityStamp = "f05ab707-cba9-422b-9c43-25dd739ada56",
                             TwoFactorEnabled = false,
                             UserName = "GHIE-API"
                         });

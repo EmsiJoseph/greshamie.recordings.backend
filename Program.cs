@@ -79,6 +79,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connection));
 
 builder.Services.AddIdentityCore<User>(options => { })
+    .AddRoles<Role>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
