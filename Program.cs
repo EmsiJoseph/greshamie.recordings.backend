@@ -9,6 +9,7 @@ using backend.Services.ClarifyGoServices.HistoricRecordings;
 using backend.Services.ClarifyGoServices.LiveRecordings;
 using backend.Services.ClarifyGoServices.Tags;
 using backend.Services.Storage;
+using backend.Services.Sync;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
@@ -102,8 +103,12 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 // 2.6 Audit Service
 builder.Services.AddScoped<IAuditService, AuditService>();
 
-//2.7 Blob Storage Service
+// 2.7 Blob Storage Service
 builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();
+
+// 2.8 Auto Sync Service
+builder.Services.AddScoped<IAutoSyncService, AutoSyncService>();
+builder.Services.AddHostedService<AutoSyncService>();
 
 // 3. HTTP Client Configurations
 var identityServerUri = configuration["ClarifyGoAPI:IdentityServerUri"]
@@ -129,6 +134,11 @@ builder.Services.AddHttpClient<IHistoricRecordingsService, HistoricRecordingsSer
 });
 
 builder.Services.AddHttpClient<ICommentsService, CommentsService>(client =>
+{
+    client.BaseAddress = new Uri(apiBaseUri);
+});
+
+builder.Services.AddHttpClient<IAutoSyncService, AutoSyncService>(client =>
 {
     client.BaseAddress = new Uri(apiBaseUri);
 });

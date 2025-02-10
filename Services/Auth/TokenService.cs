@@ -35,6 +35,8 @@ namespace backend.Services.Auth
             httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
 
         private readonly ILogger<TokenService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        
+        
 
         public async Task SetBearerTokenAsync(HttpClient httpClientFromExternalService)
         {
@@ -72,7 +74,7 @@ namespace backend.Services.Auth
 
                     var token = _protector.Unprotect(user.ClarifyGoAccessToken);
                     httpClientFromExternalService.SetBearerToken(token);
-                    Console.WriteLine($"Token set: {token}");
+                    
                 }
                 catch (Exception ex)
                 {
@@ -121,6 +123,21 @@ namespace backend.Services.Auth
 
             Console.WriteLine("Token: " + response.AccessToken);
             return response ?? throw new Exception("Access token is missing");
+        }
+
+        public async Task SetBearerTokenWithPasswordAsync(string username, string password, HttpClient httpClientFromExternalService)
+        {
+            try
+            {
+                var tokenResponse = await GetAccessTokenFromClarifyGo(username, password);
+                httpClientFromExternalService.SetBearerToken(tokenResponse.AccessToken);
+                
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while setting the bearer token.");
+                throw;
+            }
         }
     }
 }
