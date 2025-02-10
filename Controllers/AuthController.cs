@@ -242,19 +242,11 @@ namespace backend.Controllers
 
                 await _userManager.UpdateAsync(user);
 
-                // Log audit entry
-                await _auditService.LogAuditEntryAsync(user.Id, AuditEventTypes.UserLoggedOut, "User logged out.");
+            // Optionally, if you are maintaining a token revocation list or performing cleanup, do it here.
 
-                _logger.LogInformation("User tokens invalidated successfully.");
-                return Ok(new { message = "Logged out successfully." });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError($"Error processing logout: {ex.Message}");
-                return BadRequest(new { message = "Invalid token format." });
-            }
+            // Inform the client that logout was successful.
+            return Ok(new { message = "Logged out successfully." });
         }
-
     }
 
     public class RefreshTokenRequest
