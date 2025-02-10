@@ -12,8 +12,8 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250206081937_AddedCallType")]
-    partial class AddedCallType
+    [Migration("20250207084927_FixedUserRoleSeeder")]
+    partial class FixedUserRoleSeeder
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,33 +24,6 @@ namespace backend.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
-
-            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("ConcurrencyStamp")
-                        .IsConcurrencyToken()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Name")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("NormalizedName")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NormalizedName")
-                        .IsUnique()
-                        .HasDatabaseName("RoleNameIndex")
-                        .HasFilter("[NormalizedName] IS NOT NULL");
-
-                    b.ToTable("AspNetRoles", (string)null);
-                });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
@@ -137,6 +110,13 @@ namespace backend.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("AspNetUserRoles", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            UserId = "16a50dcc-6e55-4375-a258-cd876d15bf74",
+                            RoleId = "c2bac7d5-125f-4e87-8efe-c1113e15a1ac"
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
@@ -158,7 +138,7 @@ namespace backend.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("backend.Models.AuditEntry", b =>
+            modelBuilder.Entity("backend.Data.Models.AuditEntry", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -189,7 +169,7 @@ namespace backend.Migrations
                     b.ToTable("AuditEntries");
                 });
 
-            modelBuilder.Entity("backend.Models.AuditEvent", b =>
+            modelBuilder.Entity("backend.Data.Models.AuditEvent", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -209,7 +189,7 @@ namespace backend.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("AuditEvent");
+                    b.ToTable("AuditEvents");
 
                     b.HasData(
                         new
@@ -244,7 +224,132 @@ namespace backend.Migrations
                         });
                 });
 
-            modelBuilder.Entity("backend.Models.User", b =>
+            modelBuilder.Entity("backend.Data.Models.CallType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CallTypes");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Description = "An inbound call.",
+                            Name = "incoming",
+                            NormalizedName = "INCOMING"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Description = "An outbound call.",
+                            Name = "outgoing",
+                            NormalizedName = "OUTGOING"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            Description = "An internal call.",
+                            Name = "internal",
+                            NormalizedName = "INTERNAL"
+                        });
+                });
+
+            modelBuilder.Entity("backend.Data.Models.Role", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Level")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("NormalizedName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique()
+                        .HasFilter("[Name] IS NOT NULL");
+
+                    b.HasIndex("NormalizedName")
+                        .IsUnique()
+                        .HasDatabaseName("RoleNameIndex")
+                        .HasFilter("[NormalizedName] IS NOT NULL");
+
+                    b.ToTable("AspNetRoles", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "c2bac7d5-125f-4e87-8efe-c1113e15a1ac",
+                            CreatedAt = new DateTime(2025, 2, 7, 8, 49, 27, 319, DateTimeKind.Utc).AddTicks(9135),
+                            Description = "Administrator",
+                            IsActive = true,
+                            Level = 100,
+                            Name = "Admin",
+                            NormalizedName = "ADMIN",
+                            UpdatedAt = new DateTime(2025, 2, 7, 8, 49, 27, 319, DateTimeKind.Utc).AddTicks(9137)
+                        },
+                        new
+                        {
+                            Id = "c28b2613-0ff4-4bec-ad07-4a5dc19fa044",
+                            CreatedAt = new DateTime(2025, 2, 7, 8, 49, 27, 320, DateTimeKind.Utc).AddTicks(213),
+                            Description = "User",
+                            IsActive = true,
+                            Level = 90,
+                            Name = "User",
+                            NormalizedName = "USER",
+                            UpdatedAt = new DateTime(2025, 2, 7, 8, 49, 27, 320, DateTimeKind.Utc).AddTicks(214)
+                        });
+                });
+
+            modelBuilder.Entity("backend.Data.Models.User", b =>
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
@@ -319,11 +424,26 @@ namespace backend.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
+
+                    b.HasData(
+                        new
+                        {
+                            Id = "16a50dcc-6e55-4375-a258-cd876d15bf74",
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "e5658b52-3b7b-43ad-80a1-d68c7768902e",
+                            EmailConfirmed = false,
+                            LockoutEnabled = false,
+                            PasswordHash = "AQAAAAIAAYagAAAAEIJQ+jW55X+JokL7Xb9+vrLlYvtRDmFEPapkMLfj638Y1dENVKvNT7+PIO0dvNYIJQ==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "56361ac7-34f6-47ff-98fc-8c896075e845",
+                            TwoFactorEnabled = false,
+                            UserName = "GHIE-API"
+                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
+                    b.HasOne("backend.Data.Models.Role", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -332,7 +452,7 @@ namespace backend.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("backend.Models.User", null)
+                    b.HasOne("backend.Data.Models.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -341,7 +461,7 @@ namespace backend.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("backend.Models.User", null)
+                    b.HasOne("backend.Data.Models.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -350,13 +470,13 @@ namespace backend.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserRole<string>", b =>
                 {
-                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
+                    b.HasOne("backend.Data.Models.Role", null)
                         .WithMany()
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("backend.Models.User", null)
+                    b.HasOne("backend.Data.Models.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -365,22 +485,22 @@ namespace backend.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("backend.Models.User", null)
+                    b.HasOne("backend.Data.Models.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("backend.Models.AuditEntry", b =>
+            modelBuilder.Entity("backend.Data.Models.AuditEntry", b =>
                 {
-                    b.HasOne("backend.Models.AuditEvent", "Event")
+                    b.HasOne("backend.Data.Models.AuditEvent", "Event")
                         .WithMany()
                         .HasForeignKey("EventId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("backend.Models.User", "User")
+                    b.HasOne("backend.Data.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)

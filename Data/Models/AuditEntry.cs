@@ -1,8 +1,7 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace backend.Models
+namespace backend.Data.Models
 {
     public sealed class AuditEntry
     {
@@ -12,7 +11,6 @@ namespace backend.Models
 
         [Required] public int EventId { get; set; }
 
-        // Use UTC timestamp.
         [Required] public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 
         [MaxLength(100)] public string? Details { get; set; }
