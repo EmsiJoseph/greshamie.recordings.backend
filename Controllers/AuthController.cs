@@ -139,6 +139,8 @@ namespace backend.Controllers
                 // Generate JWT token
                 var (jwtToken, expiresIn) = GenerateJwtToken(user);
 
+                await _auditService.LogAuditEntryAsync(user.Id, AuditEventTypes.UserLoggedIn, "User logged in successfully.");
+
                 return Ok(new
                 {
                     user = new { user_name = user.UserName },
