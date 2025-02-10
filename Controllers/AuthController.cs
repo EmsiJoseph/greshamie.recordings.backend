@@ -15,6 +15,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Azure.Core;
 using backend.Services;
+using System.Security.Cryptography;
 
 namespace backend.Controllers
 {
@@ -50,20 +51,28 @@ namespace backend.Controllers
             return Convert.ToBase64String(Guid.NewGuid().ToByteArray());
         }
 
-        // Method to generate JWT token
         private (string Token, int ExpiresIn) GenerateJwtToken(User user)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]); // Ensure this is set in appsettings.json
+            var key = Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]); // Static key from config
+
+            // Generate additional entropy using cryptographic randomness
+            var randomBytes = new byte[32];
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(randomBytes);
+            }
+            var randomKeyPart = Convert.ToBase64String(randomBytes); // Extra randomness
 
             var tokenDescriptor = new SecurityTokenDescriptor
             {
                 Subject = new ClaimsIdentity(new[]
                 {
-                    new Claim(JwtRegisteredClaimNames.Sub, user.Id),  // Ensure `sub` claim exists
-                    new Claim(JwtRegisteredClaimNames.UniqueName, user.UserName),
-                    new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
-                }),
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+            new Claim(JwtRegisteredClaimNames.UniqueName, user.UserName),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()), // Already used
+            new Claim("custom_nonce", randomKeyPart) // Extra randomness
+        }),
                 Expires = DateTime.UtcNow.AddHours(int.Parse(_configuration["Jwt:ExpiryHours"])),
                 Issuer = _configuration["Jwt:Issuer"],
                 Audience = _configuration["Jwt:Audience"],
@@ -73,6 +82,7 @@ namespace backend.Controllers
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return (tokenHandler.WriteToken(token), (int)(tokenDescriptor.Expires.Value - DateTime.UtcNow).TotalSeconds);
         }
+
         [HttpPost("login")]
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
@@ -186,7 +196,6 @@ namespace backend.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Logout()
         {
-            // Log request to verify it hits the method
             _logger.LogInformation("Logout request received.");
 
             // Retrieve the token from the Authorization header.
@@ -199,52 +208,54 @@ namespace backend.Controllers
 
             _logger.LogInformation("Authorization header found, extracting token...");
 
-            // Extract the token (removing the "Bearer " prefix).
+            // Extract the Bearer token (removing the "Bearer " prefix).
             var token = authHeader.Substring("Bearer ".Length).Trim();
 
-            // Use JwtSecurityTokenHandler to read (decode) the token without validating lifetime.
-            var tokenHandler = new JwtSecurityTokenHandler();
-            JwtSecurityToken jwtToken;
             try
             {
-                jwtToken = tokenHandler.ReadJwtToken(token);
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var jwtToken = tokenHandler.ReadJwtToken(token);
+
+                // Extract the user ID from the `sub` claim
+                var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub);
+                if (userIdClaim == null)
+                {
+                    _logger.LogError("User ID (sub claim) not found in token.");
+                    return BadRequest(new { message = "User identifier not found in token." });
+                }
+
+                string userId = userIdClaim.Value;
+                _logger.LogInformation($"Extracted User ID: {userId}");
+
+                // Find the user by ID
+                var user = await _userManager.FindByIdAsync(userId);
+                if (user == null)
+                {
+                    _logger.LogError("No user found with the extracted User ID.");
+                    return Unauthorized(new { message = "Invalid user." });
+                }
+
+                _logger.LogInformation($"User found. Wiping token-related fields.");
+
+                // Wipe the token-related values
+                user.ClarifyGoAccessToken = null;
+                user.ClarifyGoAccessTokenExpiry = null;
+                user.RefreshToken = null;
+                user.RefreshTokenExpiry = null;
+
+                await _userManager.UpdateAsync(user);
+
+                // Log audit entry
+                await _auditService.LogAuditEntryAsync(user.Id, AuditEventTypes.UserLoggedOut, "User logged out.");
+
+                _logger.LogInformation("User tokens invalidated successfully.");
+                return Ok(new { message = "Logged out successfully." });
             }
             catch (Exception ex)
             {
-                _logger.LogError("Token parsing failed: " + ex.Message);
-                return BadRequest(new { message = "Invalid token." });
+                _logger.LogError($"Error processing logout: {ex.Message}");
+                return BadRequest(new { message = "Invalid token format." });
             }
-
-            _logger.LogInformation("Token parsed successfully.");
-
-            // Attempt to get the user identifier from the token claims.
-            var userIdClaim = jwtToken.Claims.FirstOrDefault(c => c.Type == JwtRegisteredClaimNames.Sub);
-            if (userIdClaim == null)
-            {
-                _logger.LogError("User identifier (sub claim) not found in token.");
-                return BadRequest(new { message = "User identifier (sub claim) not found in token." });
-            }
-
-            string userId = userIdClaim.Value;
-            _logger.LogInformation($"User ID extracted: {userId}");
-
-            // Log the logout event using your audit service and the predefined constant.
-            await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.UserLoggedOut, "User logged out.");
-
-            // Optionally, invalidate the refresh token and ClarifyGo access token if they exist in the database.
-            var user = await _userManager.FindByIdAsync(userId);
-            if (user != null)
-            {
-                user.RefreshToken = null;
-                user.RefreshTokenExpiry = null;
-                user.ClarifyGoAccessToken = null;           // Remove the ClarifyGo Access Token
-                user.ClarifyGoAccessTokenExpiry = null;     // Remove the ClarifyGo Access Token Expiry
-                await _userManager.UpdateAsync(user);
-                _logger.LogInformation("Refresh token and ClarifyGo access token invalidated.");
-            }
-
-            _logger.LogInformation("Logout successful.");
-            return Ok(new { message = "Logged out successfully." });
         }
 
     }
