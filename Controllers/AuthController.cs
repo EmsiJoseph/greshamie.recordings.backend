@@ -82,7 +82,9 @@ namespace backend.Controllers
             return new JwtTokenResult
             {
                 Token = tokenString,
-                ExpiresIn = (int)(expires - DateTime.UtcNow).TotalSeconds
+                ExpiresIn = user.ClarifyGoAccessTokenExpiry.HasValue
+                    ? (int)user.ClarifyGoAccessTokenExpiry.Value.Subtract(DateTime.UtcNow).TotalSeconds
+                    : 0
             };
         }
 
@@ -158,7 +160,7 @@ namespace backend.Controllers
                     accessToken = new
                     {
                         value = jwtToken.Token,
-                        expiresIn = jwtToken.ExpiresIn
+                        expiresIn = DateTime.UtcNow.AddSeconds(jwtToken.ExpiresIn)
                     },
                     refreshToken = new
                     {
