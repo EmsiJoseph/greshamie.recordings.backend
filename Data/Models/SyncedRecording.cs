@@ -12,13 +12,13 @@ namespace backend.Models
         public string Id { get; set; } = null!;  // Recording ID from Clarify Go
 
         [Required]
-        public string BlobUrl { get; set; } = null!; // Azure Blob Storage URL
+        public string StreamingUrl { get; set; } = null!; // Azure Blob Storage URL
         
         [Required]
         public string DownloadUrl { get; set; } = null!; // Azure Blob Storage Download URL
         
         [Required]
-        public bool IsDeleted { get; set; } // Is the recording deleted
+        public bool IsDeleted { get; set; } = false ;// Is the recording deleted
         
         [Required]
         public DateTime RecordingDate { get; set; } // Date of the recording
