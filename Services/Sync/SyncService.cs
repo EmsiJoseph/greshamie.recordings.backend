@@ -1,12 +1,10 @@
 using System;
 using System.Threading.Tasks;
-using System.Threading.Tasks;
-using backend.Services.Auth;
-using backend.Models;
+using backend.Data;
+using backend.Data.Models;
+using backend.DTOs;
 using backend.Services.Auth;
 using backend.Services.ClarifyGoServices.HistoricRecordings;
-using backend.Models;
-using Microsoft.EntityFrameworkCore;
 using backend.Services.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -69,11 +67,13 @@ namespace backend.Services.Sync
                     var fileName = $"{MediaStartedTime:yyyy/MM/dd}/{Id}.mp3";
 
                     // Export the recording as an MP3 stream.
+                    using var mp3Stream = await _historicRecordingsService.ExportMp3Async(Id);
+
                     // Upload the file and get both URLs from blob storage.
                     var downloadUrl =
                         await _blobStorageService.UploadFileAsync(mp3Stream, "greshamrecordings", fileName);
                     var streamingUrl = await _blobStorageService.StreamingUrlAsync("greshamrecordings", fileName);
-                
+
                     // Save the new record to the SyncedRecordings table.
                     var syncedRecording = new SyncedRecording
                     {
@@ -84,8 +84,6 @@ namespace backend.Services.Sync
                         CreatedAt = DateTime.UtcNow,
                         IsDeleted = false
                     };
-                    IsDeleted = false
-                };
 
                     _dbContext.SyncedRecordings.Add(syncedRecording);
                     await _dbContext.SaveChangesAsync();
