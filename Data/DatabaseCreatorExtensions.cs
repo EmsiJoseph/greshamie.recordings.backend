@@ -8,10 +8,20 @@ namespace backend.Data
     {
         public static IEnumerable<string> GetTables(this IRelationalDatabaseCreator creator)
         {
-            var dbContext = (creator as RelationalDatabaseCreator)?.Dependencies?.RelationalConnection;
-            if (dbContext?.ConnectionString == null) return Array.Empty<string>();
+            // Get the RelationalDatabaseCreator implementation
+            var relationalCreator = creator as RelationalDatabaseCreator;
+            if (relationalCreator == null) return Array.Empty<string>();
 
-            using var connection = new SqlConnection(dbContext.ConnectionString);
+            // Access the connection through the context
+            var context = relationalCreator.GetType()
+                .GetField("_context", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
+                ?.GetValue(relationalCreator) as DbContext;
+
+            if (context == null) return Array.Empty<string>();
+
+            var connection = context.Database.GetDbConnection();
+            if (connection == null) return Array.Empty<string>();
+
             using var command = connection.CreateCommand();
             command.CommandText = @"
                 SELECT TABLE_NAME 
@@ -20,9 +30,12 @@ namespace backend.Data
 
             var tables = new List<string>();
             
+            var wasOpen = connection.State == System.Data.ConnectionState.Open;
             try
             {
-                connection.Open();
+                if (!wasOpen)
+                    connection.Open();
+
                 using var reader = command.ExecuteReader();
                 while (reader.Read())
                 {
@@ -31,7 +44,7 @@ namespace backend.Data
             }
             finally
             {
-                if (connection.State == System.Data.ConnectionState.Open)
+                if (!wasOpen && connection.State == System.Data.ConnectionState.Open)
                     connection.Close();
             }
 
