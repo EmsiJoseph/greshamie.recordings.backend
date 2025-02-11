@@ -37,6 +37,11 @@ namespace backend.Data.Seeds
                     Id = 5,
                     Name = "RecordDeleted",
                     Description = "A record was deleted."
+                },
+                new AuditEvent
+                {
+                    Id = 6,
+                    Name = "TokenRefreshed",
                 }
             );
         }
