@@ -1,6 +1,6 @@
 namespace backend.Constants
 {
-    public static class AuditEventTypes
+    public static class AuditEvents
     {
         public const int UserLoggedIn = 1;
         public const int UserLoggedOut = 2;
