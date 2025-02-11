@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
 using backend.Data;
-using backend.Models;
+using backend.Data.Models;
 using backend.Services.Sync;
 using Microsoft.AspNetCore.Authorization;
 

@@ -1,8 +1,8 @@
 using System;
 using System.Threading.Tasks;
 using backend.Data;
+using backend.Data.Models;
 using backend.DTOs;
-using backend.Models;
 using backend.Services.Auth;
 using backend.Services.ClarifyGoServices.HistoricRecordings;
 using backend.Services.Storage;
