@@ -51,7 +51,10 @@ namespace backend.Services.Storage
                 BlobContainerName = containerName,
                 BlobName = fileName,
                 Resource = "b", // 'b' indicates the resource is a blob.
-                ExpiresOn = DateTimeOffset.UtcNow.AddHours(1)
+                ExpiresOn = DateTimeOffset.UtcNow.AddHours(1),
+                
+                ContentType = "audio/mpeg",
+                ContentDisposition = "inline"  // inline forces the browser to stream/display instead of downloading.
             };
             sasBuilder.SetPermissions(BlobSasPermissions.Read);
     
@@ -60,25 +63,6 @@ namespace backend.Services.Storage
             return streamingSasUri.ToString();
         }
         
-        public async Task DeleteFileAsync(string containerName, string fileName)
-        {
-            var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
-            var blobClient = containerClient.GetBlobClient(fileName);
-            await blobClient.DeleteIfExistsAsync();
-        }
-
-        public async Task<Stream?> DownloadFileAsync(string containerName, string fileName)
-        {
-            var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
-            var blobClient = containerClient.GetBlobClient(fileName);
-
-            if (!await blobClient.ExistsAsync())
-            {
-                return null;
-            }
-
-            var downloadInfo = await blobClient.DownloadAsync();
-            return downloadInfo.Value.Content;
-        }
+        
     }
 }

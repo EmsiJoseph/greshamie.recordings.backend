@@ -1,53 +1,40 @@
-using backend.Data;
-using backend.DTOs;
-using backend.Services.ClarifyGoServices.HistoricRecordings;
-using backend.Services.Storage;
+using System;
+using System.Threading.Tasks;
 using backend.Services.Sync;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
-namespace backend.Controllers;
-[Authorize]
-[ApiController]
-[Route("api/[controller]")]
-public class SyncRecordingController : ControllerBase
+namespace backend.Controllers
 {
-    private readonly IHistoricRecordingsService _historicRecordingsService;
-    private readonly IBlobStorageService _blobStorageService;
-    private readonly ISyncService _syncService;
-    private readonly ApplicationDbContext _dbContext;
-
-    public SyncRecordingController(
-        IHistoricRecordingsService historicRecordingsService,
-        IBlobStorageService blobStorageService,
-        ISyncService syncService,
-        ApplicationDbContext dbContext)
-    {
-        _historicRecordingsService = historicRecordingsService;
-        _blobStorageService = blobStorageService;
-        _syncService = syncService;
-        _dbContext = dbContext;
-    }
     [Authorize]
-    [HttpPost("manual")]
-    public async Task<IActionResult> SynchronizeRecordings([FromBody] SyncDateRangeDto dateRange)
+    [ApiController]
+    [Route("api/[controller]")]
+    public class SyncRecordingController : ControllerBase
     {
-        try
-        {
-            if (dateRange == null || dateRange.StartDate == default || dateRange.EndDate == default)
-            {
-                return BadRequest(new { message = "Start date and end date are required" });
-            }
-            
-            
+        private readonly ISyncService _syncService;
+        private readonly ILogger<SyncRecordingController> _logger;
 
-            await _syncService.SynchronizeRecordingsAsync(dateRange.StartDate, dateRange.EndDate);
-            return Ok(new { message = "Sync complete" });
-        }
-        catch (Exception ex)
+        public SyncRecordingController(ISyncService syncService, ILogger<SyncRecordingController> logger)
         {
-            return StatusCode(500, new { message = "An unexpected error occurred", details = ex.Message });
+            _syncService = syncService;
+            _logger = logger;
+        }
+
+        // POST: api/sync/synchronize?fromDate=2025-01-01&toDate=2025-01-31
+        [HttpPost("synchronize")]
+        public async Task<IActionResult> Synchronize([FromQuery] DateTime fromDate, [FromQuery] DateTime toDate)
+        {
+            try 
+            {
+                await _syncService.SynchronizeRecordingsAsync(fromDate, toDate);
+                return Ok(new { Message = "Synchronization completed successfully." });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Synchronization failed.");
+                return StatusCode(500, new { Message = "Error synchronizing recordings.", Error = ex.Message });
+            }
         }
     }
 }
