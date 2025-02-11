@@ -25,26 +25,30 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, string>
 
         var adminUserName = _configuration["AdminCredentials:UserName"];
         var adminPassword = _configuration["AdminCredentials:Password"];
+        var adminRoleId = _configuration["UserRole:AdminRoleId"];
+        var userRoleId = _configuration["UserRole:UserRoleId"];
+        var adminUserId = _configuration["UserRole:UserId"];
 
-        if (string.IsNullOrEmpty(adminUserName) || string.IsNullOrEmpty(adminPassword))
+        if (string.IsNullOrEmpty(adminUserName) || string.IsNullOrEmpty(adminPassword) ||
+            string.IsNullOrEmpty(adminRoleId) || string.IsNullOrEmpty(userRoleId) || string.IsNullOrEmpty(adminUserId))
         {
             throw new InvalidOperationException("Admin credentials not found in configuration.");
         }
 
-        builder.SeedUserRole(adminUserName, adminPassword);
+        builder.SeedUserRole(adminUserName, adminPassword, adminRoleId, userRoleId, adminUserId);
 
         builder.Entity<AuditEntry>()
             .HasOne(ae => ae.Event)
             .WithMany(e => e.AuditEntries)
             .HasForeignKey(ae => ae.EventId)
-            .OnDelete(DeleteBehavior.Restrict)
+            .OnDelete(DeleteBehavior.NoAction)
             .IsRequired();
 
         builder.Entity<AuditEntry>()
             .HasOne(ae => ae.User)
             .WithMany(u => u.AuditEntries)
             .HasForeignKey(ae => ae.UserId)
-            .OnDelete(DeleteBehavior.Restrict)
+            .OnDelete(DeleteBehavior.NoAction)
             .IsRequired();
 
         builder.Entity<AuditEntry>()
@@ -60,12 +64,11 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, string>
         base.OnConfiguring(optionsBuilder);
 
         optionsBuilder
-            .EnableSensitiveDataLogging() // For debugging
-            .EnableDetailedErrors() // For debugging
+            .EnableSensitiveDataLogging()
+            .EnableDetailedErrors()
             .ConfigureWarnings(warnings =>
             {
                 warnings.Ignore(RelationalEventId.PendingModelChangesWarning);
-                // Ignore duplicate table warnings
                 warnings.Ignore(CoreEventId.DuplicateDependentEntityTypeInstanceWarning);
             });
     }
