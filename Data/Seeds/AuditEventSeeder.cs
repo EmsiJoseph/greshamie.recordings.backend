@@ -42,6 +42,19 @@ namespace backend.Data.Seeds
                 {
                     Id = 6,
                     Name = "TokenRefreshed",
+                    Description = "A token was refreshed."
+                },
+                new AuditEvent
+                {
+                    Id = 7,
+                    Name = "ManualSync",
+                    Description = "A manual sync was performed."
+                },
+                new AuditEvent
+                {
+                    Id = 8,
+                    Name = "AutoSync",
+                    Description = "An auto sync was performed."
                 }
             );
         }
