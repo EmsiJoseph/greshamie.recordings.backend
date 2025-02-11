@@ -13,12 +13,11 @@ namespace Shine.Extensions
 
             try
             {
-                // Drop existing database to clean up constraints
-                context.Database.EnsureDeleted();
-                
+
+
                 // Create new database and apply migrations
                 context.Database.Migrate();
-                
+
                 logger.LogInformation("Database migrated successfully");
             }
             catch (Exception ex)

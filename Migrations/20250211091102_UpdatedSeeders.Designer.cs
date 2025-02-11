@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using backend.Data;
 
@@ -11,9 +12,11 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250211091102_UpdatedSeeders")]
+    partial class UpdatedSeeders
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -227,7 +230,7 @@ namespace backend.Migrations
                         new
                         {
                             Id = 6,
-                            Description = "A token was refreshed. The old token is now invalid.",
+                            Description = "A token was refreshed.",
                             Name = "TokenRefreshed"
                         },
                         new
@@ -354,24 +357,24 @@ namespace backend.Migrations
                         new
                         {
                             Id = "903281ca-54d2-4d9f-8e9e-ef529d0afd4c",
-                            CreatedAt = new DateTime(2025, 2, 11, 9, 12, 35, 510, DateTimeKind.Utc).AddTicks(7983),
+                            CreatedAt = new DateTime(2025, 2, 11, 9, 11, 1, 476, DateTimeKind.Utc).AddTicks(9608),
                             Description = "Administrator role with full access",
                             IsActive = true,
                             Level = 100,
                             Name = "Admin",
                             NormalizedName = "ADMIN",
-                            UpdatedAt = new DateTime(2025, 2, 11, 9, 12, 35, 510, DateTimeKind.Utc).AddTicks(7987)
+                            UpdatedAt = new DateTime(2025, 2, 11, 9, 11, 1, 476, DateTimeKind.Utc).AddTicks(9611)
                         },
                         new
                         {
                             Id = "b7ee85d4-608f-4671-9a00-71cb05ffc2d4",
-                            CreatedAt = new DateTime(2025, 2, 11, 9, 12, 35, 510, DateTimeKind.Utc).AddTicks(9057),
+                            CreatedAt = new DateTime(2025, 2, 11, 9, 11, 1, 477, DateTimeKind.Utc).AddTicks(613),
                             Description = "Standard user role with limited access",
                             IsActive = true,
                             Level = 90,
                             Name = "User",
                             NormalizedName = "USER",
-                            UpdatedAt = new DateTime(2025, 2, 11, 9, 12, 35, 510, DateTimeKind.Utc).AddTicks(9058)
+                            UpdatedAt = new DateTime(2025, 2, 11, 9, 11, 1, 477, DateTimeKind.Utc).AddTicks(614)
                         });
                 });
 
@@ -486,13 +489,13 @@ namespace backend.Migrations
                         {
                             Id = "ccb2c35c-99a6-4d9c-8ee0-d0aec4a9a48a",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "d90e7d83-e0d4-457b-a3f9-4f4d9bab85f9",
+                            ConcurrencyStamp = "751144e6-bc50-4236-a557-06c41c7f4549",
                             EmailConfirmed = false,
                             LockoutEnabled = false,
                             NormalizedUserName = "GHIE-API",
-                            PasswordHash = "AQAAAAIAAYagAAAAENPSYeCXhaBFGkl53pOHkC2YXuN3n4b/g/EOgfqwEKcSyLAqyYP+5BcxDJ+lvJs/tw==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEPwdSJoVi8MJplNdg42z0QByHny5vrJRIx9hzX8zEyS+dUafkJTPSYRXROnaA8wpkQ==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "3a6078a7-0d12-4dd2-87fa-df7764fcdaee",
+                            SecurityStamp = "c2d5f04e-5dc1-4886-a25a-4fede600a77c",
                             TwoFactorEnabled = false,
                             UserName = "GHIE-API"
                         });

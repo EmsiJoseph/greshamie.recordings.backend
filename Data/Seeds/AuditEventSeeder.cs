@@ -42,7 +42,7 @@ namespace backend.Data.Seeds
                 {
                     Id = 6,
                     Name = "TokenRefreshed",
-                    Description = "A token was refreshed."
+                    Description = "A token was refreshed. The old token is now invalid."
                 },
                 new AuditEvent
                 {

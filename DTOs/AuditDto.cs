@@ -13,6 +13,9 @@ namespace backend.DTOs
 
         [JsonPropertyName("eventName")] 
         public string EventName { get; set; }
+        
+        [JsonPropertyName("recordingId")]
+        public string RecordingId { get; set; }
 
         [JsonPropertyName("timestamp")] 
         public DateTime Timestamp { get; set; }

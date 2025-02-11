@@ -85,6 +85,7 @@ namespace backend.Services.Audits
                     Id = ae.Id,
                     Username = ae.User.UserName,
                     EventName = ae.Event.Name,
+                    RecordingId = ae.RecordId,
                     Timestamp = ae.Timestamp,
                     Details = ae.Details,
                 }).ToList();

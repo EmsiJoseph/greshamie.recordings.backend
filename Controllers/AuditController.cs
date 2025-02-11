@@ -1,11 +1,14 @@
 using System;
 using System.Threading.Tasks;
+using backend.Data.Models;
+using backend.DTOs;
 using backend.Exceptions;
 using backend.Services;
 using backend.Services.Audits;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
+using Microsoft.Extensions.Logging;
 
 namespace backend.Controllers
 {
@@ -15,49 +18,59 @@ namespace backend.Controllers
     public class AuditController : ControllerBase
     {
         private readonly IAuditService _auditService;
+        private readonly ILogger<AuditController> _logger;
 
-        public AuditController(IAuditService auditService)
+        public AuditController(IAuditService auditService, ILogger<AuditController> logger)
         {
-            _auditService = auditService;
+            _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        /// <summary>
-        /// Retrieves all audit entries.
-        /// </summary>
-        [OutputCache(Duration = 60, VaryByQueryKeys = new[] { "AuditCache" })]
-        [HttpGet("")]
-        public async Task<IActionResult> GetAll()
+        private async Task<List<AuditEntryDto>> SearchAndProcessAuditEntries(string? search)
         {
             try
             {
                 var entries = await _auditService.GetAuditEntriesAsync();
-                return Ok(entries);
+                
+                if (entries == null)
+                {
+                    _logger.LogWarning("GetAuditEntriesAsync returned null");
+                    return new List<AuditEntryDto>();
+                }
+
+                if (!string.IsNullOrEmpty(search))
+                {
+                    entries = entries.Where(x =>
+                        (x.Username?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                        (x.RecordingId?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                        (x.EventName?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                        (x.Details?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false)
+                    ).ToList();
+                }
+
+                return entries;
             }
             catch (ServiceException ex)
             {
-                return StatusCode(ex.StatusCode, new { message = ex.Message });
+                _logger.LogError(ex, "Error searching audit entries. Search term: {Search}", search);
+                throw;
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An unexpected error occurred while retrieving audit entries" });
+                _logger.LogError(ex, "Unexpected error while searching audit entries. Search term: {Search}", search);
+                throw new ServiceException($"Error retrieving audit entries: {ex.Message}", 500);
             }
         }
 
-        /// <summary>
-        /// Retrieves a single audit entry by its ID.
-        /// </summary>
         [OutputCache(Duration = 60, VaryByQueryKeys = new[] { "AuditCache" })]
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
+        [HttpGet("")]
+        public async Task<IActionResult> GetAll([FromQuery] string? search)
         {
             try
             {
-                var entry = await _auditService.GetAuditEntryByIdAsync(id);
-                return Ok(entry);
-            }
-            catch (KeyNotFoundException ex)
-            {
-                return NotFound(new { message = ex.Message });
+                _logger.LogInformation("Searching audit entries with search term: {Search}", search);
+                var results = await SearchAndProcessAuditEntries(search);
+                return Ok(results);
             }
             catch (ServiceException ex)
             {
@@ -65,37 +78,8 @@ namespace backend.Controllers
             }
             catch (Exception ex)
             {
-                return StatusCode(500,
-                    new { message = "An unexpected error occurred while retrieving the audit entry" });
-            }
-        }
-
-
-        /// <summary>
-        /// Retrieves audit entries based on optional filter parameters.
-        /// Example: GET /api/audit/filter?eventType=1&userId=abc123&startDate=2025-01-01&endDate=2025-02-01
-        /// </summary>
-        [OutputCache(Duration = 60, VaryByQueryKeys = new[] { "AuditCache" })]
-        [HttpGet("search")]
-        public async Task<IActionResult> SearchAudits(
-            [FromQuery] int? eventType,
-            [FromQuery] string? userId,
-            [FromQuery] DateTime? startDate,
-            [FromQuery] DateTime? endDate)
-        {
-            try
-            {
-                var entries = await _auditService.GetAuditEntriesFilteredAsync(eventType, userId, startDate, endDate);
-                return Ok(entries);
-            }
-            catch (ServiceException ex)
-            {
-                return StatusCode(ex.StatusCode, new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500,
-                    new { message = "An unexpected error occurred while retrieving filtered audit entries" });
+                _logger.LogError(ex, "Unexpected error in GetAll");
+                return StatusCode(500, new { message = "An unexpected error occurred" });
             }
         }
     }
