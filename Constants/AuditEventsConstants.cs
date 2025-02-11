@@ -1,12 +1,12 @@
 namespace backend.Constants
 {
-    public static class AuditEvents
+    public static class AuditEventsConstants
     {
-        public const int UserLoggedIn = 1;
-        public const int UserLoggedOut = 2;
-        public const int RecordPlayed = 3;
-        public const int RecordExported = 4;
-        public const int RecordDeleted = 5;
-        public const int TokenRefreshed = 6;
+        public const int UserLoggedInId = 1;
+        public const int UserLoggedOutId = 2;
+        public const int RecordPlayedId = 3;
+        public const int RecordExportedId = 4;
+        public const int RecordDeletedId = 5;
+        public const int TokenRefreshedId = 6;
     }
 }

@@ -1,8 +1,8 @@
 namespace backend.Constants
 {
-    public static class AuditEventTypes
+    public static class AuditEventTypesConstants
     {
-        public const int Session = 1;
-        public const int Recording = 2;
+        public const int SessionId = 1;
+        public const int RecordingId = 2;
     }
 }

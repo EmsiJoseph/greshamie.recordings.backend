@@ -22,6 +22,7 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, string>
 
         builder.SeedAuditEvent();
         builder.SeedCallType();
+        builder.SeedAuditEventType();
 
         var adminUserName = _configuration["AdminCredentials:UserName"];
         var adminPassword = _configuration["AdminCredentials:Password"];
@@ -57,6 +58,13 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, string>
             .HasForeignKey(ae => ae.RecordId)
             .OnDelete(DeleteBehavior.SetNull)
             .IsRequired(false);
+        
+        builder.Entity<AuditEvent>()
+            .HasOne(ae => ae.Type)
+            .WithMany(et => et.Events)
+            .HasForeignKey(ae => ae.TypeId)
+            .OnDelete(DeleteBehavior.NoAction)
+            .IsRequired();
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
@@ -77,4 +85,6 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, string>
     public DbSet<AuditEvent> AuditEvents { get; set; }
     public DbSet<CallType> CallTypes { get; set; }
     public DbSet<SyncedRecording> SyncedRecordings { get; set; }
+
+    public DbSet<AuditEventType> AuditEventTypes { get; set; }
 }
