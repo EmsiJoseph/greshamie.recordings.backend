@@ -8,7 +8,6 @@ namespace backend.Services.Storage
         Task<string> UploadFileAsync(Stream fileStream, string containerName, string fileName);
 
         Task<string> StreamingUrlAsync(string containerName, string fileName);
-        Task DeleteFileAsync(string containerName, string fileName);
         
         
     }
