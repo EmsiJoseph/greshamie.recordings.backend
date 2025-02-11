@@ -108,8 +108,8 @@ builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();
 
 // 2.8 Auto Sync Service
-builder.Services.AddScoped<IAutoSyncService, AutoSyncService>();
-builder.Services.AddHostedService<AutoSyncService>();
+builder.Services.AddScoped<ISyncService, SyncService>();
+
 
 // 3. HTTP Client Configurations
 var identityServerUri = configuration["ClarifyGoAPI:IdentityServerUri"]
@@ -122,7 +122,6 @@ builder.Services.AddHttpClient<ITokenService, TokenService>(client =>
 {
     client.BaseAddress = new Uri(identityServerUri);
 });
-
 
 builder.Services.AddHttpClient<ILiveRecordingsService, LiveRecordingsService>(client =>
 {
@@ -139,7 +138,7 @@ builder.Services.AddHttpClient<ICommentsService, CommentsService>(client =>
     client.BaseAddress = new Uri(apiBaseUri);
 });
 
-builder.Services.AddHttpClient<IAutoSyncService, AutoSyncService>(client =>
+builder.Services.AddHttpClient<ISyncService, SyncService>(client =>
 {
     client.BaseAddress = new Uri(apiBaseUri);
 });

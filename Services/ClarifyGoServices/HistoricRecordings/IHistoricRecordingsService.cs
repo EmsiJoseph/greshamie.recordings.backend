@@ -34,5 +34,10 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
         /// Exports the specified recording as a WAV.
         /// </summary>
         Task<Stream> ExportWavAsync(string recordingId);
+
+        /// <summary>
+        /// Sets the bearer token for authentication.
+        /// </summary>
+        void SetBearerToken(string token);
     }
 }

@@ -111,8 +111,8 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            UserId = "ba9f0fd7-febb-4016-990e-2fe1159a6fc8",
-                            RoleId = "7195bb7d-4b88-4749-9eb2-3768ef599058"
+                            UserId = "933ad377-3281-4a40-afbc-bc93c9fdded1",
+                            RoleId = "45f0139f-1d61-4af1-ae38-759b7167db7e"
                         });
                 });
 
@@ -150,6 +150,10 @@ namespace backend.Migrations
                     b.Property<int>("EventId")
                         .HasColumnType("int");
 
+                    b.Property<string>("RecordId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<DateTime>("Timestamp")
                         .HasColumnType("datetime2");
 
@@ -160,6 +164,8 @@ namespace backend.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("EventId");
+
+                    b.HasIndex("RecordId");
 
                     b.HasIndex("UserId");
 
@@ -330,25 +336,25 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "7195bb7d-4b88-4749-9eb2-3768ef599058",
-                            CreatedAt = new DateTime(2025, 2, 10, 7, 44, 24, 360, DateTimeKind.Utc).AddTicks(7881),
+                            Id = "45f0139f-1d61-4af1-ae38-759b7167db7e",
+                            CreatedAt = new DateTime(2025, 2, 11, 2, 24, 22, 227, DateTimeKind.Utc).AddTicks(4814),
                             Description = "Administrator",
                             IsActive = true,
                             Level = 100,
                             Name = "Admin",
                             NormalizedName = "ADMIN",
-                            UpdatedAt = new DateTime(2025, 2, 10, 7, 44, 24, 360, DateTimeKind.Utc).AddTicks(7885)
+                            UpdatedAt = new DateTime(2025, 2, 11, 2, 24, 22, 227, DateTimeKind.Utc).AddTicks(4818)
                         },
                         new
                         {
-                            Id = "de0addf8-9690-44de-a108-f8882c9dc9f2",
-                            CreatedAt = new DateTime(2025, 2, 10, 7, 44, 24, 360, DateTimeKind.Utc).AddTicks(8892),
+                            Id = "1ec1652d-2c7b-40f2-9013-1595ea77f4b8",
+                            CreatedAt = new DateTime(2025, 2, 11, 2, 24, 22, 227, DateTimeKind.Utc).AddTicks(5766),
                             Description = "User",
                             IsActive = true,
                             Level = 90,
                             Name = "User",
                             NormalizedName = "USER",
-                            UpdatedAt = new DateTime(2025, 2, 10, 7, 44, 24, 360, DateTimeKind.Utc).AddTicks(8892)
+                            UpdatedAt = new DateTime(2025, 2, 11, 2, 24, 22, 227, DateTimeKind.Utc).AddTicks(5766)
                         });
                 });
 
@@ -431,18 +437,48 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "ba9f0fd7-febb-4016-990e-2fe1159a6fc8",
+                            Id = "933ad377-3281-4a40-afbc-bc93c9fdded1",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "c546c281-c759-4041-921d-49e5b2cf3e9b",
+                            ConcurrencyStamp = "2f08836d-de78-4aab-a7f9-9072ebdfa584",
                             EmailConfirmed = false,
                             LockoutEnabled = false,
                             NormalizedUserName = "GHIE-API",
-                            PasswordHash = "AQAAAAIAAYagAAAAEA7lAehUHMNhhazdeLapuE/DPFF4YRXocnEbTVraDAMnnDvwsHUjriFPA6NLiNO8jg==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEPz7/SN+vmMkwKLUu1kGwszA/3J5pKm1mUq15VNXG4xHH9sqeNXFWJ8cefoDzENWLA==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "b1abee8a-9103-4d35-968d-57b350e23f75",
+                            SecurityStamp = "562b02a7-e741-4db1-8a7f-637b1e057cc4",
                             TwoFactorEnabled = false,
                             UserName = "GHIE-API"
                         });
+                });
+
+            modelBuilder.Entity("backend.Models.SyncedRecording", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("BlobUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DownloadUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("RecordingDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SyncedRecordings");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -504,6 +540,12 @@ namespace backend.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("backend.Models.SyncedRecording", "Recording")
+                        .WithMany()
+                        .HasForeignKey("RecordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("backend.Data.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
@@ -511,6 +553,8 @@ namespace backend.Migrations
                         .IsRequired();
 
                     b.Navigation("Event");
+
+                    b.Navigation("Recording");
 
                     b.Navigation("User");
                 });
