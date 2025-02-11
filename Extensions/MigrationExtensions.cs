@@ -1,5 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Shine.Data;
+﻿using backend.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace Shine.Extensions
 {

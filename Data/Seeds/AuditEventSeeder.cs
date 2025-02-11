@@ -5,7 +5,7 @@ namespace backend.Data.Seeds
 {
     public static class AuditEventSeeder
     {
-        public static void Seed(ModelBuilder modelBuilder)
+        public static void SeedAuditEvent(this ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<AuditEvent>().HasData(
                 new AuditEvent

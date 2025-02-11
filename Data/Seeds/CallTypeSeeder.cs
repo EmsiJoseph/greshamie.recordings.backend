@@ -5,7 +5,7 @@ namespace backend.Data.Seeds
 {
     public static class CallTypeSeeder
     {
-        public static void Seed(ModelBuilder modelBuilder)
+        public static void SeedCallType(this ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<CallType>().HasData(
                 new CallType

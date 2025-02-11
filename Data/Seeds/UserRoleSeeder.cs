@@ -7,7 +7,7 @@ namespace backend.Data
 {
     public static class UserRoleSeeder
     {
-        public static void Seed(this ModelBuilder modelBuilder, string adminUserName, string adminPassword)
+        public static void SeedUserRole(this ModelBuilder modelBuilder, string adminUserName, string adminPassword)
         {
             if (string.IsNullOrEmpty(adminPassword))
             {
