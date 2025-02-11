@@ -71,6 +71,7 @@ public class RecordingController : ControllerBase
         }
         catch (Exception ex)
         {
+            // Something unexpected happened
             _logger.LogError(ex, "Unexpected error while searching recordings");
             throw new ServiceException($"Unexpected error: {ex.Message}", 500);
         }

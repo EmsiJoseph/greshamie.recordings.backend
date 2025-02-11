@@ -60,7 +60,6 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.WriteIndented = true;
     });
 
-// Add db connection
 var connection = String.Empty;
 
 if (builder.Environment.IsDevelopment())

@@ -93,7 +93,7 @@ namespace backend.Services.Audits
             }
             catch (Exception ex)
             {
-                throw new ServiceException($"Failed to retrieve audit entry : {ex.Message}", 500);
+                throw new ServiceException($"Failed to retrieve audit entry: {ex.Message}", 500);
             }
         }
 

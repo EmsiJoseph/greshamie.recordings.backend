@@ -12,7 +12,7 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250211044837_syncrecording stream and download link")]
+    [Migration("20250211045959_syncrecording stream and download link")]
     partial class syncrecordingstreamanddownloadlink
     {
         /// <inheritdoc />
@@ -114,8 +114,8 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            UserId = "17945531-0deb-4568-a465-0427dbd18648",
-                            RoleId = "6f18a182-1bf7-4521-914c-01da20a9c506"
+                            UserId = "f6630576-34c8-43f9-bb47-21dc613f59a5",
+                            RoleId = "110c7bb8-9a57-4bdc-958b-ece249a6e5bb"
                         });
                 });
 
@@ -339,25 +339,25 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "6f18a182-1bf7-4521-914c-01da20a9c506",
-                            CreatedAt = new DateTime(2025, 2, 11, 4, 48, 36, 573, DateTimeKind.Utc).AddTicks(1000),
+                            Id = "110c7bb8-9a57-4bdc-958b-ece249a6e5bb",
+                            CreatedAt = new DateTime(2025, 2, 11, 4, 59, 58, 584, DateTimeKind.Utc).AddTicks(457),
                             Description = "Administrator",
                             IsActive = true,
                             Level = 100,
                             Name = "Admin",
                             NormalizedName = "ADMIN",
-                            UpdatedAt = new DateTime(2025, 2, 11, 4, 48, 36, 573, DateTimeKind.Utc).AddTicks(1006)
+                            UpdatedAt = new DateTime(2025, 2, 11, 4, 59, 58, 584, DateTimeKind.Utc).AddTicks(461)
                         },
                         new
                         {
-                            Id = "8395eac1-5484-4857-baa6-9fb0925f583a",
-                            CreatedAt = new DateTime(2025, 2, 11, 4, 48, 36, 573, DateTimeKind.Utc).AddTicks(2053),
+                            Id = "8355997b-7e93-490a-b4bd-38436834f545",
+                            CreatedAt = new DateTime(2025, 2, 11, 4, 59, 58, 584, DateTimeKind.Utc).AddTicks(1445),
                             Description = "User",
                             IsActive = true,
                             Level = 90,
                             Name = "User",
                             NormalizedName = "USER",
-                            UpdatedAt = new DateTime(2025, 2, 11, 4, 48, 36, 573, DateTimeKind.Utc).AddTicks(2053)
+                            UpdatedAt = new DateTime(2025, 2, 11, 4, 59, 58, 584, DateTimeKind.Utc).AddTicks(1445)
                         });
                 });
 
@@ -440,15 +440,15 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "17945531-0deb-4568-a465-0427dbd18648",
+                            Id = "f6630576-34c8-43f9-bb47-21dc613f59a5",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "5a7e9e9f-5c26-4e33-8cbc-726855fe3997",
+                            ConcurrencyStamp = "cad67606-937d-4a2b-b984-5362bdadfa0a",
                             EmailConfirmed = false,
                             LockoutEnabled = false,
                             NormalizedUserName = "GHIE-API",
-                            PasswordHash = "AQAAAAIAAYagAAAAEDH6FZkNUm2zSYKTchVhHxF7sIe57NWQ3kB85LopF6gN71g8hs83X+htoRT2YlNcRg==",
+                            PasswordHash = "AQAAAAIAAYagAAAAELU6G7bopnPOpfEYKG3gZQAmIbjwj+2kCNpGygUXw/JtJLD0IBvs+GD5Y/6lhmLz6Q==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "d426d9b8-7b8c-4a03-a947-b6bd5e5483c0",
+                            SecurityStamp = "e92a8b82-ea1b-4508-8bb0-8f46b6e524f5",
                             TwoFactorEnabled = false,
                             UserName = "GHIE-API"
                         });
