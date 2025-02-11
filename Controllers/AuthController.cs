@@ -50,14 +50,16 @@ namespace backend.Controllers
         }
 
         // Method to generate JWT token
-        private JwtTokenResult GenerateJwtToken(User user)
+        private JwtTokenResult GenerateJwtToken(User user, string role)
         {
             // Create claims for the token.
             var claims = new List<Claim>
             {
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id),
+                new(JwtRegisteredClaimNames.Sub, user.Id),
                 new(JwtRegisteredClaimNames.UniqueName, user.UserName),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+                new(JwtRegisteredClaimNames.NameId, user.Id),
+                new(ClaimTypes.Role, role),
+                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
             // Get settings from configuration.
@@ -80,7 +82,9 @@ namespace backend.Controllers
             return new JwtTokenResult
             {
                 Token = tokenString,
-                ExpiresIn = (int)(expires - DateTime.UtcNow).TotalSeconds
+                ExpiresIn = user.ClarifyGoAccessTokenExpiry.HasValue
+                    ? (int)user.ClarifyGoAccessTokenExpiry.Value.Subtract(DateTime.UtcNow).TotalSeconds
+                    : 0
             };
         }
 
@@ -120,7 +124,9 @@ namespace backend.Controllers
 
                     var createResult = await _userManager.CreateAsync(user, request.Password);
 
-                    await _userManager.AddToRoleAsync(user, RolesConstants.User);
+                    var userRole = RolesConstants.User;
+
+                    await _userManager.AddToRoleAsync(user, userRole);
 
                     if (!createResult.Succeeded)
                     {
@@ -141,8 +147,12 @@ namespace backend.Controllers
                 // Update user record with new access token, refresh token, and expiry
                 await _userManager.UpdateAsync(user);
 
+
+                var role = _userManager.GetRolesAsync(user).Result.FirstOrDefault();
+
+
                 // Generate JWT token
-                var jwtToken = GenerateJwtToken(user);
+                var jwtToken = GenerateJwtToken(user, role);
 
                 return Ok(new
                 {
@@ -150,12 +160,12 @@ namespace backend.Controllers
                     accessToken = new
                     {
                         value = jwtToken.Token,
-                        expiresIn = jwtToken.ExpiresIn
+                        expiresAt = DateTime.UtcNow.AddSeconds(jwtToken.ExpiresIn)
                     },
                     refreshToken = new
                     {
                         value = user.RefreshToken,
-                        expiresIn = user.RefreshTokenExpiry
+                        expiresAt = user.RefreshTokenExpiry
                     }
                 });
             }
@@ -166,6 +176,7 @@ namespace backend.Controllers
             }
         }
 
+        [AllowAnonymous]
         [HttpPost("refresh")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
         {
@@ -185,7 +196,10 @@ namespace backend.Controllers
             }
 
             // Generate new tokens
-            var jwtToken = GenerateJwtToken(user);
+
+            var role = _userManager.GetRolesAsync(user).Result.FirstOrDefault();
+
+            var jwtToken = GenerateJwtToken(user, role);
             user.RefreshToken = GenerateRefreshToken();
             user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
             await _userManager.UpdateAsync(user);
@@ -196,12 +210,12 @@ namespace backend.Controllers
                 accessToken = new
                 {
                     value = jwtToken.Token,
-                    expiresIn = jwtToken.ExpiresIn
+                    expiresAt = DateTime.UtcNow.AddSeconds(jwtToken.ExpiresIn)
                 },
                 refreshToken = new
                 {
                     value = user.RefreshToken,
-                    expiresIn = user.RefreshTokenExpiry
+                    expiresAt = user.RefreshTokenExpiry
                 }
             });
         }

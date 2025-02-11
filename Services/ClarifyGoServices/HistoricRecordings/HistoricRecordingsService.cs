@@ -10,13 +10,21 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace backend.Services.ClarifyGoServices.HistoricRecordings
 {
-    public class HistoricRecordingsService(HttpClient httpClient, ITokenService tokenService)
-        : IHistoricRecordingsService
+    public class HistoricRecordingsService : IHistoricRecordingsService
     {
-        private readonly HttpClient _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+        private readonly HttpClient _httpClient;
+        private readonly ITokenService _tokenService;
 
-        private readonly ITokenService _tokenService =
-            tokenService ?? throw new ArgumentNullException(nameof(tokenService));
+        public HistoricRecordingsService(HttpClient httpClient, ITokenService tokenService)
+        {
+            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
+            _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
+        }
+
+        public void SetBearerToken(string token)
+        {
+            _httpClient.SetBearerToken(token);
+        }
 
         private List<string> BuildQueryParameters(RecordingSearchFiltersDto? filters)
         {

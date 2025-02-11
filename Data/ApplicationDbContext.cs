@@ -1,5 +1,6 @@
 using backend.Data.Models;
 using backend.Data.Seeds;
+using backend.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -47,4 +48,5 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, string>
     public DbSet<AuditEntry> AuditEntries { get; set; }
     public DbSet<AuditEvent> AuditEvents { get; set; }
     public DbSet<CallType> CallTypes { get; set; }
+    public DbSet<SyncedRecording> SyncedRecordings { get; set; }
 }

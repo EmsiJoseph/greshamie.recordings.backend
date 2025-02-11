@@ -8,6 +8,8 @@ using backend.Services.ClarifyGoServices.Comments;
 using backend.Services.ClarifyGoServices.HistoricRecordings;
 using backend.Services.ClarifyGoServices.LiveRecordings;
 using backend.Services.ClarifyGoServices.Tags;
+using backend.Services.Storage;
+using backend.Services.Sync;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
@@ -58,7 +60,6 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.WriteIndented = true;
     });
 
-// Add db connection
 var connection = String.Empty;
 
 if (builder.Environment.IsDevelopment())
@@ -77,6 +78,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connection));
 
 builder.Services.AddIdentityCore<User>(options => { })
+    .AddRoles<Role>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
 
@@ -101,6 +103,12 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 // 2.6 Audit Service
 builder.Services.AddScoped<IAuditService, AuditService>();
 
+// 2.7 Blob Storage Service
+builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();
+
+// 2.8 Auto Sync Service
+builder.Services.AddScoped<ISyncService, SyncService>();
+
 
 // 3. HTTP Client Configurations
 var identityServerUri = configuration["ClarifyGoAPI:IdentityServerUri"]
@@ -114,7 +122,6 @@ builder.Services.AddHttpClient<ITokenService, TokenService>(client =>
     client.BaseAddress = new Uri(identityServerUri);
 });
 
-
 builder.Services.AddHttpClient<ILiveRecordingsService, LiveRecordingsService>(client =>
 {
     client.BaseAddress = new Uri(apiBaseUri);
@@ -126,6 +133,11 @@ builder.Services.AddHttpClient<IHistoricRecordingsService, HistoricRecordingsSer
 });
 
 builder.Services.AddHttpClient<ICommentsService, CommentsService>(client =>
+{
+    client.BaseAddress = new Uri(apiBaseUri);
+});
+
+builder.Services.AddHttpClient<ISyncService, SyncService>(client =>
 {
     client.BaseAddress = new Uri(apiBaseUri);
 });
