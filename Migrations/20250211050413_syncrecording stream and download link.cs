@@ -254,14 +254,14 @@ namespace backend.Migrations
                 columns: new[] { "Id", "ConcurrencyStamp", "CreatedAt", "Description", "IsActive", "Level", "Name", "NormalizedName", "UpdatedAt" },
                 values: new object[,]
                 {
-                    { "110c7bb8-9a57-4bdc-958b-ece249a6e5bb", null, new DateTime(2025, 2, 11, 4, 59, 58, 584, DateTimeKind.Utc).AddTicks(457), "Administrator", true, 100, "Admin", "ADMIN", new DateTime(2025, 2, 11, 4, 59, 58, 584, DateTimeKind.Utc).AddTicks(461) },
-                    { "8355997b-7e93-490a-b4bd-38436834f545", null, new DateTime(2025, 2, 11, 4, 59, 58, 584, DateTimeKind.Utc).AddTicks(1445), "User", true, 90, "User", "USER", new DateTime(2025, 2, 11, 4, 59, 58, 584, DateTimeKind.Utc).AddTicks(1445) }
+                    { "329e6542-ab1f-46ef-a00b-c8c0ca84d454", null, new DateTime(2025, 2, 11, 5, 4, 13, 364, DateTimeKind.Utc).AddTicks(2173), "Administrator", true, 100, "Admin", "ADMIN", new DateTime(2025, 2, 11, 5, 4, 13, 364, DateTimeKind.Utc).AddTicks(2176) },
+                    { "dfe960ff-f6a7-4d50-85b1-a39c062a1ea6", null, new DateTime(2025, 2, 11, 5, 4, 13, 364, DateTimeKind.Utc).AddTicks(3600), "User", true, 90, "User", "USER", new DateTime(2025, 2, 11, 5, 4, 13, 364, DateTimeKind.Utc).AddTicks(3601) }
                 });
 
             migrationBuilder.InsertData(
                 table: "AspNetUsers",
                 columns: new[] { "Id", "AccessFailedCount", "ClarifyGoAccessToken", "ClarifyGoAccessTokenExpiry", "ConcurrencyStamp", "Email", "EmailConfirmed", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "RefreshToken", "RefreshTokenExpiry", "SecurityStamp", "TwoFactorEnabled", "UserName" },
-                values: new object[] { "f6630576-34c8-43f9-bb47-21dc613f59a5", 0, null, null, "cad67606-937d-4a2b-b984-5362bdadfa0a", null, false, false, null, null, "GHIE-API", "AQAAAAIAAYagAAAAELU6G7bopnPOpfEYKG3gZQAmIbjwj+2kCNpGygUXw/JtJLD0IBvs+GD5Y/6lhmLz6Q==", null, false, null, null, "e92a8b82-ea1b-4508-8bb0-8f46b6e524f5", false, "GHIE-API" });
+                values: new object[] { "81437d01-53a2-45a1-933d-a10a18897440", 0, null, null, "080143b5-8a7b-43c7-a046-b5bbdd2f831f", null, false, false, null, null, "GHIE-API", "AQAAAAIAAYagAAAAEM8EmHNLPfhZfVItgV8CApcc7PEc5Mg+zhyQ+H0MMIwfYEEaKDUcR1p2zL31OpZaAw==", null, false, null, null, "14d170b5-5a1c-4c2f-8050-fae338812562", false, "GHIE-API" });
 
             migrationBuilder.InsertData(
                 table: "AuditEvents",
@@ -288,7 +288,7 @@ namespace backend.Migrations
             migrationBuilder.InsertData(
                 table: "AspNetUserRoles",
                 columns: new[] { "RoleId", "UserId" },
-                values: new object[] { "110c7bb8-9a57-4bdc-958b-ece249a6e5bb", "f6630576-34c8-43f9-bb47-21dc613f59a5" });
+                values: new object[] { "329e6542-ab1f-46ef-a00b-c8c0ca84d454", "81437d01-53a2-45a1-933d-a10a18897440" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",

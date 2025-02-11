@@ -51,7 +51,10 @@ namespace backend.Services.Storage
                 BlobContainerName = containerName,
                 BlobName = fileName,
                 Resource = "b", // 'b' indicates the resource is a blob.
-                ExpiresOn = DateTimeOffset.UtcNow.AddHours(1)
+                ExpiresOn = DateTimeOffset.UtcNow.AddHours(1),
+                
+                ContentType = "audio/mpeg",
+                ContentDisposition = "inline"  // inline forces the browser to stream/display instead of downloading.
             };
             sasBuilder.SetPermissions(BlobSasPermissions.Read);
     

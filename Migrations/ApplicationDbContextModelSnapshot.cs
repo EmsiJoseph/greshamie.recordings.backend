@@ -111,8 +111,8 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            UserId = "f6630576-34c8-43f9-bb47-21dc613f59a5",
-                            RoleId = "110c7bb8-9a57-4bdc-958b-ece249a6e5bb"
+                            UserId = "81437d01-53a2-45a1-933d-a10a18897440",
+                            RoleId = "329e6542-ab1f-46ef-a00b-c8c0ca84d454"
                         });
                 });
 
@@ -336,25 +336,25 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "110c7bb8-9a57-4bdc-958b-ece249a6e5bb",
-                            CreatedAt = new DateTime(2025, 2, 11, 4, 59, 58, 584, DateTimeKind.Utc).AddTicks(457),
+                            Id = "329e6542-ab1f-46ef-a00b-c8c0ca84d454",
+                            CreatedAt = new DateTime(2025, 2, 11, 5, 4, 13, 364, DateTimeKind.Utc).AddTicks(2173),
                             Description = "Administrator",
                             IsActive = true,
                             Level = 100,
                             Name = "Admin",
                             NormalizedName = "ADMIN",
-                            UpdatedAt = new DateTime(2025, 2, 11, 4, 59, 58, 584, DateTimeKind.Utc).AddTicks(461)
+                            UpdatedAt = new DateTime(2025, 2, 11, 5, 4, 13, 364, DateTimeKind.Utc).AddTicks(2176)
                         },
                         new
                         {
-                            Id = "8355997b-7e93-490a-b4bd-38436834f545",
-                            CreatedAt = new DateTime(2025, 2, 11, 4, 59, 58, 584, DateTimeKind.Utc).AddTicks(1445),
+                            Id = "dfe960ff-f6a7-4d50-85b1-a39c062a1ea6",
+                            CreatedAt = new DateTime(2025, 2, 11, 5, 4, 13, 364, DateTimeKind.Utc).AddTicks(3600),
                             Description = "User",
                             IsActive = true,
                             Level = 90,
                             Name = "User",
                             NormalizedName = "USER",
-                            UpdatedAt = new DateTime(2025, 2, 11, 4, 59, 58, 584, DateTimeKind.Utc).AddTicks(1445)
+                            UpdatedAt = new DateTime(2025, 2, 11, 5, 4, 13, 364, DateTimeKind.Utc).AddTicks(3601)
                         });
                 });
 
@@ -437,15 +437,15 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "f6630576-34c8-43f9-bb47-21dc613f59a5",
+                            Id = "81437d01-53a2-45a1-933d-a10a18897440",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "cad67606-937d-4a2b-b984-5362bdadfa0a",
+                            ConcurrencyStamp = "080143b5-8a7b-43c7-a046-b5bbdd2f831f",
                             EmailConfirmed = false,
                             LockoutEnabled = false,
                             NormalizedUserName = "GHIE-API",
-                            PasswordHash = "AQAAAAIAAYagAAAAELU6G7bopnPOpfEYKG3gZQAmIbjwj+2kCNpGygUXw/JtJLD0IBvs+GD5Y/6lhmLz6Q==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEM8EmHNLPfhZfVItgV8CApcc7PEc5Mg+zhyQ+H0MMIwfYEEaKDUcR1p2zL31OpZaAw==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "e92a8b82-ea1b-4508-8bb0-8f46b6e524f5",
+                            SecurityStamp = "14d170b5-5a1c-4c2f-8050-fae338812562",
                             TwoFactorEnabled = false,
                             UserName = "GHIE-API"
                         });

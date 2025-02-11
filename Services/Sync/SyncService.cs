@@ -80,7 +80,7 @@ namespace backend.Services.Sync
                 {
                     Id = Id,
                     DownloadUrl = downloadUrl,
-                    
+                    StreamingUrl = streamingUrl,
                     RecordingDate = MediaStartedTime?.Date ?? DateTime.UtcNow,
                     CreatedAt = DateTime.UtcNow,
                     IsDeleted = false
