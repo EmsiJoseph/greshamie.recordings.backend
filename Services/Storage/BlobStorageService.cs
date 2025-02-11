@@ -63,25 +63,6 @@ namespace backend.Services.Storage
             return streamingSasUri.ToString();
         }
         
-        public async Task DeleteFileAsync(string containerName, string fileName)
-        {
-            var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
-            var blobClient = containerClient.GetBlobClient(fileName);
-            await blobClient.DeleteIfExistsAsync();
-        }
-
-        public async Task<Stream?> DownloadFileAsync(string containerName, string fileName)
-        {
-            var containerClient = _blobServiceClient.GetBlobContainerClient(containerName);
-            var blobClient = containerClient.GetBlobClient(fileName);
-
-            if (!await blobClient.ExistsAsync())
-            {
-                return null;
-            }
-
-            var downloadInfo = await blobClient.DownloadAsync();
-            return downloadInfo.Value.Content;
-        }
+        
     }
 }
