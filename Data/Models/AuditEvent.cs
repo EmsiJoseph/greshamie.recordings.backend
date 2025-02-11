@@ -1,9 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
 
-namespace backend.Models
+namespace backend.Data.Models
 {
-    [Table("AuditEvents")]
     public class AuditEvent
     {
         [Key] public int Id { get; set; }

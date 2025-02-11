@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace backend.Classes;
 
-public class ClarifyGoRecordingRaw
+public class ClarifyGoHistoricRecordingRaw
 {
     // May be null.
     [JsonPropertyName("accountId")] public string? AccountId { get; set; }
@@ -40,7 +40,7 @@ public class ClarifyGoRecordingRaw
     // This property is left as object, since its structure is not defined.
     [JsonPropertyName("pbxAccounts")] public object? PbxAccounts { get; set; }
 
-    [JsonPropertyName("callType")] public int CallType { get; set; }
+    [JsonPropertyName("callType")] public int? CallType { get; set; }
 
     [JsonPropertyName("calledParty")] public string? CalledParty { get; set; }
 

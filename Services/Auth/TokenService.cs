@@ -1,11 +1,14 @@
 ﻿using System;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 using System.Threading.Tasks;
-using backend.Models;
+using backend.Data.Models;
 using IdentityModel.Client;
 using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using backend.Exceptions;
 
 namespace backend.Services.Auth
 {
@@ -33,47 +36,57 @@ namespace backend.Services.Auth
 
         private readonly ILogger<TokenService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-        public async Task SetBearerTokenAsync()
+        public async Task SetBearerTokenAsync(HttpClient httpClientFromExternalService)
         {
-            // Get the current user from the HTTP context.
-            var userClaims = _httpContextAccessor.HttpContext?.User;
-            if (userClaims == null)
-            {
-                throw new Exception("User not found in context.");
-            }
-
-            var user = await _userManager.GetUserAsync(userClaims);
-            if (user == null)
-            {
-                // No user was found; do nothing.
-                return;
-            }
-
-            // If the token has expired, do nothing.
-            if (user.ClarifyGoAccessTokenExpiry < DateTime.UtcNow)
-            {
-                return;
-            }
-
             try
             {
-                if (string.IsNullOrEmpty(user.ClarifyGoAccessToken))
+                var userClaims = _httpContextAccessor.HttpContext?.User;
+                if (userClaims == null)
                 {
-                    return;
+                    throw new ServiceException("User not found in context", 401);
                 }
 
-                // Unprotect (decrypt) the stored token.
-                var token = _protector.Unprotect(user.ClarifyGoAccessToken);
+                var userName = userClaims.FindFirstValue(ClaimTypes.Name);
+                if (string.IsNullOrEmpty(userName))
+                {
+                    throw new ServiceException("User name not found in token", 401);
+                }
 
-                // Set the token as a Bearer token on the HttpClient.
-                _httpClient.SetBearerToken(token);
+                var user = await _userManager.FindByNameAsync(userName);
+                if (user == null)
+                {
+                    throw new ServiceException($"User not found: {userName}", 401);
+                }
+
+                if (user.ClarifyGoAccessTokenExpiry < DateTime.UtcNow)
+                {
+                    throw new ServiceException("Access token has expired", 401);
+                }
+
+                try
+                {
+                    if (string.IsNullOrEmpty(user.ClarifyGoAccessToken))
+                    {
+                        throw new ServiceException("No access token available", 401);
+                    }
+
+                    var token = _protector.Unprotect(user.ClarifyGoAccessToken);
+                    httpClientFromExternalService.SetBearerToken(token);
+                }
+                catch (Exception ex)
+                {
+                    throw new ServiceException($"Token processing error: {ex.Message}", 500);
+                }
+            }
+            catch (ServiceException)
+            {
+                throw;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error setting bearer token for user {UserId}", user.Id);
+                throw new ServiceException($"Unexpected error: {ex.Message}");
             }
         }
-
 
         public async Task<TokenResponse> GetAccessTokenFromClarifyGo(string username, string password)
         {
@@ -105,6 +118,7 @@ namespace backend.Services.Auth
             if (response.IsError)
                 throw new Exception($"Token request failed: {response.Error}");
 
+            Console.WriteLine("Token: " + response.AccessToken);
             return response ?? throw new Exception("Access token is missing");
         }
     }

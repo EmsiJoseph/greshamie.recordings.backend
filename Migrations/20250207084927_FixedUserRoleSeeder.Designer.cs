@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using backend.Data;
 
@@ -11,9 +12,11 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250207084927_FixedUserRoleSeeder")]
+    partial class FixedUserRoleSeeder
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -111,8 +114,8 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            UserId = "aa11a2f2-ca6f-4c4f-afcd-722a0bb83c50",
-                            RoleId = "d2b60933-1257-42c9-8a2c-53673a823c6b"
+                            UserId = "16a50dcc-6e55-4375-a258-cd876d15bf74",
+                            RoleId = "c2bac7d5-125f-4e87-8efe-c1113e15a1ac"
                         });
                 });
 
@@ -234,9 +237,6 @@ namespace backend.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<int>("IdFromClarify")
-                        .HasColumnType("int");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -256,7 +256,6 @@ namespace backend.Migrations
                         {
                             Id = 1,
                             Description = "An inbound call.",
-                            IdFromClarify = 0,
                             Name = "incoming",
                             NormalizedName = "INCOMING"
                         },
@@ -264,7 +263,6 @@ namespace backend.Migrations
                         {
                             Id = 2,
                             Description = "An outbound call.",
-                            IdFromClarify = 1,
                             Name = "outgoing",
                             NormalizedName = "OUTGOING"
                         },
@@ -272,7 +270,6 @@ namespace backend.Migrations
                         {
                             Id = 3,
                             Description = "An internal call.",
-                            IdFromClarify = 2,
                             Name = "internal",
                             NormalizedName = "INTERNAL"
                         });
@@ -330,25 +327,25 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "d2b60933-1257-42c9-8a2c-53673a823c6b",
-                            CreatedAt = new DateTime(2025, 2, 7, 9, 3, 14, 596, DateTimeKind.Utc).AddTicks(8705),
+                            Id = "c2bac7d5-125f-4e87-8efe-c1113e15a1ac",
+                            CreatedAt = new DateTime(2025, 2, 7, 8, 49, 27, 319, DateTimeKind.Utc).AddTicks(9135),
                             Description = "Administrator",
                             IsActive = true,
                             Level = 100,
                             Name = "Admin",
                             NormalizedName = "ADMIN",
-                            UpdatedAt = new DateTime(2025, 2, 7, 9, 3, 14, 596, DateTimeKind.Utc).AddTicks(8708)
+                            UpdatedAt = new DateTime(2025, 2, 7, 8, 49, 27, 319, DateTimeKind.Utc).AddTicks(9137)
                         },
                         new
                         {
-                            Id = "36a698a5-b0fe-43ef-8ebf-2380f8a5b610",
-                            CreatedAt = new DateTime(2025, 2, 7, 9, 3, 14, 596, DateTimeKind.Utc).AddTicks(9784),
+                            Id = "c28b2613-0ff4-4bec-ad07-4a5dc19fa044",
+                            CreatedAt = new DateTime(2025, 2, 7, 8, 49, 27, 320, DateTimeKind.Utc).AddTicks(213),
                             Description = "User",
                             IsActive = true,
                             Level = 90,
                             Name = "User",
                             NormalizedName = "USER",
-                            UpdatedAt = new DateTime(2025, 2, 7, 9, 3, 14, 596, DateTimeKind.Utc).AddTicks(9785)
+                            UpdatedAt = new DateTime(2025, 2, 7, 8, 49, 27, 320, DateTimeKind.Utc).AddTicks(214)
                         });
                 });
 
@@ -431,14 +428,14 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "aa11a2f2-ca6f-4c4f-afcd-722a0bb83c50",
+                            Id = "16a50dcc-6e55-4375-a258-cd876d15bf74",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "69b28c4e-111e-4c2b-a5b0-aae0a34113ba",
+                            ConcurrencyStamp = "e5658b52-3b7b-43ad-80a1-d68c7768902e",
                             EmailConfirmed = false,
                             LockoutEnabled = false,
-                            PasswordHash = "AQAAAAIAAYagAAAAEPJ0mdHulCSLgRv6JJwIC5yL1SOzDt/QDgqxN3Hhl505jJV8U7jPqvZrSkQAo7FsXQ==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEIJQ+jW55X+JokL7Xb9+vrLlYvtRDmFEPapkMLfj638Y1dENVKvNT7+PIO0dvNYIJQ==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "9d774300-c3d0-4f82-aa57-d8ed37ccc096",
+                            SecurityStamp = "56361ac7-34f6-47ff-98fc-8c896075e845",
                             TwoFactorEnabled = false,
                             UserName = "GHIE-API"
                         });
