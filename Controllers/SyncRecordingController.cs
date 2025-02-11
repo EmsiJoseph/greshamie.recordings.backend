@@ -16,21 +16,21 @@ public class SyncRecordingController : ControllerBase
 {
     private readonly IHistoricRecordingsService _historicRecordingsService;
     private readonly IBlobStorageService _blobStorageService;
-    private readonly IAutoSyncService _autoSyncService;
+    private readonly ISyncService _syncService;
     private readonly ApplicationDbContext _dbContext;
 
     public SyncRecordingController(
         IHistoricRecordingsService historicRecordingsService,
         IBlobStorageService blobStorageService,
-        IAutoSyncService autoSyncService,
+        ISyncService syncService,
         ApplicationDbContext dbContext)
     {
         _historicRecordingsService = historicRecordingsService;
         _blobStorageService = blobStorageService;
-        _autoSyncService = autoSyncService;
+        _syncService = syncService;
         _dbContext = dbContext;
     }
-
+    [Authorize]
     [HttpPost("manual")]
     public async Task<IActionResult> SynchronizeRecordings([FromBody] SyncDateRangeDto dateRange)
     {
@@ -40,18 +40,15 @@ public class SyncRecordingController : ControllerBase
             {
                 return BadRequest(new { message = "Start date and end date are required" });
             }
+            
+            
 
-            await SynchronizeRecordingsAsync(dateRange.StartDate, dateRange.EndDate);
+            await _syncService.SynchronizeRecordingsAsync(dateRange.StartDate, dateRange.EndDate);
             return Ok(new { message = "Sync complete" });
         }
         catch (Exception ex)
         {
             return StatusCode(500, new { message = "An unexpected error occurred", details = ex.Message });
         }
-    }
-
-    private async Task SynchronizeRecordingsAsync(DateTime fromDate, DateTime toDate)
-    {
-        await _autoSyncService.SynchronizeRecordingsAsync(fromDate, toDate);
     }
 }
