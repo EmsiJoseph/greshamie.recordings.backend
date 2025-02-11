@@ -1,57 +1,56 @@
-using backend.Data;
-using backend.DTOs;
-using backend.Models;
-using backend.Services.ClarifyGoServices.HistoricRecordings;
-using backend.Services.Storage;
+using System;
+using System.Security.Claims;
+using System.Threading.Tasks;
+using backend.Constants;
+using backend.Services.Audits;
 using backend.Services.Sync;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
-namespace backend.Controllers;
-[Authorize]
-[ApiController]
-[Route("api/[controller]")]
-public class SyncRecordingController : ControllerBase
+namespace backend.Controllers
 {
-    private readonly IHistoricRecordingsService _historicRecordingsService;
-    private readonly IBlobStorageService _blobStorageService;
-    private readonly IAutoSyncService _autoSyncService;
-    private readonly ApplicationDbContext _dbContext;
-
-    public SyncRecordingController(
-        IHistoricRecordingsService historicRecordingsService,
-        IBlobStorageService blobStorageService,
-        IAutoSyncService autoSyncService,
-        ApplicationDbContext dbContext)
+    [Authorize]
+    [ApiController]
+    [Route("api/[controller]")]
+    public class SyncRecordingController : ControllerBase
     {
-        _historicRecordingsService = historicRecordingsService;
-        _blobStorageService = blobStorageService;
-        _autoSyncService = autoSyncService;
-        _dbContext = dbContext;
-    }
+        private readonly ISyncService _syncService;
+        private readonly ILogger<SyncRecordingController> _logger;
+        private readonly IAuditService _auditService;
 
-    [HttpPost("manual")]
-    public async Task<IActionResult> SynchronizeRecordings([FromBody] SyncDateRangeDto dateRange)
-    {
-        try
+        public SyncRecordingController(ISyncService syncService, ILogger<SyncRecordingController> logger, IAuditService auditService)
         {
-            if (dateRange == null || dateRange.StartDate == default || dateRange.EndDate == default)
+            _syncService = syncService;
+            _logger = logger;
+            _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
+        }
+
+        // POST: api/sync/synchronize?fromDate=2025-01-01&toDate=2025-01-31
+        [HttpPost("synchronize")]
+        public async Task<IActionResult> Synchronize([FromQuery] DateTime fromDate, [FromQuery] DateTime toDate)
+        {
+            try 
             {
-                return BadRequest(new { message = "Start date and end date are required" });
+                var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
+                {
+                    return Unauthorized(new { message = "User not found" });
+                }
+
+                await _syncService.SynchronizeRecordingsAsync(fromDate, toDate);
+
+                // Log the recording sync event using your audit service with date range
+                string logMessage = $"User synced recordings from {fromDate:yyyy-MM-dd} to {toDate:yyyy-MM-dd}";
+                await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.ManualSync, logMessage);
+
+                return Ok(new { Message = "Synchronization completed successfully." });
             }
-
-            await SynchronizeRecordingsAsync(dateRange.StartDate, dateRange.EndDate);
-            return Ok(new { message = "Sync complete" });
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Synchronization failed.");
+                return StatusCode(500, new { Message = "Error synchronizing recordings.", Error = ex.Message });
+            }
         }
-        catch (Exception ex)
-        {
-            return StatusCode(500, new { message = "An unexpected error occurred", details = ex.Message });
-        }
-    }
-
-    private async Task SynchronizeRecordingsAsync(DateTime fromDate, DateTime toDate)
-    {
-        await _autoSyncService.SynchronizeRecordingsAsync(fromDate, toDate);
     }
 }

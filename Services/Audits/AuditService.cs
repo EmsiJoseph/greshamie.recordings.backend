@@ -3,16 +3,19 @@ using backend.Data.Models;
 using backend.Exceptions;
 using backend.DTOs;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 namespace backend.Services.Audits
 {
     public class AuditService : IAuditService
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<AuditService> _logger;
 
-        public AuditService(ApplicationDbContext context)
+        public AuditService(ApplicationDbContext context, ILogger<AuditService> logger)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
+            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
         public async Task LogAuditEntryAsync(string userId, int eventId, string? details = null)
@@ -24,6 +27,20 @@ namespace backend.Services.Audits
                     throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
                 }
 
+                // Validate user exists
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null)
+                {
+                    throw new ServiceException($"User with ID {userId} not found", 404);
+                }
+
+                // Validate event exists
+                var auditEvent = await _context.AuditEvents.FindAsync(eventId);
+                if (auditEvent == null)
+                {
+                    throw new ServiceException($"Audit event with ID {eventId} not found", 404);
+                }
+
                 var auditEntry = new AuditEntry
                 {
                     UserId = userId,
@@ -32,16 +49,30 @@ namespace backend.Services.Audits
                     Details = details
                 };
 
-                await _context.AuditEntries.AddAsync(auditEntry);
-                await _context.SaveChangesAsync();
+                _context.AuditEntries.Add(auditEntry);
+
+                // Enable change tracking explicitly
+                _context.ChangeTracker.DetectChanges();
+
+                var changes = await _context.SaveChangesAsync();
+
+                if (changes == 0)
+                {
+                    throw new ServiceException("No changes were saved to the database", 500);
+                }
+
+                Console.WriteLine($"Audit entry logged successfully: {auditEntry.Id}");
             }
             catch (DbUpdateException ex)
             {
-                throw new ServiceException("Failed to save audit entry to database", 500);
+                Console.WriteLine($"Database error: {ex.InnerException?.Message ?? ex.Message}");
+                throw new ServiceException($"Failed to save audit entry: {ex.InnerException?.Message ?? ex.Message}",
+                    500);
             }
             catch (Exception ex)
             {
-                throw new ServiceException($"Unexpected error logging audit entry: {ex.Message}", 500);
+                Console.WriteLine($"Unexpected error: {ex.Message}");
+                throw;
             }
         }
 
@@ -49,22 +80,31 @@ namespace backend.Services.Audits
         {
             try
             {
+                _logger.LogInformation("Fetching audit entries from database");
+                
                 var entries = await _context.AuditEntries
-                    .Include(ae => ae.User)
-                    .Include(ae => ae.Event)
+                    .Include(x => x.Event.Type)
+                    .Include(x => x.User)
+                    .Select(audit => new AuditEntryDto
+                    {
+                        Id = audit.Id,
+                        Username = audit.User != null ? audit.User.UserName : "Unknown",
+                        RecordingId = audit.RecordId ?? "N/A",
+                        EventName = audit.Event != null ? audit.Event.Name : "Unknown",
+                        EventType = audit.Event.Type != null ? audit.Event.Type.Name : "Unknown",
+                        Details = audit.Details ?? "No details",
+                        Timestamp = audit.Timestamp
+                    })
+                    .OrderByDescending(x => x.Timestamp)
                     .ToListAsync();
-                return entries.Select(ae => new AuditEntryDto
-                {
-                    Id = ae.Id,
-                    Username = ae.User.UserName,
-                    EventName = ae.Event.Name,
-                    Timestamp = ae.Timestamp,
-                    Details = ae.Details,
-                }).ToList();
+
+                _logger.LogInformation("Retrieved {Count} audit entries", entries.Count);
+                return entries;
             }
             catch (Exception ex)
             {
-                throw new ServiceException($"Failed to retrieve audit entries: {ex.Message}", 500);
+                _logger.LogError(ex, "Error retrieving audit entries from database");
+                throw new ServiceException("Failed to retrieve audit entries", 500);
             }
         }
 
@@ -93,7 +133,7 @@ namespace backend.Services.Audits
             }
             catch (Exception ex)
             {
-                throw new ServiceException($"Failed to retrieve audit entry : {ex.Message}", 500);
+                throw new ServiceException($"Failed to retrieve audit entry: {ex.Message}", 500);
             }
         }
 

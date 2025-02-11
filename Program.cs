@@ -15,6 +15,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Shine.Extensions;
+
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -60,7 +62,6 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.WriteIndented = true;
     });
 
-// Add db connection
 var connection = String.Empty;
 
 if (builder.Environment.IsDevelopment())
@@ -77,6 +78,9 @@ else
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connection));
+
+builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+
 
 builder.Services.AddIdentityCore<User>(options => { })
     .AddRoles<Role>()
@@ -108,8 +112,8 @@ builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();
 
 // 2.8 Auto Sync Service
-builder.Services.AddScoped<IAutoSyncService, AutoSyncService>();
-builder.Services.AddHostedService<AutoSyncService>();
+builder.Services.AddScoped<ISyncService, SyncService>();
+
 
 // 3. HTTP Client Configurations
 var identityServerUri = configuration["ClarifyGoAPI:IdentityServerUri"]
@@ -122,7 +126,6 @@ builder.Services.AddHttpClient<ITokenService, TokenService>(client =>
 {
     client.BaseAddress = new Uri(identityServerUri);
 });
-
 
 builder.Services.AddHttpClient<ILiveRecordingsService, LiveRecordingsService>(client =>
 {
@@ -139,10 +142,7 @@ builder.Services.AddHttpClient<ICommentsService, CommentsService>(client =>
     client.BaseAddress = new Uri(apiBaseUri);
 });
 
-builder.Services.AddHttpClient<IAutoSyncService, AutoSyncService>(client =>
-{
-    client.BaseAddress = new Uri(apiBaseUri);
-});
+builder.Services.AddHttpClient<ISyncService, SyncService>(client => { client.BaseAddress = new Uri(apiBaseUri); });
 
 builder.Services.AddHttpClient<ITagsService, TagsService>(client => { client.BaseAddress = new Uri(apiBaseUri); });
 
@@ -151,7 +151,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("ReactClient", policy =>
     {
-        policy.WithOrigins("https://localhost:3000")
+        policy.WithOrigins("http://localhost:3000")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -162,6 +162,18 @@ var app = builder.Build();
 
 // 5. Middleware Pipeline
 // app.UseHttpsRedirection();
+if (app.Environment.IsDevelopment())
+{
+    app.UseMigrationsEndPoint();
+    app.ApplyMigrations();
+}
+else
+{
+    app.UseExceptionHandler("/Home/Error");
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseHsts();
+}
+
 app.UseCors("ReactClient");
 app.UseAuthentication();
 app.UseAuthorization();
