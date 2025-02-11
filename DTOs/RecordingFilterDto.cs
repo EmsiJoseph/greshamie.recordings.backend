@@ -5,6 +5,9 @@ namespace backend.DTOs
 {
     public class RecordingSearchFiltersDto
     {
+        // Global Search
+        public string Search { get; set; } = string.Empty;
+        
         // Start date and time (inclusive) of the search period in UTC.
         // Example: "2022-01-15T09:00:00Z"
         public DateTime? StartDate { get; set; }

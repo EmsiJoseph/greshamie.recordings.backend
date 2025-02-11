@@ -38,6 +38,28 @@ public class RecordingController : ControllerBase
         _context = context ?? throw new ArgumentNullException(nameof(context));
     }
 
+    private async Task<List<RecordingDto>> MapRawRecordingToDto(
+        List<ClarifyGoHistoricRecordingRaw> historicRecordingsRaw)
+    {
+        return await Task.FromResult(historicRecordingsRaw.Select(x => new RecordingDto
+        {
+            Id = x.Id,
+            Caller = x.CallingParty,
+            Receiver = x.CalledParty,
+            StartDateTime = x.MediaStartedTime,
+            EndDateTime = x.MediaCompletedTime,
+            CallType = x.CallType != null
+                ? _context.CallTypes.FirstOrDefault(ct => ct.IdFromClarify == x.CallType)?.NormalizedName ??
+                  string.Empty
+                : string.Empty,
+            IsLive = false, // TODO: Change this to dynamic if we know the shape of the live recordings
+            DurationSeconds = x.MediaStartedTime != null && x.MediaCompletedTime != null
+                ? (int)(x.MediaCompletedTime - x.MediaStartedTime).Value.TotalSeconds
+                : 0,
+            Recorder = x.RecorderId,
+        }).ToList());
+    }
+
     private async Task<List<RecordingDto>> SearchAndProcessRecordings(RecordingSearchFiltersDto? filtersDto)
     {
         try
@@ -46,23 +68,13 @@ public class RecordingController : ControllerBase
             var historicRecordingSearchResults = historicRecordingsSearchResult.ToList();
             var historicRecordingsRaw = historicRecordingSearchResults.Select(x => x.HistoricRecording).ToList();
 
-            return await Task.FromResult(historicRecordingsRaw.Select(x => new RecordingDto
+            if (filtersDto.Search != null)
             {
-                Id = x.Id,
-                Caller = x.CallingParty,
-                Receiver = x.CalledParty,
-                StartDateTime = x.MediaStartedTime,
-                EndDateTime = x.MediaCompletedTime,
-                CallType = x.CallType != null
-                    ? _context.CallTypes.FirstOrDefault(ct => ct.IdFromClarify == x.CallType)?.NormalizedName ??
-                      string.Empty
-                    : string.Empty,
-                IsLive = false, // TODO: Change this to dynamic if we know the shape of the live recordings
-                DurationSeconds = x.MediaStartedTime != null && x.MediaCompletedTime != null
-                    ? (int)(x.MediaCompletedTime - x.MediaStartedTime).Value.TotalSeconds
-                    : 0,
-                Recorder = x.RecorderId,
-            }).ToList());
+                historicRecordingsRaw = historicRecordingsRaw.Where(x =>
+                    x.CallingParty.Contains(filtersDto.Search) || x.CalledParty.Contains(filtersDto.Search)).ToList();
+            }
+           
+            return await MapRawRecordingToDto(historicRecordingsRaw);
         }
         catch (ServiceException ex)
         {
@@ -76,32 +88,6 @@ public class RecordingController : ControllerBase
             throw new ServiceException($"Unexpected error: {ex.Message}", 500);
         }
     }
-
-    // [OutputCache(Duration = 60, VaryByQueryKeys = new[] { "RecordingsCache" })]
-    // [HttpGet("")]
-    // public async Task<IActionResult> GetRecordings()
-    // {
-    //     try
-    //     {
-    //         var filtersDto = new RecordingSearchFiltersDto
-    //         {
-    //             StartDate = DateTime.Now.StartOfWeek(DayOfWeek.Monday),
-    //             EndDate = DateTime.Now
-    //         };
-    //
-    //         var results = await SearchAndProcessRecordings(filtersDto);
-    //         return Ok(results);
-    //     }
-    //     catch (ServiceException ex)
-    //     {
-    //         return StatusCode(ex.StatusCode, new { message = ex.Message });
-    //     }
-    //     catch (Exception ex)
-    //     {
-    //         _logger.LogError(ex, "Unexpected error in GetRecordings");
-    //         return StatusCode(500, new { message = "An unexpected error occurred" });
-    //     }
-    // }
 
     [OutputCache(Duration = 60, VaryByQueryKeys = new[] { "RecordingsCache" })]
     [HttpGet("")]
@@ -140,7 +126,7 @@ public class RecordingController : ControllerBase
             return StatusCode(500, new { message = "An unexpected error occurred" });
         }
     }
-    
+
     [Authorize(Roles = $"{RolesConstants.Admin}")]
     [HttpDelete("{recordingId}")]
     public async Task<IActionResult> DeleteRecording(string recordingId)
@@ -166,7 +152,7 @@ public class RecordingController : ControllerBase
             return StatusCode(500, new { message = "An unexpected error occurred" });
         }
     }
-    
+
     [Authorize(Roles = $"{RolesConstants.Admin}")]
     [HttpGet("admin-only")]
     public IActionResult AdminOnly()
