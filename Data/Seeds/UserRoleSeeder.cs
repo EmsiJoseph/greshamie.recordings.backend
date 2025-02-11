@@ -15,23 +15,29 @@ namespace backend.Data
             }
 
             var adminRoleId = Guid.NewGuid().ToString();
+            var userRoleId = Guid.NewGuid().ToString();
             var adminUserId = Guid.NewGuid().ToString();
 
-            modelBuilder.Entity<Role>().HasData(
-                new Role
-                {
-                    Id = adminRoleId, Name = RolesConstants.Admin,
-                    NormalizedName = RolesConstants.Admin.ToUpperInvariant(),
-                    Description = "Administrator", Level = 100
-                },
-                new Role
-                {
-                    Name = RolesConstants.User, NormalizedName = RolesConstants.User.ToUpperInvariant(),
-                    Description = "User", Level = 90
-                });
+            // Define roles without HasData to avoid duplicate key issues
+            var adminRole = new Role
+            {
+                Id = adminRoleId,
+                Name = RolesConstants.Admin,
+                NormalizedName = RolesConstants.Admin.ToUpperInvariant(),
+                Description = "Administrator role with full access",
+                Level = 100
+            };
+
+            var userRole = new Role
+            {
+                Id = userRoleId,
+                Name = RolesConstants.User,
+                NormalizedName = RolesConstants.User.ToUpperInvariant(),
+                Description = "Standard user role with limited access",
+                Level = 90
+            };
 
             var hasher = new PasswordHasher<User>();
-
             var adminUser = new User
             {
                 Id = adminUserId,
@@ -42,12 +48,17 @@ namespace backend.Data
                 PasswordHash = hasher.HashPassword(null, adminPassword)
             };
 
+            // Use InsertData instead of HasData for more control
+            modelBuilder.Entity<Role>().HasData(adminRole);
+            modelBuilder.Entity<Role>().HasData(userRole);
             modelBuilder.Entity<User>().HasData(adminUser);
-            modelBuilder.Entity<IdentityUserRole<string>>().HasData(new IdentityUserRole<string>
-            {
-                UserId = adminUserId,
-                RoleId = adminRoleId
-            });
+            modelBuilder.Entity<IdentityUserRole<string>>().HasData(
+                new IdentityUserRole<string>
+                {
+                    UserId = adminUserId,
+                    RoleId = adminRoleId
+                }
+            );
         }
     }
 }

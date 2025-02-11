@@ -24,6 +24,20 @@ namespace backend.Services.Audits
                     throw new ArgumentException("User ID cannot be null or empty.", nameof(userId));
                 }
 
+                // Validate user exists
+                var user = await _context.Users.FindAsync(userId);
+                if (user == null)
+                {
+                    throw new ServiceException($"User with ID {userId} not found", 404);
+                }
+
+                // Validate event exists
+                var auditEvent = await _context.AuditEvents.FindAsync(eventId);
+                if (auditEvent == null)
+                {
+                    throw new ServiceException($"Audit event with ID {eventId} not found", 404);
+                }
+
                 var auditEntry = new AuditEntry
                 {
                     UserId = userId,
@@ -32,16 +46,29 @@ namespace backend.Services.Audits
                     Details = details
                 };
 
-                await _context.AuditEntries.AddAsync(auditEntry);
-                await _context.SaveChangesAsync();
+                _context.AuditEntries.Add(auditEntry);
+                
+                // Enable change tracking explicitly
+                _context.ChangeTracker.DetectChanges();
+                
+                var changes = await _context.SaveChangesAsync();
+                
+                if (changes == 0)
+                {
+                    throw new ServiceException("No changes were saved to the database", 500);
+                }
+
+                Console.WriteLine($"Audit entry logged successfully: {auditEntry.Id}");
             }
             catch (DbUpdateException ex)
             {
-                throw new ServiceException("Failed to save audit entry to database", 500);
+                Console.WriteLine($"Database error: {ex.InnerException?.Message ?? ex.Message}");
+                throw new ServiceException($"Failed to save audit entry: {ex.InnerException?.Message ?? ex.Message}", 500);
             }
             catch (Exception ex)
             {
-                throw new ServiceException($"Unexpected error logging audit entry: {ex.Message}", 500);
+                Console.WriteLine($"Unexpected error: {ex.Message}");
+                throw;
             }
         }
 

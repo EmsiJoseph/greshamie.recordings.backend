@@ -79,6 +79,9 @@ else
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connection));
 
+builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+
+
 builder.Services.AddIdentityCore<User>(options => { })
     .AddRoles<Role>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
