@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace backend.Migrations
 {
     /// <inheritdoc />
-    public partial class FixedMigration : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -222,7 +222,7 @@ namespace backend.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     EventId = table.Column<int>(type: "int", nullable: false),
-                    RecordId = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    RecordId = table.Column<string>(type: "nvarchar(450)", nullable: true),
                     Timestamp = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Details = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true)
                 },
@@ -233,20 +233,18 @@ namespace backend.Migrations
                         name: "FK_AuditEntries_AspNetUsers_UserId",
                         column: x => x.UserId,
                         principalTable: "AspNetUsers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_AuditEntries_AuditEvents_EventId",
                         column: x => x.EventId,
                         principalTable: "AuditEvents",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_AuditEntries_SyncedRecordings_RecordId",
                         column: x => x.RecordId,
                         principalTable: "SyncedRecordings",
                         principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.SetNull);
                 });
 
             migrationBuilder.InsertData(
@@ -254,14 +252,14 @@ namespace backend.Migrations
                 columns: new[] { "Id", "ConcurrencyStamp", "CreatedAt", "Description", "IsActive", "Level", "Name", "NormalizedName", "UpdatedAt" },
                 values: new object[,]
                 {
-                    { "1321eaaf-4c9e-440c-853f-039aed0f2b96", null, new DateTime(2025, 2, 11, 6, 23, 49, 218, DateTimeKind.Utc).AddTicks(3606), "Administrator role with full access", true, 100, "Admin", "ADMIN", new DateTime(2025, 2, 11, 6, 23, 49, 218, DateTimeKind.Utc).AddTicks(3609) },
-                    { "fc6842d3-abc1-4467-9729-19a30955fec4", null, new DateTime(2025, 2, 11, 6, 23, 49, 218, DateTimeKind.Utc).AddTicks(4539), "Standard user role with limited access", true, 90, "User", "USER", new DateTime(2025, 2, 11, 6, 23, 49, 218, DateTimeKind.Utc).AddTicks(4540) }
+                    { "903281ca-54d2-4d9f-8e9e-ef529d0afd4c", null, new DateTime(2025, 2, 11, 8, 28, 29, 311, DateTimeKind.Utc).AddTicks(1253), "Administrator role with full access", true, 100, "Admin", "ADMIN", new DateTime(2025, 2, 11, 8, 28, 29, 311, DateTimeKind.Utc).AddTicks(1258) },
+                    { "b7ee85d4-608f-4671-9a00-71cb05ffc2d4", null, new DateTime(2025, 2, 11, 8, 28, 29, 311, DateTimeKind.Utc).AddTicks(2289), "Standard user role with limited access", true, 90, "User", "USER", new DateTime(2025, 2, 11, 8, 28, 29, 311, DateTimeKind.Utc).AddTicks(2290) }
                 });
 
             migrationBuilder.InsertData(
                 table: "AspNetUsers",
                 columns: new[] { "Id", "AccessFailedCount", "ClarifyGoAccessToken", "ClarifyGoAccessTokenExpiry", "ConcurrencyStamp", "Email", "EmailConfirmed", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "RefreshToken", "RefreshTokenExpiry", "SecurityStamp", "TwoFactorEnabled", "UserName" },
-                values: new object[] { "6d8c6bb2-416a-4d63-a05f-4906d841b1ae", 0, null, null, "beb08295-cd4f-45de-9613-a9f8cfa78299", null, false, false, null, null, "GHIE-API", "AQAAAAIAAYagAAAAECX/P7mYcQN5Xk37CY2ZDF3oNgyvVZ1eJfE79c6xXAF3ZR7+ascyrJuBL43mE2z6Kg==", null, false, null, null, "98c9b6a2-ed64-44fd-a94a-9f287514af98", false, "GHIE-API" });
+                values: new object[] { "ccb2c35c-99a6-4d9c-8ee0-d0aec4a9a48a", 0, null, null, "22334a72-f8fc-4e68-9b0d-d0041d2f7d76", null, false, false, null, null, "GHIE-API", "AQAAAAIAAYagAAAAEGSuMmqtFEvIsSFmB8+Z1VdC3o7JSDW+xaKm07gHx/xONVNAJ87bpdut7/8PD5+sWQ==", null, false, null, null, "0356dc1e-cf91-41cb-be09-23269ece7cb0", false, "GHIE-API" });
 
             migrationBuilder.InsertData(
                 table: "AuditEvents",
@@ -273,7 +271,9 @@ namespace backend.Migrations
                     { 3, "A new record was played.", "RecordPlayed" },
                     { 4, "An existing record was exported.", "RecordExported" },
                     { 5, "A record was deleted.", "RecordDeleted" },
-                    { 6, "", "TokenRefreshed" }
+                    { 6, "A token was refreshed.", "TokenRefreshed" },
+                    { 7, "A manual sync was performed.", "ManualSync" },
+                    { 8, "An auto sync was performed.", "AutoSync" }
                 });
 
             migrationBuilder.InsertData(
@@ -289,7 +289,7 @@ namespace backend.Migrations
             migrationBuilder.InsertData(
                 table: "AspNetUserRoles",
                 columns: new[] { "RoleId", "UserId" },
-                values: new object[] { "1321eaaf-4c9e-440c-853f-039aed0f2b96", "6d8c6bb2-416a-4d63-a05f-4906d841b1ae" });
+                values: new object[] { "903281ca-54d2-4d9f-8e9e-ef529d0afd4c", "ccb2c35c-99a6-4d9c-8ee0-d0aec4a9a48a" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
