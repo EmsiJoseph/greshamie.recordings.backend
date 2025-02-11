@@ -15,6 +15,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using Shine.Extensions;
+
 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
@@ -77,6 +79,9 @@ else
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connection));
 
+builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+
+
 builder.Services.AddIdentityCore<User>(options => { })
     .AddRoles<Role>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
@@ -137,10 +142,7 @@ builder.Services.AddHttpClient<ICommentsService, CommentsService>(client =>
     client.BaseAddress = new Uri(apiBaseUri);
 });
 
-builder.Services.AddHttpClient<ISyncService, SyncService>(client =>
-{
-    client.BaseAddress = new Uri(apiBaseUri);
-});
+builder.Services.AddHttpClient<ISyncService, SyncService>(client => { client.BaseAddress = new Uri(apiBaseUri); });
 
 builder.Services.AddHttpClient<ITagsService, TagsService>(client => { client.BaseAddress = new Uri(apiBaseUri); });
 
@@ -149,7 +151,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("ReactClient", policy =>
     {
-        policy.WithOrigins("https://localhost:3000")
+        policy.WithOrigins("http://localhost:3000")
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -160,6 +162,18 @@ var app = builder.Build();
 
 // 5. Middleware Pipeline
 // app.UseHttpsRedirection();
+if (app.Environment.IsDevelopment())
+{
+    app.UseMigrationsEndPoint();
+    app.ApplyMigrations();
+}
+else
+{
+    app.UseExceptionHandler("/Home/Error");
+    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
+    app.UseHsts();
+}
+
 app.UseCors("ReactClient");
 app.UseAuthentication();
 app.UseAuthorization();

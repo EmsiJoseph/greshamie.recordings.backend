@@ -5,7 +5,7 @@ namespace backend.Data.Seeds
 {
     public static class AuditEventSeeder
     {
-        public static void Seed(ModelBuilder modelBuilder)
+        public static void SeedAuditEvent(this ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<AuditEvent>().HasData(
                 new AuditEvent
@@ -37,6 +37,24 @@ namespace backend.Data.Seeds
                     Id = 5,
                     Name = "RecordDeleted",
                     Description = "A record was deleted."
+                },
+                new AuditEvent
+                {
+                    Id = 6,
+                    Name = "TokenRefreshed",
+                    Description = "A token was refreshed."
+                },
+                new AuditEvent
+                {
+                    Id = 7,
+                    Name = "ManualSync",
+                    Description = "A manual sync was performed."
+                },
+                new AuditEvent
+                {
+                    Id = 8,
+                    Name = "AutoSync",
+                    Description = "An auto sync was performed."
                 }
             );
         }

@@ -77,34 +77,34 @@ public class RecordingController : ControllerBase
         }
     }
 
+    // [OutputCache(Duration = 60, VaryByQueryKeys = new[] { "RecordingsCache" })]
+    // [HttpGet("")]
+    // public async Task<IActionResult> GetRecordings()
+    // {
+    //     try
+    //     {
+    //         var filtersDto = new RecordingSearchFiltersDto
+    //         {
+    //             StartDate = DateTime.Now.StartOfWeek(DayOfWeek.Monday),
+    //             EndDate = DateTime.Now
+    //         };
+    //
+    //         var results = await SearchAndProcessRecordings(filtersDto);
+    //         return Ok(results);
+    //     }
+    //     catch (ServiceException ex)
+    //     {
+    //         return StatusCode(ex.StatusCode, new { message = ex.Message });
+    //     }
+    //     catch (Exception ex)
+    //     {
+    //         _logger.LogError(ex, "Unexpected error in GetRecordings");
+    //         return StatusCode(500, new { message = "An unexpected error occurred" });
+    //     }
+    // }
+
     [OutputCache(Duration = 60, VaryByQueryKeys = new[] { "RecordingsCache" })]
     [HttpGet("")]
-    public async Task<IActionResult> GetRecordings()
-    {
-        try
-        {
-            var filtersDto = new RecordingSearchFiltersDto
-            {
-                StartDate = DateTime.Now.StartOfWeek(DayOfWeek.Monday),
-                EndDate = DateTime.Now
-            };
-
-            var results = await SearchAndProcessRecordings(filtersDto);
-            return Ok(results);
-        }
-        catch (ServiceException ex)
-        {
-            return StatusCode(ex.StatusCode, new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error in GetRecordings");
-            return StatusCode(500, new { message = "An unexpected error occurred" });
-        }
-    }
-
-    [OutputCache(Duration = 60, VaryByQueryKeys = new[] { "RecordingsCache" })]
-    [HttpGet("search")]
     public async Task<IActionResult> SearchRecordings([FromQuery] RecordingSearchFiltersDto filtersDto)
     {
         try
