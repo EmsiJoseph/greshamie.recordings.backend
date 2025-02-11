@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace backend.Migrations
 {
     /// <inheritdoc />
-    public partial class addedSyncRecordings : Migration
+    public partial class syncrecordingstreamanddownloadlink : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -96,7 +96,7 @@ namespace backend.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    BlobUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    StreamingUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     DownloadUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
                     RecordingDate = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -254,14 +254,14 @@ namespace backend.Migrations
                 columns: new[] { "Id", "ConcurrencyStamp", "CreatedAt", "Description", "IsActive", "Level", "Name", "NormalizedName", "UpdatedAt" },
                 values: new object[,]
                 {
-                    { "1ec1652d-2c7b-40f2-9013-1595ea77f4b8", null, new DateTime(2025, 2, 11, 2, 24, 22, 227, DateTimeKind.Utc).AddTicks(5766), "User", true, 90, "User", "USER", new DateTime(2025, 2, 11, 2, 24, 22, 227, DateTimeKind.Utc).AddTicks(5766) },
-                    { "45f0139f-1d61-4af1-ae38-759b7167db7e", null, new DateTime(2025, 2, 11, 2, 24, 22, 227, DateTimeKind.Utc).AddTicks(4814), "Administrator", true, 100, "Admin", "ADMIN", new DateTime(2025, 2, 11, 2, 24, 22, 227, DateTimeKind.Utc).AddTicks(4818) }
+                    { "6f18a182-1bf7-4521-914c-01da20a9c506", null, new DateTime(2025, 2, 11, 4, 48, 36, 573, DateTimeKind.Utc).AddTicks(1000), "Administrator", true, 100, "Admin", "ADMIN", new DateTime(2025, 2, 11, 4, 48, 36, 573, DateTimeKind.Utc).AddTicks(1006) },
+                    { "8395eac1-5484-4857-baa6-9fb0925f583a", null, new DateTime(2025, 2, 11, 4, 48, 36, 573, DateTimeKind.Utc).AddTicks(2053), "User", true, 90, "User", "USER", new DateTime(2025, 2, 11, 4, 48, 36, 573, DateTimeKind.Utc).AddTicks(2053) }
                 });
 
             migrationBuilder.InsertData(
                 table: "AspNetUsers",
                 columns: new[] { "Id", "AccessFailedCount", "ClarifyGoAccessToken", "ClarifyGoAccessTokenExpiry", "ConcurrencyStamp", "Email", "EmailConfirmed", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "RefreshToken", "RefreshTokenExpiry", "SecurityStamp", "TwoFactorEnabled", "UserName" },
-                values: new object[] { "933ad377-3281-4a40-afbc-bc93c9fdded1", 0, null, null, "2f08836d-de78-4aab-a7f9-9072ebdfa584", null, false, false, null, null, "GHIE-API", "AQAAAAIAAYagAAAAEPz7/SN+vmMkwKLUu1kGwszA/3J5pKm1mUq15VNXG4xHH9sqeNXFWJ8cefoDzENWLA==", null, false, null, null, "562b02a7-e741-4db1-8a7f-637b1e057cc4", false, "GHIE-API" });
+                values: new object[] { "17945531-0deb-4568-a465-0427dbd18648", 0, null, null, "5a7e9e9f-5c26-4e33-8cbc-726855fe3997", null, false, false, null, null, "GHIE-API", "AQAAAAIAAYagAAAAEDH6FZkNUm2zSYKTchVhHxF7sIe57NWQ3kB85LopF6gN71g8hs83X+htoRT2YlNcRg==", null, false, null, null, "d426d9b8-7b8c-4a03-a947-b6bd5e5483c0", false, "GHIE-API" });
 
             migrationBuilder.InsertData(
                 table: "AuditEvents",
@@ -288,7 +288,7 @@ namespace backend.Migrations
             migrationBuilder.InsertData(
                 table: "AspNetUserRoles",
                 columns: new[] { "RoleId", "UserId" },
-                values: new object[] { "45f0139f-1d61-4af1-ae38-759b7167db7e", "933ad377-3281-4a40-afbc-bc93c9fdded1" });
+                values: new object[] { "6f18a182-1bf7-4521-914c-01da20a9c506", "17945531-0deb-4568-a465-0427dbd18648" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",

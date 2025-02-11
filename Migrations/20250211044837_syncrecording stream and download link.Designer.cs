@@ -12,8 +12,8 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250211022422_addedSyncRecordings")]
-    partial class addedSyncRecordings
+    [Migration("20250211044837_syncrecording stream and download link")]
+    partial class syncrecordingstreamanddownloadlink
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -114,8 +114,8 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            UserId = "933ad377-3281-4a40-afbc-bc93c9fdded1",
-                            RoleId = "45f0139f-1d61-4af1-ae38-759b7167db7e"
+                            UserId = "17945531-0deb-4568-a465-0427dbd18648",
+                            RoleId = "6f18a182-1bf7-4521-914c-01da20a9c506"
                         });
                 });
 
@@ -339,25 +339,25 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "45f0139f-1d61-4af1-ae38-759b7167db7e",
-                            CreatedAt = new DateTime(2025, 2, 11, 2, 24, 22, 227, DateTimeKind.Utc).AddTicks(4814),
+                            Id = "6f18a182-1bf7-4521-914c-01da20a9c506",
+                            CreatedAt = new DateTime(2025, 2, 11, 4, 48, 36, 573, DateTimeKind.Utc).AddTicks(1000),
                             Description = "Administrator",
                             IsActive = true,
                             Level = 100,
                             Name = "Admin",
                             NormalizedName = "ADMIN",
-                            UpdatedAt = new DateTime(2025, 2, 11, 2, 24, 22, 227, DateTimeKind.Utc).AddTicks(4818)
+                            UpdatedAt = new DateTime(2025, 2, 11, 4, 48, 36, 573, DateTimeKind.Utc).AddTicks(1006)
                         },
                         new
                         {
-                            Id = "1ec1652d-2c7b-40f2-9013-1595ea77f4b8",
-                            CreatedAt = new DateTime(2025, 2, 11, 2, 24, 22, 227, DateTimeKind.Utc).AddTicks(5766),
+                            Id = "8395eac1-5484-4857-baa6-9fb0925f583a",
+                            CreatedAt = new DateTime(2025, 2, 11, 4, 48, 36, 573, DateTimeKind.Utc).AddTicks(2053),
                             Description = "User",
                             IsActive = true,
                             Level = 90,
                             Name = "User",
                             NormalizedName = "USER",
-                            UpdatedAt = new DateTime(2025, 2, 11, 2, 24, 22, 227, DateTimeKind.Utc).AddTicks(5766)
+                            UpdatedAt = new DateTime(2025, 2, 11, 4, 48, 36, 573, DateTimeKind.Utc).AddTicks(2053)
                         });
                 });
 
@@ -440,15 +440,15 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "933ad377-3281-4a40-afbc-bc93c9fdded1",
+                            Id = "17945531-0deb-4568-a465-0427dbd18648",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "2f08836d-de78-4aab-a7f9-9072ebdfa584",
+                            ConcurrencyStamp = "5a7e9e9f-5c26-4e33-8cbc-726855fe3997",
                             EmailConfirmed = false,
                             LockoutEnabled = false,
                             NormalizedUserName = "GHIE-API",
-                            PasswordHash = "AQAAAAIAAYagAAAAEPz7/SN+vmMkwKLUu1kGwszA/3J5pKm1mUq15VNXG4xHH9sqeNXFWJ8cefoDzENWLA==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEDH6FZkNUm2zSYKTchVhHxF7sIe57NWQ3kB85LopF6gN71g8hs83X+htoRT2YlNcRg==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "562b02a7-e741-4db1-8a7f-637b1e057cc4",
+                            SecurityStamp = "d426d9b8-7b8c-4a03-a947-b6bd5e5483c0",
                             TwoFactorEnabled = false,
                             UserName = "GHIE-API"
                         });
@@ -458,10 +458,6 @@ namespace backend.Migrations
                 {
                     b.Property<string>("Id")
                         .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("BlobUrl")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -478,6 +474,10 @@ namespace backend.Migrations
 
                     b.Property<DateTime>("RecordingDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("StreamingUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
