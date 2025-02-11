@@ -154,6 +154,9 @@ namespace backend.Controllers
                 // Generate JWT token
                 var jwtToken = GenerateJwtToken(user, role);
 
+                // Log the login event using your audit service and the predefined constant.
+                await _auditService.LogAuditEntryAsync(user.Id, AuditEventTypes.UserLoggedIn, "User logged in.");
+
                 return Ok(new
                 {
                     user = new { userName = user.UserName },
@@ -203,6 +206,9 @@ namespace backend.Controllers
             user.RefreshToken = GenerateRefreshToken();
             user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
             await _userManager.UpdateAsync(user);
+
+            // Log the refresh event using your audit service and the predefined constant.
+            await _auditService.LogAuditEntryAsync(user.Id, AuditEventTypes.TokenRefreshed, "Token refreshed.");
 
             return Ok(new
             {
@@ -282,6 +288,9 @@ namespace backend.Controllers
             }
 
             _logger.LogInformation("Logout successful.");
+
+            // Log the logout event using your audit service and the predefined constant.
+            await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.UserLoggedOut, "User logged out.");
             return Ok(new { message = "Logged out successfully." });
         }
     }

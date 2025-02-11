@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace backend.Migrations
 {
     /// <inheritdoc />
-    public partial class addedSyncRecordings : Migration
+    public partial class FixedMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -96,7 +96,7 @@ namespace backend.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    BlobUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    StreamingUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     DownloadUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
                     RecordingDate = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -254,14 +254,14 @@ namespace backend.Migrations
                 columns: new[] { "Id", "ConcurrencyStamp", "CreatedAt", "Description", "IsActive", "Level", "Name", "NormalizedName", "UpdatedAt" },
                 values: new object[,]
                 {
-                    { "1ec1652d-2c7b-40f2-9013-1595ea77f4b8", null, new DateTime(2025, 2, 11, 2, 24, 22, 227, DateTimeKind.Utc).AddTicks(5766), "User", true, 90, "User", "USER", new DateTime(2025, 2, 11, 2, 24, 22, 227, DateTimeKind.Utc).AddTicks(5766) },
-                    { "45f0139f-1d61-4af1-ae38-759b7167db7e", null, new DateTime(2025, 2, 11, 2, 24, 22, 227, DateTimeKind.Utc).AddTicks(4814), "Administrator", true, 100, "Admin", "ADMIN", new DateTime(2025, 2, 11, 2, 24, 22, 227, DateTimeKind.Utc).AddTicks(4818) }
+                    { "1321eaaf-4c9e-440c-853f-039aed0f2b96", null, new DateTime(2025, 2, 11, 6, 23, 49, 218, DateTimeKind.Utc).AddTicks(3606), "Administrator role with full access", true, 100, "Admin", "ADMIN", new DateTime(2025, 2, 11, 6, 23, 49, 218, DateTimeKind.Utc).AddTicks(3609) },
+                    { "fc6842d3-abc1-4467-9729-19a30955fec4", null, new DateTime(2025, 2, 11, 6, 23, 49, 218, DateTimeKind.Utc).AddTicks(4539), "Standard user role with limited access", true, 90, "User", "USER", new DateTime(2025, 2, 11, 6, 23, 49, 218, DateTimeKind.Utc).AddTicks(4540) }
                 });
 
             migrationBuilder.InsertData(
                 table: "AspNetUsers",
                 columns: new[] { "Id", "AccessFailedCount", "ClarifyGoAccessToken", "ClarifyGoAccessTokenExpiry", "ConcurrencyStamp", "Email", "EmailConfirmed", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "RefreshToken", "RefreshTokenExpiry", "SecurityStamp", "TwoFactorEnabled", "UserName" },
-                values: new object[] { "933ad377-3281-4a40-afbc-bc93c9fdded1", 0, null, null, "2f08836d-de78-4aab-a7f9-9072ebdfa584", null, false, false, null, null, "GHIE-API", "AQAAAAIAAYagAAAAEPz7/SN+vmMkwKLUu1kGwszA/3J5pKm1mUq15VNXG4xHH9sqeNXFWJ8cefoDzENWLA==", null, false, null, null, "562b02a7-e741-4db1-8a7f-637b1e057cc4", false, "GHIE-API" });
+                values: new object[] { "6d8c6bb2-416a-4d63-a05f-4906d841b1ae", 0, null, null, "beb08295-cd4f-45de-9613-a9f8cfa78299", null, false, false, null, null, "GHIE-API", "AQAAAAIAAYagAAAAECX/P7mYcQN5Xk37CY2ZDF3oNgyvVZ1eJfE79c6xXAF3ZR7+ascyrJuBL43mE2z6Kg==", null, false, null, null, "98c9b6a2-ed64-44fd-a94a-9f287514af98", false, "GHIE-API" });
 
             migrationBuilder.InsertData(
                 table: "AuditEvents",
@@ -272,7 +272,8 @@ namespace backend.Migrations
                     { 2, "A user logged out.", "UserLoggedOut" },
                     { 3, "A new record was played.", "RecordPlayed" },
                     { 4, "An existing record was exported.", "RecordExported" },
-                    { 5, "A record was deleted.", "RecordDeleted" }
+                    { 5, "A record was deleted.", "RecordDeleted" },
+                    { 6, "", "TokenRefreshed" }
                 });
 
             migrationBuilder.InsertData(
@@ -288,7 +289,7 @@ namespace backend.Migrations
             migrationBuilder.InsertData(
                 table: "AspNetUserRoles",
                 columns: new[] { "RoleId", "UserId" },
-                values: new object[] { "45f0139f-1d61-4af1-ae38-759b7167db7e", "933ad377-3281-4a40-afbc-bc93c9fdded1" });
+                values: new object[] { "1321eaaf-4c9e-440c-853f-039aed0f2b96", "6d8c6bb2-416a-4d63-a05f-4906d841b1ae" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",

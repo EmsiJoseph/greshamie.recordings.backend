@@ -1,14 +1,8 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using backend.Data;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Configuration;
+using backend.Data.Models;
 using backend.Services.Auth;
 using backend.Services.ClarifyGoServices.HistoricRecordings;
 using backend.DTOs;
-using backend.Models;
 using Microsoft.EntityFrameworkCore;
 using backend.Services.Storage;
 
@@ -28,7 +22,6 @@ namespace backend.Services.Sync
             ILogger<SyncService> logger,
             ITokenService tokenService,
             IHistoricRecordingsService historicRecordingsService,
-
             ApplicationDbContext dbContext,
             IBlobStorageService blobStorageService,
             HttpClient httpClient)
@@ -70,16 +63,20 @@ namespace backend.Services.Sync
                 // Export the recording as an MP3 stream.
                 using var mp3Stream = await _historicRecordingsService.ExportMp3Async(Id);
 
-                // Upload the MP3 file to blob storage.
-                var blobUrl = await _blobStorageService.UploadFileAsync(mp3Stream, "greshamrecordings", fileName);
+                // Get both URLs from blob storage
+                var downloadUrl = await _blobStorageService.UploadFileAsync(mp3Stream, "greshamrecordings", fileName);
+
+                var streamingUrl = await _blobStorageService.StreamingUrlAsync("greshamrecordings", fileName);
 
                 // Save the new record to the SyncedRecordings table.
                 var syncedRecording = new SyncedRecording
                 {
                     Id = Id,
-                    BlobUrl = blobUrl,
+                    DownloadUrl = downloadUrl,
+
                     RecordingDate = MediaStartedTime?.Date ?? DateTime.UtcNow,
-                    CreatedAt = DateTime.UtcNow
+                    CreatedAt = DateTime.UtcNow,
+                    IsDeleted = false
                 };
 
                 _dbContext.SyncedRecordings.Add(syncedRecording);

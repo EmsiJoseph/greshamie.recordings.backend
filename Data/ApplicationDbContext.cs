@@ -1,7 +1,5 @@
 using backend.Data.Models;
 using backend.Data.Seeds;
-using backend.Models;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -18,12 +16,12 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, string>
         _configuration = configuration;
     }
 
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    protected override void OnModelCreating(ModelBuilder builder)
     {
-        base.OnModelCreating(modelBuilder);
+        base.OnModelCreating(builder);
 
-        AuditEventSeeder.Seed(modelBuilder);
-        CallTypeSeeder.Seed(modelBuilder);
+        builder.SeedAuditEvent();
+        builder.SeedCallType();
 
         var adminUserName = _configuration["AdminCredentials:UserName"];
         var adminPassword = _configuration["AdminCredentials:Password"];
@@ -33,16 +31,43 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, string>
             throw new InvalidOperationException("Admin credentials not found in configuration.");
         }
 
-        UserRoleSeeder.Seed(modelBuilder, adminUserName, adminPassword);
+        builder.SeedUserRole(adminUserName, adminPassword);
+
+        builder.Entity<AuditEntry>()
+            .HasOne(ae => ae.Event)
+            .WithMany(e => e.AuditEntries)
+            .HasForeignKey(ae => ae.EventId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired();
+
+        builder.Entity<AuditEntry>()
+            .HasOne(ae => ae.User)
+            .WithMany(u => u.AuditEntries)
+            .HasForeignKey(ae => ae.UserId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired();
+
+        builder.Entity<AuditEntry>()
+            .HasOne(ae => ae.Recording)
+            .WithMany(r => r.AuditEntries)
+            .HasForeignKey(ae => ae.RecordId)
+            .OnDelete(DeleteBehavior.SetNull)
+            .IsRequired(false);
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         base.OnConfiguring(optionsBuilder);
 
-        // Suppress the warning about model changes
-        optionsBuilder.ConfigureWarnings(warnings =>
-            warnings.Ignore(RelationalEventId.PendingModelChangesWarning));
+        optionsBuilder
+            .EnableSensitiveDataLogging() // For debugging
+            .EnableDetailedErrors() // For debugging
+            .ConfigureWarnings(warnings =>
+            {
+                warnings.Ignore(RelationalEventId.PendingModelChangesWarning);
+                // Ignore duplicate table warnings
+                warnings.Ignore(CoreEventId.DuplicateDependentEntityTypeInstanceWarning);
+            });
     }
 
     public DbSet<AuditEntry> AuditEntries { get; set; }
