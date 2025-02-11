@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using backend.Data;
 
@@ -11,9 +12,16 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+<<<<<<<< HEAD:backend/Migrations/20250211050413_syncrecording stream and download link.Designer.cs
+    [Migration("20250211050413_syncrecording stream and download link")]
+    partial class syncrecordingstreamanddownloadlink
+========
+    [Migration("20250211062349_FixedMigration")]
+    partial class FixedMigration
+>>>>>>>> origin/backend-main:backend/Migrations/20250211062349_FixedMigration.Designer.cs
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -111,8 +119,13 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            UserId = "0468ec16-4ce3-4a5a-807c-0da5e0c6ca52",
-                            RoleId = "bc1380a7-931c-4554-918e-a5f4dde1ec2b"
+<<<<<<<< HEAD:backend/Migrations/20250211050413_syncrecording stream and download link.Designer.cs
+                            UserId = "81437d01-53a2-45a1-933d-a10a18897440",
+                            RoleId = "329e6542-ab1f-46ef-a00b-c8c0ca84d454"
+========
+                            UserId = "6d8c6bb2-416a-4d63-a05f-4906d841b1ae",
+                            RoleId = "1321eaaf-4c9e-440c-853f-039aed0f2b96"
+>>>>>>>> origin/backend-main:backend/Migrations/20250211062349_FixedMigration.Designer.cs
                         });
                 });
 
@@ -151,6 +164,7 @@ namespace backend.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("RecordId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("Timestamp")
@@ -341,56 +355,46 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "bc1380a7-931c-4554-918e-a5f4dde1ec2b",
-                            CreatedAt = new DateTime(2025, 2, 11, 7, 9, 29, 891, DateTimeKind.Utc).AddTicks(1864),
+<<<<<<<< HEAD:backend/Migrations/20250211050413_syncrecording stream and download link.Designer.cs
+                            Id = "329e6542-ab1f-46ef-a00b-c8c0ca84d454",
+                            CreatedAt = new DateTime(2025, 2, 11, 5, 4, 13, 364, DateTimeKind.Utc).AddTicks(2173),
+                            Description = "Administrator",
+========
+                            Id = "1321eaaf-4c9e-440c-853f-039aed0f2b96",
+                            CreatedAt = new DateTime(2025, 2, 11, 6, 23, 49, 218, DateTimeKind.Utc).AddTicks(3606),
                             Description = "Administrator role with full access",
+>>>>>>>> origin/backend-main:backend/Migrations/20250211062349_FixedMigration.Designer.cs
                             IsActive = true,
                             Level = 100,
                             Name = "Admin",
                             NormalizedName = "ADMIN",
-                            UpdatedAt = new DateTime(2025, 2, 11, 7, 9, 29, 891, DateTimeKind.Utc).AddTicks(1869)
+<<<<<<<< HEAD:backend/Migrations/20250211050413_syncrecording stream and download link.Designer.cs
+                            UpdatedAt = new DateTime(2025, 2, 11, 5, 4, 13, 364, DateTimeKind.Utc).AddTicks(2176)
                         },
                         new
                         {
-                            Id = "709c8d10-f076-4dfa-8888-0defcea3542d",
-                            CreatedAt = new DateTime(2025, 2, 11, 7, 9, 29, 891, DateTimeKind.Utc).AddTicks(2879),
+                            Id = "dfe960ff-f6a7-4d50-85b1-a39c062a1ea6",
+                            CreatedAt = new DateTime(2025, 2, 11, 5, 4, 13, 364, DateTimeKind.Utc).AddTicks(3600),
+                            Description = "User",
+========
+                            UpdatedAt = new DateTime(2025, 2, 11, 6, 23, 49, 218, DateTimeKind.Utc).AddTicks(3609)
+                        },
+                        new
+                        {
+                            Id = "fc6842d3-abc1-4467-9729-19a30955fec4",
+                            CreatedAt = new DateTime(2025, 2, 11, 6, 23, 49, 218, DateTimeKind.Utc).AddTicks(4539),
                             Description = "Standard user role with limited access",
+>>>>>>>> origin/backend-main:backend/Migrations/20250211062349_FixedMigration.Designer.cs
                             IsActive = true,
                             Level = 90,
                             Name = "User",
                             NormalizedName = "USER",
-                            UpdatedAt = new DateTime(2025, 2, 11, 7, 9, 29, 891, DateTimeKind.Utc).AddTicks(2880)
+<<<<<<<< HEAD:backend/Migrations/20250211050413_syncrecording stream and download link.Designer.cs
+                            UpdatedAt = new DateTime(2025, 2, 11, 5, 4, 13, 364, DateTimeKind.Utc).AddTicks(3601)
+========
+                            UpdatedAt = new DateTime(2025, 2, 11, 6, 23, 49, 218, DateTimeKind.Utc).AddTicks(4540)
+>>>>>>>> origin/backend-main:backend/Migrations/20250211062349_FixedMigration.Designer.cs
                         });
-                });
-
-            modelBuilder.Entity("backend.Data.Models.SyncedRecording", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("DownloadUrl")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTime>("RecordingDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("StreamingUrl")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("SyncedRecordings");
                 });
 
             modelBuilder.Entity("backend.Data.Models.User", b =>
@@ -472,18 +476,60 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "0468ec16-4ce3-4a5a-807c-0da5e0c6ca52",
+<<<<<<<< HEAD:backend/Migrations/20250211050413_syncrecording stream and download link.Designer.cs
+                            Id = "81437d01-53a2-45a1-933d-a10a18897440",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "3ebc75a8-0b11-4d4f-ae09-44a1aeb420cc",
+                            ConcurrencyStamp = "080143b5-8a7b-43c7-a046-b5bbdd2f831f",
                             EmailConfirmed = false,
                             LockoutEnabled = false,
                             NormalizedUserName = "GHIE-API",
-                            PasswordHash = "AQAAAAIAAYagAAAAEFHjH4RblopmRhgMMSuC8BevzapX6xTqUiavWXNjk98NMgFeVey9j69+Y3Rq67V0yg==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEM8EmHNLPfhZfVItgV8CApcc7PEc5Mg+zhyQ+H0MMIwfYEEaKDUcR1p2zL31OpZaAw==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "19236dbd-3655-476e-8a7f-3c413cf40de0",
+                            SecurityStamp = "14d170b5-5a1c-4c2f-8050-fae338812562",
+========
+                            Id = "6d8c6bb2-416a-4d63-a05f-4906d841b1ae",
+                            AccessFailedCount = 0,
+                            ConcurrencyStamp = "beb08295-cd4f-45de-9613-a9f8cfa78299",
+                            EmailConfirmed = false,
+                            LockoutEnabled = false,
+                            NormalizedUserName = "GHIE-API",
+                            PasswordHash = "AQAAAAIAAYagAAAAECX/P7mYcQN5Xk37CY2ZDF3oNgyvVZ1eJfE79c6xXAF3ZR7+ascyrJuBL43mE2z6Kg==",
+                            PhoneNumberConfirmed = false,
+                            SecurityStamp = "98c9b6a2-ed64-44fd-a94a-9f287514af98",
+>>>>>>>> origin/backend-main:backend/Migrations/20250211062349_FixedMigration.Designer.cs
                             TwoFactorEnabled = false,
                             UserName = "GHIE-API"
                         });
+                });
+
+            modelBuilder.Entity("backend.Models.SyncedRecording", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("DownloadUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime>("RecordingDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("StreamingUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SyncedRecordings");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -540,20 +586,21 @@ namespace backend.Migrations
             modelBuilder.Entity("backend.Data.Models.AuditEntry", b =>
                 {
                     b.HasOne("backend.Data.Models.AuditEvent", "Event")
-                        .WithMany("AuditEntries")
+                        .WithMany()
                         .HasForeignKey("EventId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("backend.Data.Models.SyncedRecording", "Recording")
-                        .WithMany("AuditEntries")
+                    b.HasOne("backend.Models.SyncedRecording", "Recording")
+                        .WithMany()
                         .HasForeignKey("RecordId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("backend.Data.Models.User", "User")
-                        .WithMany("AuditEntries")
+                        .WithMany()
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Event");
@@ -561,21 +608,6 @@ namespace backend.Migrations
                     b.Navigation("Recording");
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("backend.Data.Models.AuditEvent", b =>
-                {
-                    b.Navigation("AuditEntries");
-                });
-
-            modelBuilder.Entity("backend.Data.Models.SyncedRecording", b =>
-                {
-                    b.Navigation("AuditEntries");
-                });
-
-            modelBuilder.Entity("backend.Data.Models.User", b =>
-                {
-                    b.Navigation("AuditEntries");
                 });
 #pragma warning restore 612, 618
         }

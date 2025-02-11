@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace backend.Migrations
 {
     /// <inheritdoc />
-    public partial class syncrecordingstreamanddownloadlink : Migration
+    public partial class FixedMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -254,14 +254,23 @@ namespace backend.Migrations
                 columns: new[] { "Id", "ConcurrencyStamp", "CreatedAt", "Description", "IsActive", "Level", "Name", "NormalizedName", "UpdatedAt" },
                 values: new object[,]
                 {
+<<<<<<<< HEAD:backend/Migrations/20250211050413_syncrecording stream and download link.cs
                     { "329e6542-ab1f-46ef-a00b-c8c0ca84d454", null, new DateTime(2025, 2, 11, 5, 4, 13, 364, DateTimeKind.Utc).AddTicks(2173), "Administrator", true, 100, "Admin", "ADMIN", new DateTime(2025, 2, 11, 5, 4, 13, 364, DateTimeKind.Utc).AddTicks(2176) },
                     { "dfe960ff-f6a7-4d50-85b1-a39c062a1ea6", null, new DateTime(2025, 2, 11, 5, 4, 13, 364, DateTimeKind.Utc).AddTicks(3600), "User", true, 90, "User", "USER", new DateTime(2025, 2, 11, 5, 4, 13, 364, DateTimeKind.Utc).AddTicks(3601) }
+========
+                    { "1321eaaf-4c9e-440c-853f-039aed0f2b96", null, new DateTime(2025, 2, 11, 6, 23, 49, 218, DateTimeKind.Utc).AddTicks(3606), "Administrator role with full access", true, 100, "Admin", "ADMIN", new DateTime(2025, 2, 11, 6, 23, 49, 218, DateTimeKind.Utc).AddTicks(3609) },
+                    { "fc6842d3-abc1-4467-9729-19a30955fec4", null, new DateTime(2025, 2, 11, 6, 23, 49, 218, DateTimeKind.Utc).AddTicks(4539), "Standard user role with limited access", true, 90, "User", "USER", new DateTime(2025, 2, 11, 6, 23, 49, 218, DateTimeKind.Utc).AddTicks(4540) }
+>>>>>>>> origin/backend-main:backend/Migrations/20250211062349_FixedMigration.cs
                 });
 
             migrationBuilder.InsertData(
                 table: "AspNetUsers",
                 columns: new[] { "Id", "AccessFailedCount", "ClarifyGoAccessToken", "ClarifyGoAccessTokenExpiry", "ConcurrencyStamp", "Email", "EmailConfirmed", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "RefreshToken", "RefreshTokenExpiry", "SecurityStamp", "TwoFactorEnabled", "UserName" },
+<<<<<<<< HEAD:backend/Migrations/20250211050413_syncrecording stream and download link.cs
                 values: new object[] { "81437d01-53a2-45a1-933d-a10a18897440", 0, null, null, "080143b5-8a7b-43c7-a046-b5bbdd2f831f", null, false, false, null, null, "GHIE-API", "AQAAAAIAAYagAAAAEM8EmHNLPfhZfVItgV8CApcc7PEc5Mg+zhyQ+H0MMIwfYEEaKDUcR1p2zL31OpZaAw==", null, false, null, null, "14d170b5-5a1c-4c2f-8050-fae338812562", false, "GHIE-API" });
+========
+                values: new object[] { "6d8c6bb2-416a-4d63-a05f-4906d841b1ae", 0, null, null, "beb08295-cd4f-45de-9613-a9f8cfa78299", null, false, false, null, null, "GHIE-API", "AQAAAAIAAYagAAAAECX/P7mYcQN5Xk37CY2ZDF3oNgyvVZ1eJfE79c6xXAF3ZR7+ascyrJuBL43mE2z6Kg==", null, false, null, null, "98c9b6a2-ed64-44fd-a94a-9f287514af98", false, "GHIE-API" });
+>>>>>>>> origin/backend-main:backend/Migrations/20250211062349_FixedMigration.cs
 
             migrationBuilder.InsertData(
                 table: "AuditEvents",
@@ -272,7 +281,8 @@ namespace backend.Migrations
                     { 2, "A user logged out.", "UserLoggedOut" },
                     { 3, "A new record was played.", "RecordPlayed" },
                     { 4, "An existing record was exported.", "RecordExported" },
-                    { 5, "A record was deleted.", "RecordDeleted" }
+                    { 5, "A record was deleted.", "RecordDeleted" },
+                    { 6, "", "TokenRefreshed" }
                 });
 
             migrationBuilder.InsertData(
@@ -288,7 +298,11 @@ namespace backend.Migrations
             migrationBuilder.InsertData(
                 table: "AspNetUserRoles",
                 columns: new[] { "RoleId", "UserId" },
+<<<<<<<< HEAD:backend/Migrations/20250211050413_syncrecording stream and download link.cs
                 values: new object[] { "329e6542-ab1f-46ef-a00b-c8c0ca84d454", "81437d01-53a2-45a1-933d-a10a18897440" });
+========
+                values: new object[] { "1321eaaf-4c9e-440c-853f-039aed0f2b96", "6d8c6bb2-416a-4d63-a05f-4906d841b1ae" });
+>>>>>>>> origin/backend-main:backend/Migrations/20250211062349_FixedMigration.cs
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",

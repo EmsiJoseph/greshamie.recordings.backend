@@ -1,6 +1,5 @@
 using backend.Data;
 using backend.DTOs;
-using backend.Models;
 using backend.Services.ClarifyGoServices.HistoricRecordings;
 using backend.Services.Storage;
 using backend.Services.Sync;

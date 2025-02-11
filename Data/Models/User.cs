@@ -10,5 +10,7 @@ namespace backend.Data.Models
 
         public string? RefreshToken { get; set; }
         public DateTime? RefreshTokenExpiry { get; set; }
+
+        public ICollection<AuditEntry> AuditEntries { get; set; } = new List<AuditEntry>();
     }
 }

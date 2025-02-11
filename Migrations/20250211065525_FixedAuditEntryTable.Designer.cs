@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using backend.Data;
 
@@ -11,9 +12,11 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250211065525_FixedAuditEntryTable")]
+    partial class FixedAuditEntryTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -111,8 +114,8 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            UserId = "0468ec16-4ce3-4a5a-807c-0da5e0c6ca52",
-                            RoleId = "bc1380a7-931c-4554-918e-a5f4dde1ec2b"
+                            UserId = "d52ea5f6-8d4a-4404-bda2-58e59e060ffe",
+                            RoleId = "ee7237da-b067-4533-9256-3aa178d5e344"
                         });
                 });
 
@@ -151,6 +154,7 @@ namespace backend.Migrations
                         .HasColumnType("int");
 
                     b.Property<string>("RecordId")
+                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime>("Timestamp")
@@ -341,25 +345,25 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "bc1380a7-931c-4554-918e-a5f4dde1ec2b",
-                            CreatedAt = new DateTime(2025, 2, 11, 7, 9, 29, 891, DateTimeKind.Utc).AddTicks(1864),
+                            Id = "ee7237da-b067-4533-9256-3aa178d5e344",
+                            CreatedAt = new DateTime(2025, 2, 11, 6, 55, 25, 201, DateTimeKind.Utc).AddTicks(3719),
                             Description = "Administrator role with full access",
                             IsActive = true,
                             Level = 100,
                             Name = "Admin",
                             NormalizedName = "ADMIN",
-                            UpdatedAt = new DateTime(2025, 2, 11, 7, 9, 29, 891, DateTimeKind.Utc).AddTicks(1869)
+                            UpdatedAt = new DateTime(2025, 2, 11, 6, 55, 25, 201, DateTimeKind.Utc).AddTicks(3723)
                         },
                         new
                         {
-                            Id = "709c8d10-f076-4dfa-8888-0defcea3542d",
-                            CreatedAt = new DateTime(2025, 2, 11, 7, 9, 29, 891, DateTimeKind.Utc).AddTicks(2879),
+                            Id = "67905f15-26cf-4ef1-b1e7-58a2f929b61c",
+                            CreatedAt = new DateTime(2025, 2, 11, 6, 55, 25, 201, DateTimeKind.Utc).AddTicks(5500),
                             Description = "Standard user role with limited access",
                             IsActive = true,
                             Level = 90,
                             Name = "User",
                             NormalizedName = "USER",
-                            UpdatedAt = new DateTime(2025, 2, 11, 7, 9, 29, 891, DateTimeKind.Utc).AddTicks(2880)
+                            UpdatedAt = new DateTime(2025, 2, 11, 6, 55, 25, 201, DateTimeKind.Utc).AddTicks(5502)
                         });
                 });
 
@@ -472,15 +476,15 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "0468ec16-4ce3-4a5a-807c-0da5e0c6ca52",
+                            Id = "d52ea5f6-8d4a-4404-bda2-58e59e060ffe",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "3ebc75a8-0b11-4d4f-ae09-44a1aeb420cc",
+                            ConcurrencyStamp = "07f2cd10-afeb-46eb-be4f-bac5850a9900",
                             EmailConfirmed = false,
                             LockoutEnabled = false,
                             NormalizedUserName = "GHIE-API",
-                            PasswordHash = "AQAAAAIAAYagAAAAEFHjH4RblopmRhgMMSuC8BevzapX6xTqUiavWXNjk98NMgFeVey9j69+Y3Rq67V0yg==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEJNcJ9NG96qWVUhkYuIFpU3MeU4JIvu49pqgYm55zIOvAjk3IBSTJIu9g8n9Qk1FMA==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "19236dbd-3655-476e-8a7f-3c413cf40de0",
+                            SecurityStamp = "132fee62-6372-4b2e-bf58-a8d2f34afc20",
                             TwoFactorEnabled = false,
                             UserName = "GHIE-API"
                         });
@@ -548,7 +552,8 @@ namespace backend.Migrations
                     b.HasOne("backend.Data.Models.SyncedRecording", "Recording")
                         .WithMany("AuditEntries")
                         .HasForeignKey("RecordId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
 
                     b.HasOne("backend.Data.Models.User", "User")
                         .WithMany("AuditEntries")
