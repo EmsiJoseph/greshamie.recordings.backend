@@ -160,12 +160,12 @@ namespace backend.Controllers
                     accessToken = new
                     {
                         value = jwtToken.Token,
-                        expiresIn = DateTime.UtcNow.AddSeconds(jwtToken.ExpiresIn)
+                        expiresAt = DateTime.UtcNow.AddSeconds(jwtToken.ExpiresIn)
                     },
                     refreshToken = new
                     {
                         value = user.RefreshToken,
-                        expiresIn = user.RefreshTokenExpiry
+                        expiresAt = user.RefreshTokenExpiry
                     }
                 });
             }
@@ -210,12 +210,12 @@ namespace backend.Controllers
                 accessToken = new
                 {
                     value = jwtToken.Token,
-                    expiresIn = jwtToken.ExpiresIn
+                    expiresAt = DateTime.UtcNow.AddSeconds(jwtToken.ExpiresIn)
                 },
                 refreshToken = new
                 {
                     value = user.RefreshToken,
-                    expiresIn = user.RefreshTokenExpiry
+                    expiresAt = user.RefreshTokenExpiry
                 }
             });
         }
