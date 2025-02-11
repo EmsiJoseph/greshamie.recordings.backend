@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace backend.Data;
@@ -23,40 +22,43 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, string>
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        base.OnModelCreating(modelBuilder);
-
         try
         {
-            // Check if database exists, if not, create it
+            base.OnModelCreating(modelBuilder);
+
+            // Get database creator
             var databaseCreator = Database.GetService<IRelationalDatabaseCreator>();
-            if (!databaseCreator.Exists())
-            {
-                databaseCreator.Create();
-            }
 
             // Check if tables exist
-            var tables = databaseCreator.GetTables();
-            var tablesExist = tables.Any(t => t.Name == "AspNetUsers" || t.Name == "AspNetRoles");
+            var hasIdentityTables = databaseCreator.TableExists("AspNetUsers") && 
+                                  databaseCreator.TableExists("AspNetRoles");
+            var hasAuditTables = databaseCreator.TableExists("AuditEvents") && 
+                                databaseCreator.TableExists("AuditEntries");
+            var hasCallTypesTable = databaseCreator.TableExists("CallTypes");
 
-            if (!tablesExist)
+            // Only seed data for tables that don't exist
+            if (!hasAuditTables)
             {
-                // Tables don't exist, create them
-                databaseCreator.CreateTables();
+                AuditEventSeeder.Seed(modelBuilder);
             }
 
-            // Always seed data, EF Core will handle updates for existing records
-            AuditEventSeeder.Seed(modelBuilder);
-            CallTypeSeeder.Seed(modelBuilder);
-
-            var adminUserName = _configuration["AdminCredentials:UserName"];
-            var adminPassword = _configuration["AdminCredentials:Password"];
-
-            if (string.IsNullOrEmpty(adminUserName) || string.IsNullOrEmpty(adminPassword))
+            if (!hasCallTypesTable)
             {
-                throw new InvalidOperationException("Admin credentials not found in configuration.");
+                CallTypeSeeder.Seed(modelBuilder);
             }
 
-            UserRoleSeeder.Seed(modelBuilder, adminUserName, adminPassword);
+            if (!hasIdentityTables)
+            {
+                var adminUserName = _configuration["AdminCredentials:UserName"];
+                var adminPassword = _configuration["AdminCredentials:Password"];
+
+                if (string.IsNullOrEmpty(adminUserName) || string.IsNullOrEmpty(adminPassword))
+                {
+                    throw new InvalidOperationException("Admin credentials not found in configuration.");
+                }
+
+                UserRoleSeeder.Seed(modelBuilder, adminUserName, adminPassword);
+            }
         }
         catch (Exception ex)
         {
