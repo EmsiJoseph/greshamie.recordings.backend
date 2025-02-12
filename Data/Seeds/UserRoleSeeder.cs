@@ -1,5 +1,4 @@
-﻿using System;
-using backend.Constants;
+﻿using backend.Constants;
 using backend.Data.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;

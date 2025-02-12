@@ -1,9 +1,6 @@
-using System;
-using System.IO;
-using System.Text.Json;
-using System.Threading.Tasks;
 using backend.ClarifyGoClasses;
 using backend.DTOs;
+using backend.DTOs.Recording;
 
 namespace backend.Services.ClarifyGoServices.HistoricRecordings
 {
@@ -13,9 +10,8 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
         /// Searches for historic recordings with pagination support.
         /// </summary>
         /// <param name="searchFiltersDto">Search and filter criteria.</param>
-        /// <param name="pagination">Pagination parameters.</param>
         /// <returns>A paged response containing the search results.</returns>
-        Task<PagedResponseDto<ClarifyGoHistoricRecordingRaw>> SearchRecordingsAsync(
+        Task<PagedResponseDto<HistoricRecordingRaw>> SearchRecordingsAsync(
             RecordingSearchFiltersDto searchFiltersDto);
 
         /// <summary>

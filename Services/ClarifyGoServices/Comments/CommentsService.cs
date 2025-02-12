@@ -1,10 +1,8 @@
 using System.Net;
 using System.Text.Json;
 using backend.Services.Auth;
-using IdentityModel.Client;
 using backend.ClarifyGoClasses;
-using backend.Constants;
-using Microsoft.IdentityModel.Tokens;
+using backend.Constants.ClarifyGo;
 using backend.Exceptions;
 
 namespace backend.Services.ClarifyGoServices.Comments

@@ -7,11 +7,16 @@ namespace backend.Data.Models
     {
         [Key] public int Id { get; set; }
 
-        [Required] [ForeignKey("User")] public string UserId { get; set; } = string.Empty;
+        [Required]
+        [ForeignKey("User")]
+        [MaxLength(50)]
+        public string UserId { get; set; } = string.Empty;
 
         [Required] [ForeignKey("Event")] public int EventId { get; set; }
 
-        [ForeignKey("Recording")] public string? RecordId { get; set; }
+        [ForeignKey("Recording")]
+        [MaxLength(50)]
+        public string? RecordId { get; set; }
 
         [Required] public DateTime Timestamp { get; set; } = DateTime.UtcNow;
 

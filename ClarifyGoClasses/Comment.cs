@@ -1,6 +1,6 @@
 ﻿namespace backend.ClarifyGoClasses;
 
-public class Comment
+public  class Comment
 {
     public string? Id { get; set; }
     public string? RecordingId { get; set; }

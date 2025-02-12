@@ -1,10 +1,8 @@
 ﻿using System.Net;
 using System.Text.Json;
-using backend.Constants;
-using backend.DTOs;
+using backend.Constants.ClarifyGo;
+using backend.DTOs.Recording;
 using backend.Services.Auth;
-using IdentityModel.Client;
-using Microsoft.IdentityModel.Tokens;
 using backend.Exceptions;
 
 namespace backend.Services.ClarifyGoServices.LiveRecordings;
@@ -37,7 +35,7 @@ public class LiveRecordingsService(HttpClient httpClient, ITokenService tokenSer
                 throw new ServiceException($"Live recording service error: {error}", (int)response.StatusCode);
             }
 
-            return await response.Content.ReadFromJsonAsync<IEnumerable<RecordingDto>>() 
+            return await response.Content.ReadFromJsonAsync<IEnumerable<RecordingDto>>()
                    ?? Array.Empty<RecordingDto>();
         }
         catch (HttpRequestException ex)

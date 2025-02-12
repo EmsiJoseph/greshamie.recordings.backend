@@ -1,6 +1,6 @@
 ﻿namespace backend.Constants;
 
-public class RolesConstants
+public  class RolesConstants
 {
     public const string Admin = "Admin";
 

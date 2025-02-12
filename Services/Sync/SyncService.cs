@@ -1,149 +1,137 @@
-using System;
-using System.Threading.Tasks;
 using backend.Data;
 using backend.Data.Models;
-using backend.DTOs;
-using backend.Services.Auth;
+using backend.DTOs.Recording;
 using backend.Services.ClarifyGoServices.HistoricRecordings;
 using backend.Services.Storage;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
-namespace backend.Services.Sync
+namespace backend.Services.Sync;
+
+public class SyncService(
+    IHistoricRecordingsService historicRecordingsService,
+    ApplicationDbContext dbContext,
+    IBlobStorageService blobStorageService,
+    ILogger<SyncService> logger)
+    : ISyncService
 {
-    public class SyncService : ISyncService
+    private readonly ILogger<SyncService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+    private readonly IHistoricRecordingsService _historicRecordingsService =
+        historicRecordingsService ?? throw new ArgumentNullException(nameof(historicRecordingsService));
+
+    private readonly ApplicationDbContext _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+
+    private readonly IBlobStorageService _blobStorageService =
+        blobStorageService ?? throw new ArgumentNullException(nameof(blobStorageService));
+
+    /// <summary>
+    /// Exports recordings matching the search filters to blob storage and saves new SyncedRecording records.
+    /// Throws an exception if an error occurs.
+    /// </summary>
+    private async Task<bool> ExportRecordingToBlob(RecordingSearchFiltersDto searchFilters)
     {
-        private readonly ILogger<SyncService> _logger;
-        private readonly ITokenService _tokenService;
-        private readonly IHistoricRecordingsService _historicRecordingsService;
-        private readonly ApplicationDbContext _dbContext;
-        private readonly IBlobStorageService _blobStorageService;
-        private readonly HttpClient _httpClient;
-
-        public SyncService(
-            ILogger<SyncService> logger,
-            ITokenService tokenService,
-            IHistoricRecordingsService historicRecordingsService,
-            ApplicationDbContext dbContext,
-            IBlobStorageService blobStorageService,
-            HttpClient httpClient)
+        try
         {
-            _logger = logger;
-            _tokenService = tokenService;
-            _historicRecordingsService = historicRecordingsService;
-            _dbContext = dbContext;
-            _blobStorageService = blobStorageService;
-            _httpClient = httpClient;
-        }
-
-        /// <summary>
-        /// Exports recordings matching the search filters to blob storage and saves new SyncedRecording records.
-        /// Throws an exception if an error occurs.
-        /// </summary>
-        private async Task<bool> ExportRecordingToBlob(RecordingSearchFiltersDto searchFilters)
-        {
-            try
+            var pagedResponse = await _historicRecordingsService.SearchRecordingsAsync(searchFilters);
+            var results = pagedResponse.Items;
+            foreach (var result in results)
             {
-                var pagedResponse = await _historicRecordingsService.SearchRecordingsAsync(searchFilters);
-                var results = pagedResponse.Items;
-                foreach (var result in results)
+                var (id, mediaStartedTime) =
+                    (result.Id, result.MediaStartedTime);
+
+                // If the recording already exists, skip it.
+                if (await _dbContext.SyncedRecordings.AnyAsync(r => r.Id == id))
                 {
-                    var (Id, MediaStartedTime) =
-                        (result.Id, result.MediaStartedTime);
-
-                    // If the recording already exists, skip it.
-                    if (await _dbContext.SyncedRecordings.AnyAsync(r => r.Id == Id))
-                    {
-                        _logger.LogInformation($"Skipping already synced recording: {Id}");
-                        continue;
-                    }
-
-                    if (MediaStartedTime == null)
-                    {
-                        _logger.LogWarning($"Skipping recording with missing MediaStartedTime: {Id}");
-                        continue;
-                    }
-
-                    // Format the file name based on the recording date and ID.
-                    var fileName = $"{MediaStartedTime:yyyy/MM/dd}/{Id}.mp3";
-
-                    // Export the recording as an MP3 stream.
-                    using var mp3Stream = await _historicRecordingsService.ExportMp3Async(Id);
-
-                    // Upload the file and get both URLs from blob storage.
-                    var downloadUrl =
-                        await _blobStorageService.UploadFileAsync(mp3Stream, "greshamrecordings", fileName);
-                    var streamingUrl = await _blobStorageService.StreamingUrlAsync("greshamrecordings", fileName);
-
-                    // Save the new record to the SyncedRecordings table.
-                    var syncedRecording = new SyncedRecording
-                    {
-                        Id = Id,
-                        DownloadUrl = downloadUrl,
-                        StreamingUrl = streamingUrl,
-                        RecordingDate = MediaStartedTime?.Date ?? DateTime.UtcNow,
-                        CreatedAt = DateTime.UtcNow,
-                        IsDeleted = false
-                    };
-
-                    _dbContext.SyncedRecordings.Add(syncedRecording);
-                    await _dbContext.SaveChangesAsync();
+                    _logger.LogInformation($"Skipping already synced recording: {id}");
+                    continue;
                 }
 
-                return true;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error exporting recordings to blob for search filters: {@SearchFilters}", searchFilters);
-                throw new Exception("Error exporting recordings to blob for search filters", ex);
-            }
-        }
-
-        /// <summary>
-        /// Synchronizes recordings between the specified dates.
-        /// Throws an exception if the synchronization fails.
-        /// </summary>
-        public async Task SynchronizeRecordingsAsync(DateTime fromDate, DateTime toDate)
-        {
-            try
-            {
-                // Create search filters to retrieve recordings from Clarify Go.
-                var searchFilters = new RecordingSearchFiltersDto
+                if (mediaStartedTime == null)
                 {
-                    StartDate = fromDate,
-                    EndDate = toDate
+                    _logger.LogWarning($"Skipping recording with missing MediaStartedTime: {id}");
+                    continue;
+                }
+
+                // Format the file name based on the recording date and ID.
+                var fileName = $"{mediaStartedTime:yyyy/MM/dd}/{id}.mp3";
+
+                // Export the recording as an MP3 stream.
+                await using var mp3Stream = await _historicRecordingsService.ExportMp3Async(id ?? string.Empty);
+
+                // Upload the file and get both URLs from blob storage.
+                var downloadUrl =
+                    await _blobStorageService.UploadFileAsync(mp3Stream, "greshamrecordings", fileName);
+                var streamingUrl = await _blobStorageService.StreamingUrlAsync("greshamrecordings", fileName);
+
+                // Save the new record to the SyncedRecordings table.
+                var syncedRecording = new SyncedRecording
+                {
+                    Id = id ?? string.Empty,
+                    DownloadUrl = downloadUrl,
+                    StreamingUrl = streamingUrl,
+                    RecordingDate = mediaStartedTime.Value,
+                    CreatedAt = DateTime.UtcNow,
+                    IsDeleted = false
                 };
 
-                // Export the recordings and sync them to blob storage.
-                bool exported = await ExportRecordingToBlob(searchFilters);
-                if (!exported)
-                {
-                    throw new Exception("Export failed for the specified recordings.");
-                }
+                _dbContext.SyncedRecordings.Add(syncedRecording);
+                await _dbContext.SaveChangesAsync();
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error synchronizing recordings from {FromDate} to {ToDate}", fromDate, toDate);
-                throw new Exception($"Error synchronizing recordings from {fromDate} to {toDate}", ex);
-            }
-        }
 
-        /// <summary>
-        /// Syncs a single missing recording using its recording ID.
-        /// Throws an exception if the operation fails.
-        /// </summary>
-        public async Task SyncRecordingByObjectAsync(RecordingDto dto)
+            return true;
+        }
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Error exporting recordings to blob for search filters: {@SearchFilters}",
+                searchFilters);
+            throw new Exception("Error exporting recordings to blob for search filters", ex);
+        }
+    }
+
+    /// <summary>
+    /// Synchronizes recordings between the specified dates.
+    /// Throws an exception if the synchronization fails.
+    /// </summary>
+    public async Task SynchronizeRecordingsAsync(DateTime fromDate, DateTime toDate)
+    {
+        try
+        {
+            // Create search filters to retrieve recordings from Clarify Go.
             var searchFilters = new RecordingSearchFiltersDto
             {
-                StartDate = dto.StartDateTime,
-                EndDate = dto.EndDateTime,
-                CallDirection = dto.CallType,
-                MinimumDurationSeconds = dto.DurationSeconds,
-                MaximumDurationSeconds = dto.DurationSeconds,
-                RecorderId = dto.Recorder
+                StartDate = fromDate,
+                EndDate = toDate
             };
-            await ExportRecordingToBlob(searchFilters);
+
+            // Export the recordings and sync them to blob storage.
+            bool exported = await ExportRecordingToBlob(searchFilters);
+            if (!exported)
+            {
+                throw new Exception("Export failed for the specified recordings.");
+            }
         }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error synchronizing recordings from {FromDate} to {ToDate}", fromDate, toDate);
+            throw new Exception($"Error synchronizing recordings from {fromDate} to {toDate}", ex);
+        }
+    }
+
+    /// <summary>
+    /// Syncs a single missing recording using its recording ID.
+    /// Throws an exception if the operation fails.
+    /// </summary>
+    public async Task SyncRecordingByObjectAsync(RecordingDto dto)
+    {
+        var searchFilters = new RecordingSearchFiltersDto
+        {
+            StartDate = dto.StartDateTime,
+            EndDate = dto.EndDateTime,
+            CallDirection = dto.CallType,
+            MinimumDurationSeconds = dto.DurationSeconds,
+            MaximumDurationSeconds = dto.DurationSeconds,
+            RecorderId = dto.Recorder
+        };
+        await ExportRecordingToBlob(searchFilters);
     }
 }

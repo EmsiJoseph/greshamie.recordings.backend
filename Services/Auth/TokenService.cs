@@ -1,14 +1,8 @@
-﻿using System;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Threading.Tasks;
+﻿using System.Security.Claims;
 using backend.Data.Models;
 using IdentityModel.Client;
 using Microsoft.AspNetCore.DataProtection;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using backend.Exceptions;
 using backend.Exceptions;
 
 namespace backend.Services.Auth
@@ -36,8 +30,7 @@ namespace backend.Services.Auth
             httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
 
         private readonly ILogger<TokenService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        
-        
+
 
         public async Task SetBearerTokenAsync(HttpClient httpClientFromExternalService)
         {
@@ -75,11 +68,10 @@ namespace backend.Services.Auth
 
                     var token = _protector.Unprotect(user.ClarifyGoAccessToken);
                     httpClientFromExternalService.SetBearerToken(token);
-                    
                 }
                 catch (Exception ex)
                 {
-                    throw new ServiceException($"Token processing error: {ex.Message}", 500);
+                    throw new ServiceException($"Token processing error: {ex.Message}");
                 }
             }
             catch (ServiceException)
@@ -122,17 +114,17 @@ namespace backend.Services.Auth
             if (response.IsError)
                 throw new Exception($"Token request failed: {response.Error}");
 
-            Console.WriteLine("Token: " + response.AccessToken);
             return response ?? throw new Exception("Access token is missing");
         }
 
-        public async Task SetBearerTokenWithPasswordAsync(string username, string password, HttpClient httpClientFromExternalService)
+        public async Task SetBearerTokenWithPasswordAsync(string username, string password,
+            HttpClient httpClientFromExternalService)
         {
             try
             {
                 var tokenResponse = await GetAccessTokenFromClarifyGo(username, password);
-                httpClientFromExternalService.SetBearerToken(tokenResponse.AccessToken);
-                
+                httpClientFromExternalService.SetBearerToken(tokenResponse.AccessToken ??
+                                                             throw new Exception("Access token is missing"));
             }
             catch (Exception ex)
             {

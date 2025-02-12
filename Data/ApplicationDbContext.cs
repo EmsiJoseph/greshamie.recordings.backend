@@ -7,15 +7,18 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace backend.Data;
 
-public class ApplicationDbContext : IdentityDbContext<User, Role, string>
+public class ApplicationDbContext(
+    DbContextOptions<ApplicationDbContext> options,
+    IConfiguration configuration,
+    IWebHostEnvironment environment)
+    : IdentityDbContext<User, Role, string>(options)
 {
-    private readonly IConfiguration _configuration;
+    private readonly IConfiguration _configuration =
+        configuration ?? throw new ArgumentNullException(nameof(configuration));
 
-    public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options, IConfiguration configuration)
-        : base(options)
-    {
-        _configuration = configuration;
-    }
+    private readonly IWebHostEnvironment _environment =
+        environment ?? throw new ArgumentNullException(nameof(environment));
+
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -73,14 +76,19 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, string>
     {
         base.OnConfiguring(optionsBuilder);
 
-        optionsBuilder
-            .EnableSensitiveDataLogging()
-            .EnableDetailedErrors()
-            .ConfigureWarnings(warnings =>
-            {
-                warnings.Ignore(RelationalEventId.PendingModelChangesWarning);
-                warnings.Ignore(CoreEventId.DuplicateDependentEntityTypeInstanceWarning);
-            });
+        // Only enable sensitive data logging in development
+        if (_environment.IsDevelopment())
+        {
+            optionsBuilder
+                .EnableSensitiveDataLogging()
+                .EnableDetailedErrors();
+        }
+
+        optionsBuilder.ConfigureWarnings(warnings =>
+        {
+            warnings.Ignore(RelationalEventId.PendingModelChangesWarning);
+            warnings.Ignore(CoreEventId.DuplicateDependentEntityTypeInstanceWarning);
+        });
     }
 
     public DbSet<AuditEntry> AuditEntries { get; set; }

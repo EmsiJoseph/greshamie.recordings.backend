@@ -1,13 +1,8 @@
 
 namespace backend.Exceptions
 {
-    public class ServiceException : Exception
+    public class ServiceException(string message, int statusCode = 500) : Exception(message)
     {
-        public int StatusCode { get; }
-
-        public ServiceException(string message, int statusCode = 500) : base(message)
-        {
-            StatusCode = statusCode;
-        }
+        public int StatusCode { get; } = statusCode;
     }
 }

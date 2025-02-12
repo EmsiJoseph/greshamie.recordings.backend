@@ -6,11 +6,11 @@ using backend.Constants;
 using backend.Data;
 using backend.Data.Models;
 using backend.DTOs;
+using backend.DTOs.Recording;
 using backend.Exceptions;
 using backend.Extensions;
 using backend.Services.Audits;
 using backend.Services.ClarifyGoServices.HistoricRecordings;
-using backend.Services.ClarifyGoServices.LiveRecordings;
 using backend.Services.Sync;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -25,7 +25,6 @@ namespace backend.Controllers;
 public class RecordingController : ControllerBase
 {
     private readonly ILogger<RecordingController> _logger;
-    private readonly ILiveRecordingsService _liveRecordingsService;
     private readonly IHistoricRecordingsService _historicRecordingsService;
     private readonly ISyncService _syncService;
     private readonly ApplicationDbContext _context;
@@ -34,12 +33,10 @@ public class RecordingController : ControllerBase
 
     public RecordingController(
         ILogger<RecordingController> logger,
-        ILiveRecordingsService liveRecordingsService,
         IHistoricRecordingsService historicRecordingsService,
         ISyncService syncService,
         ApplicationDbContext context,
-        IAuditService auditService
-    )
+        IAuditService auditService)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         _liveRecordingsService =
@@ -52,7 +49,7 @@ public class RecordingController : ControllerBase
     }
 
     private async Task<List<RecordingDto>> MapRawRecordingToDto(
-        List<ClarifyGoHistoricRecordingRaw> historicRecordingsRaw)
+        List<HistoricRecordingRaw> historicRecordingsRaw)
     {
         return await Task.FromResult(historicRecordingsRaw.Select(x => new RecordingDto
         {
@@ -66,7 +63,7 @@ public class RecordingController : ControllerBase
                   string.Empty
                 : string.Empty,
             IsLive = false, // TODO: Change this to dynamic if we know the shape of the live recordings
-            DurationSeconds = x.MediaStartedTime != null && x.MediaCompletedTime != null
+            DurationSeconds = x is { MediaStartedTime: not null, MediaCompletedTime: not null }
                 ? (int)(x.MediaCompletedTime - x.MediaStartedTime).Value.TotalSeconds
                 : 0,
             Recorder = x.RecorderId,
@@ -78,15 +75,16 @@ public class RecordingController : ControllerBase
     {
         try
         {
-            var pagedResults = await _historicRecordingsService.SearchRecordingsAsync(filtersDto);
+            var pagedResults =
+                await _historicRecordingsService.SearchRecordingsAsync(filtersDto ?? new RecordingSearchFiltersDto());
 
             var mappedItems = await MapRawRecordingToDto(pagedResults.Items.ToList());
 
             if (!string.IsNullOrEmpty(filtersDto?.Search))
             {
                 mappedItems = mappedItems.Where(x =>
-                    x.Caller.Contains(filtersDto.Search) ||
-                    x.Receiver.Contains(filtersDto.Search)
+                    x is { Caller: not null, Receiver: not null } && (x.Caller.Contains(filtersDto.Search) ||
+                                                                      x.Receiver.Contains(filtersDto.Search))
                 ).ToList();
             }
 
@@ -108,12 +106,12 @@ public class RecordingController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error while searching recordings");
-            throw new ServiceException($"Unexpected error: {ex.Message}", 500);
+            throw new ServiceException($"Unexpected error: {ex.Message}");
         }
     }
 
     /// <summary>
-    /// Retrieves a synced recording from the database. If it doesn’t exist,
+    /// Retrieves a synced recording from the database. If it doesn't exist,
     /// it calls the sync service to export and sync the recording.
     /// </summary>
     private async Task<SyncedRecording> GetSyncedRecordingAsync(RecordingDto dto)
@@ -127,12 +125,12 @@ public class RecordingController : ControllerBase
             syncedRecording = await _context.SyncedRecordings.FindAsync(dto.Id);
         }
 
-        return syncedRecording;
+        return syncedRecording ?? throw new Exception("Synced recording not found.");
     }
 
-    [OutputCache(Duration = 60, VaryByQueryKeys = new[] { "RecordingsCache" })]
+    [OutputCache(Duration = 60, VaryByQueryKeys = ["RecordingsCache"])]
     [HttpGet("")]
-    public async Task<IActionResult> SearchRecordings([FromQuery] RecordingSearchFiltersDto filtersDto)
+    public async Task<IActionResult> SearchRecordings([FromQuery] RecordingSearchFiltersDto? filtersDto)
     {
         try
         {
@@ -142,18 +140,9 @@ public class RecordingController : ControllerBase
             }
 
             // Ensure dates are set if not provided
-            if (filtersDto.StartDate == default)
-            {
-                filtersDto.StartDate = DateTime.Now.StartOfWeek(DayOfWeek.Monday);
-            }
+            filtersDto.StartDate ??= DateTime.Now.StartOfWeek(DayOfWeek.Monday);
 
-            if (filtersDto.EndDate == default)
-            {
-                filtersDto.EndDate = DateTime.Now;
-            }
-
-            _logger.LogInformation("Search Filters: {Filters}", JsonSerializer.Serialize(filtersDto));
-
+            filtersDto.EndDate ??= DateTime.Now;
 
             var results = await SearchAndProcessRecordings(filtersDto);
             return Ok(results);
@@ -170,7 +159,7 @@ public class RecordingController : ControllerBase
     }
 
     [HttpPost("sync")]
-    public async Task<IActionResult> Synchronize([FromBody] SyncDateRangeDto request)
+    public async Task<IActionResult> Synchronize([FromBody] SyncDateRangeDto? request)
     {
         if (request == null)
         {
@@ -221,7 +210,7 @@ public class RecordingController : ControllerBase
             string logMessage = $"User played the recording.";
             await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.RecordPlayed, syncedRecording.Id.ToString(), logMessage);
 
-            return Ok(new { StreamingUrl = syncedRecording.StreamingUrl });
+            return Ok(new { syncedRecording.StreamingUrl });
         }
         catch (Exception ex)
         {
@@ -249,7 +238,7 @@ public class RecordingController : ControllerBase
             string logMessage = $"User downloaded the recording.";
             await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.RecordExported, syncedRecording.Id.ToString(), logMessage);
 
-            return Ok(new { DownloadUrl = syncedRecording.DownloadUrl });
+            return Ok(new { syncedRecording.DownloadUrl });
         }
         catch (Exception ex)
         {

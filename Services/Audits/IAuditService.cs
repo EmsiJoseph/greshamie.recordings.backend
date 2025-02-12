@@ -1,4 +1,5 @@
 ﻿using backend.DTOs;
+using backend.DTOs.Audit;
 
 namespace backend.Services.Audits
 {
