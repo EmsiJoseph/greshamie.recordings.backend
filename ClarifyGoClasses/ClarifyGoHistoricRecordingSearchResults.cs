@@ -6,14 +6,14 @@ namespace backend.Classes
     public class HistoricRecordingSearchResults
     {
         [JsonPropertyName("searchResults")]
-        public List<HistoricRecordingSearchResult> SearchResults { get; set; } = new List<HistoricRecordingSearchResult>();
+        public List<ClarifyGoHistoricRecordingSearchResult> SearchResults { get; set; } = new List<ClarifyGoHistoricRecordingSearchResult>();
         
         [JsonPropertyName("totalResults")]
         public int TotalResults { get; set; }
     }
 
     // Represents an individual search result item.
-    public class HistoricRecordingSearchResult
+    public class ClarifyGoHistoricRecordingSearchResult
     {
         // The recording details.
         [JsonPropertyName("recording")]
