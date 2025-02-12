@@ -1,8 +1,7 @@
 using System.Security.Claims;
-using System.Text.Json;
-using Azure.Core;
 using backend.ClarifyGoClasses;
 using backend.Constants;
+using backend.Constants.Audit;
 using backend.Data;
 using backend.Data.Models;
 using backend.DTOs;
@@ -39,8 +38,6 @@ public class RecordingController : ControllerBase
         IAuditService auditService)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _liveRecordingsService =
-            liveRecordingsService ?? throw new ArgumentNullException(nameof(liveRecordingsService));
         _historicRecordingsService = historicRecordingsService ??
                                      throw new ArgumentNullException(nameof(historicRecordingsService));
         _context = context ?? throw new ArgumentNullException(nameof(context));
@@ -177,7 +174,8 @@ public class RecordingController : ControllerBase
             }
 
             // Log the recording sync event using your audit service with date range
-            string logMessage = $"User synced recordings from {request.StartDate:yyyy-MM-dd} to {request.EndDate:yyyy-MM-dd}";
+            string logMessage =
+                $"User synced recordings from {request.StartDate:yyyy-MM-dd} to {request.EndDate:yyyy-MM-dd}";
             await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.ManualSync, null, logMessage);
 
 
@@ -208,7 +206,8 @@ public class RecordingController : ControllerBase
             }
 
             string logMessage = $"User played the recording.";
-            await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.RecordPlayed, syncedRecording.Id.ToString(), logMessage);
+            await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.RecordPlayed, syncedRecording.Id.ToString(),
+                logMessage);
 
             return Ok(new { syncedRecording.StreamingUrl });
         }
@@ -236,7 +235,8 @@ public class RecordingController : ControllerBase
             }
 
             string logMessage = $"User downloaded the recording.";
-            await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.RecordExported, syncedRecording.Id.ToString(), logMessage);
+            await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.RecordExported,
+                syncedRecording.Id.ToString(), logMessage);
 
             return Ok(new { syncedRecording.DownloadUrl });
         }
