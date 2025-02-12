@@ -5,6 +5,7 @@ using System;
 using System.Threading.Tasks;
 using backend.Data;
 using backend.Data.Models;
+using backend.DTOs;
 using backend.Services.Sync;
 using Microsoft.AspNetCore.Authorization;
 
@@ -33,26 +34,26 @@ namespace backend.Controllers
         /// Retrieves a synced recording from the database. If it doesn’t exist,
         /// it calls the sync service to export and sync the recording.
         /// </summary>
-        private async Task<SyncedRecording> GetSyncedRecordingAsync(string recordingId)
+        private async Task<SyncedRecording> GetSyncedRecordingAsync(RecordingDto dto)
         {
             // Attempt to get the synced recording from the database.
-            var syncedRecording = await _dbContext.SyncedRecordings.FindAsync(recordingId);
+            var syncedRecording = await _dbContext.SyncedRecordings.FindAsync(dto.Id);
             if (syncedRecording == null)
             {
                 // If not found, attempt to sync the recording.
-                await _syncService.SyncRecordingByIdAsync(recordingId);
-                syncedRecording = await _dbContext.SyncedRecordings.FindAsync(recordingId);
+                await _syncService.SyncRecordingByObjectAsync(dto);
+                syncedRecording = await _dbContext.SyncedRecordings.FindAsync(dto.Id);
             }
             return syncedRecording;
         }
 
         // GET: api/blobrecording/{recordingId}/stream
-        [HttpGet("{recordingId}/stream")]
-        public async Task<IActionResult> GetStreamingUrl(string recordingId)
+        [HttpGet("stream")]
+        public async Task<IActionResult> GetStreamingUrl([FromQuery] RecordingDto dto)
         {
             try
             {
-                var syncedRecording = await GetSyncedRecordingAsync(recordingId);
+                var syncedRecording = await GetSyncedRecordingAsync(dto);
                 if (syncedRecording == null)
                 {
                     return NotFound(new { Message = "Recording not found." });
@@ -61,18 +62,17 @@ namespace backend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving streaming URL for recording {RecordingId}", recordingId);
                 return StatusCode(500, new { Message = "Error retrieving streaming URL", Error = ex.Message });
             }
         }
 
         // GET: api/blobrecording/{recordingId}/download
-        [HttpGet("{recordingId}/download")]
-        public async Task<IActionResult> GetDownloadUrl(string recordingId)
+        [HttpGet("download")]
+        public async Task<IActionResult> GetDownloadUrl([FromQuery] RecordingDto dto)
         {
             try
             {
-                var syncedRecording = await GetSyncedRecordingAsync(recordingId);
+                var syncedRecording = await GetSyncedRecordingAsync(dto);
                 if (syncedRecording == null)
                 {
                     return NotFound(new { Message = "Recording not found." });
@@ -81,7 +81,6 @@ namespace backend.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving download URL for recording {RecordingId}", recordingId);
                 return StatusCode(500, new { Message = "Error retrieving download URL", Error = ex.Message });
             }
         }

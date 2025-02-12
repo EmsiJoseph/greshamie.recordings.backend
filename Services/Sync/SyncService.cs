@@ -131,11 +131,16 @@ namespace backend.Services.Sync
         /// Syncs a single missing recording using its recording ID.
         /// Throws an exception if the operation fails.
         /// </summary>
-        public async Task SyncRecordingByIdAsync(string recordingId)
+        public async Task SyncRecordingByObjectAsync(RecordingDto dto)
         {
             var searchFilters = new RecordingSearchFiltersDto
             {
-                CallId = recordingId
+                StartDate = dto.StartDateTime,
+                EndDate = dto.EndDateTime,
+                CallDirection = dto.CallType,
+                MinimumDurationSeconds = dto.DurationSeconds,
+                MaximumDurationSeconds = dto.DurationSeconds,
+                RecorderId = dto.Recorder
             };
             await ExportRecordingToBlob(searchFilters);
         }
