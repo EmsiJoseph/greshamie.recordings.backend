@@ -1,6 +1,6 @@
 namespace backend.DTOs.Audit
 {
-    public class AuditEntryDto
+    public class AuditResponseDto
     {
         public int Id { get; set; }
 

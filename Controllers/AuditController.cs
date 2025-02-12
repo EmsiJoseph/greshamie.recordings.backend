@@ -21,6 +21,10 @@ namespace backend.Controllers
 
         private readonly ILogger<AuditController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
+        /// <summary>
+        /// Gets all audit logs with optional filtering and pagination.
+        /// Use this to see who did what and when in the system.
+        /// </summary>
         [OutputCache(Duration = 60, VaryByQueryKeys = ["AuditRequestDto"])]
         [HttpGet("")]
         public async Task<IActionResult> GetAll(

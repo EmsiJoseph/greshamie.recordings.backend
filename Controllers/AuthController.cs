@@ -90,6 +90,10 @@ namespace backend.Controllers
             };
         }
 
+        /// <summary>
+        /// Log into the system with your username and password.
+        /// Returns tokens needed for making other API calls.
+        /// </summary>
         [HttpPost("login")]
         [AllowAnonymous]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
@@ -156,9 +160,16 @@ namespace backend.Controllers
                 // Generate JWT token
                 var jwtToken = GenerateJwtToken(user, role ?? string.Empty);
 
+                var auditEntry = new AuditEntry
+                {
+                    UserId = user.Id,
+                    EventId = AuditEventsConstants.UserLoggedInId,
+                    RecordId = null,
+                    Details = "User logged in."
+                };
+
                 // Log the login event using your audit service and the predefined constant.
-                await _auditService.LogAuditEntryAsync(user.Id, AuditEventsConstants.UserLoggedInId, null,
-                    "User logged in.");
+                await _auditService.LogAuditEntryAsync(auditEntry);
 
                 return Ok(new LoginResponseDto
                 {
@@ -181,6 +192,10 @@ namespace backend.Controllers
             }
         }
 
+        /// <summary>
+        /// Get a new access token using your refresh token.
+        /// Use this when your access token expires.
+        /// </summary>
         [AllowAnonymous]
         [HttpPost("refresh")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
@@ -209,9 +224,15 @@ namespace backend.Controllers
             user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
             await _userManager.UpdateAsync(user);
 
+            var auditEntry = new AuditEntry
+            {
+                UserId = user.Id,
+                EventId = AuditEventsConstants.TokenRefreshedId,
+                RecordId = null,
+                Details = "Token refreshed."
+            };
             // Log the refresh event using your audit service and the predefined constant.
-            await _auditService.LogAuditEntryAsync(user.Id, AuditEventsConstants.TokenRefreshedId, null,
-                "Token refreshed.");
+            await _auditService.LogAuditEntryAsync(auditEntry);
 
             return Ok(new LoginResponseDto
             {
@@ -229,6 +250,10 @@ namespace backend.Controllers
             });
         }
 
+        /// <summary>
+        /// Log out of the system.
+        /// This will invalidate your current tokens.
+        /// </summary>
         [HttpPost("logout")]
         [AllowAnonymous]
         public async Task<IActionResult> Logout()
@@ -288,9 +313,15 @@ namespace backend.Controllers
 
             _logger.LogInformation("Logout successful.");
 
+            var auditEntry = new AuditEntry
+            {
+                UserId = userId,
+                EventId = AuditEventsConstants.UserLoggedOutId,
+                RecordId = null,
+                Details = "User logged out."
+            };
             // Log the logout event using your audit service and the predefined constant.
-            await _auditService.LogAuditEntryAsync(userId, AuditEventsConstants.UserLoggedOutId, null,
-                "User logged out.");
+            await _auditService.LogAuditEntryAsync(auditEntry);
             return Ok(new { message = "Logged out successfully." });
         }
     }
