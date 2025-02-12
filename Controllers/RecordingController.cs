@@ -80,7 +80,7 @@ public class RecordingController(
             return new PagedResponseDto<RecordingDto>
             {
                 Items = mappedItems,
-                PageOffset = pagedResults.PageOffset,
+                PageOffSet = pagedResults.PageOffSet,
                 PageSize = pagedResults.PageSize,
                 TotalPages = pagedResults.TotalPages,
                 TotalCount = pagedResults.TotalCount,
