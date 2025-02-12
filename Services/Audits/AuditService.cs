@@ -45,7 +45,6 @@ namespace backend.Services.Audits
                 {
                     UserId = userId,
                     EventId = eventId,
-                    Timestamp = DateTime.UtcNow,
                     Details = details
                 };
 
