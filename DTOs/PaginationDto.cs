@@ -3,7 +3,7 @@ namespace backend.DTOs
     public class PaginationDto
     {
         private int _pageSize = 10;
-        private int _pageOffset;
+        private int _pageOffset = 0;
 
         public int PageOffset
         {

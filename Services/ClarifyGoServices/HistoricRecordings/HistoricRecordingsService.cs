@@ -78,7 +78,7 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
         }
 
         public async Task<PagedResponseDto<ClarifyGoHistoricRecordingRaw>> SearchRecordingsAsync(
-            RecordingSearchFiltersDto searchFiltersDto, PaginationDto? pagination)
+            RecordingSearchFiltersDto searchFiltersDto)
         {
             try
             {
@@ -118,17 +118,20 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
                     .ToList() ?? new List<ClarifyGoHistoricRecordingRaw>();
 
                 var totalCount = searchResultsObj.TotalResults;
-                var totalPages = (int)Math.Ceiling(totalCount / (double)pagination.PageSize);
+                
+              
+                
+                var totalPages = (int)Math.Ceiling(totalCount / (double)searchFiltersDto.PageSize);
 
                 return new PagedResponseDto<ClarifyGoHistoricRecordingRaw>
                 {
                     Items = recordings,
-                    PageOffset = pagination.PageOffset,
-                    PageSize = pagination.PageSize,
+                    PageOffset = searchFiltersDto.PageOffset,
+                    PageSize = searchFiltersDto.PageSize,
                     TotalPages = totalPages,
                     TotalCount = totalCount,
-                    HasNext = (pagination.PageOffset + 1) * pagination.PageSize < totalCount,
-                    HasPrevious = pagination.PageOffset > 0
+                    HasNext = (searchFiltersDto.PageOffset + 1) * searchFiltersDto.PageSize < totalCount,
+                    HasPrevious = searchFiltersDto.PageOffset > 0
                 };
             }
             catch (HttpRequestException ex)

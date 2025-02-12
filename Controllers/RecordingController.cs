@@ -7,6 +7,7 @@ using backend.Exceptions;
 using backend.Extensions;
 using backend.Services.ClarifyGoServices.HistoricRecordings;
 using backend.Services.ClarifyGoServices.LiveRecordings;
+using backend.Services.Sync;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
@@ -22,12 +23,14 @@ public class RecordingController : ControllerBase
     private readonly ILogger<RecordingController> _logger;
     private readonly ILiveRecordingsService _liveRecordingsService;
     private readonly IHistoricRecordingsService _historicRecordingsService;
+    private readonly ISyncService _syncService;
     private readonly ApplicationDbContext _context;
 
     public RecordingController(
         ILogger<RecordingController> logger,
         ILiveRecordingsService liveRecordingsService,
         IHistoricRecordingsService historicRecordingsService,
+        ISyncService syncService,
         ApplicationDbContext context
     )
     {
@@ -37,6 +40,7 @@ public class RecordingController : ControllerBase
         _historicRecordingsService = historicRecordingsService ??
                                      throw new ArgumentNullException(nameof(historicRecordingsService));
         _context = context ?? throw new ArgumentNullException(nameof(context));
+        _syncService = syncService ?? throw new ArgumentNullException(nameof(syncService));
     }
 
     private async Task<List<RecordingDto>> MapRawRecordingToDto(
@@ -62,12 +66,11 @@ public class RecordingController : ControllerBase
     }
 
     private async Task<PagedResponseDto<RecordingDto>> SearchAndProcessRecordings(
-        RecordingSearchFiltersDto? filtersDto,
-        PaginationDto pagination)
+        RecordingSearchFiltersDto? filtersDto)
     {
         try
         {
-            var pagedResults = await _historicRecordingsService.SearchRecordingsAsync(filtersDto, pagination);
+            var pagedResults = await _historicRecordingsService.SearchRecordingsAsync(filtersDto);
 
             var mappedItems = await MapRawRecordingToDto(pagedResults.Items.ToList());
 
@@ -125,13 +128,8 @@ public class RecordingController : ControllerBase
 
             _logger.LogInformation("Search Filters: {Filters}", JsonSerializer.Serialize(filtersDto));
 
-            var pagination = new PaginationDto
-            {
-                PageOffset = filtersDto.PageOffset ?? 0,
-                PageSize = filtersDto.PageSize ?? 10
-            };
 
-            var results = await SearchAndProcessRecordings(filtersDto, pagination);
+            var results = await SearchAndProcessRecordings(filtersDto);
             return Ok(results);
         }
         catch (ServiceException ex)
@@ -142,6 +140,26 @@ public class RecordingController : ControllerBase
         {
             _logger.LogError(ex, "Unexpected error in SearchRecordings");
             return StatusCode(500, new { message = "An unexpected error occurred" });
+        }
+    }
+
+    [HttpPost("sync")]
+    public async Task<IActionResult> Synchronize([FromBody] SyncDateRangeDto request)
+    {
+        if (request == null)
+        {
+            return BadRequest(new { Message = "Invalid request body." });
+        }
+
+        try
+        {
+            await _syncService.SynchronizeRecordingsAsync(request.StartDate, request.EndDate);
+            return Ok(new { Message = "Synchronization completed successfully." });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Synchronization failed.");
+            return StatusCode(500, new { Message = "Error synchronizing recordings.", Error = ex.Message });
         }
     }
 
