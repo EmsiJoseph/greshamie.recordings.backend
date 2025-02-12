@@ -1,11 +1,8 @@
-using System;
-using System.Threading.Tasks;
 using backend.Services.Sync;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-
 namespace backend.Controllers
+
 {
     [Authorize]
     [ApiController]
