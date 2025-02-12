@@ -2,6 +2,7 @@ using System.Text.Json;
 using backend.ClarifyGoClasses;
 using backend.Constants;
 using backend.Data;
+using backend.Data.Models;
 using backend.DTOs;
 using backend.Exceptions;
 using backend.Extensions;
@@ -104,6 +105,24 @@ public class RecordingController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Retrieves a synced recording from the database. If it doesn’t exist,
+    /// it calls the sync service to export and sync the recording.
+    /// </summary>
+    private async Task<SyncedRecording> GetSyncedRecordingAsync(RecordingDto dto)
+    {
+        // Attempt to get the synced recording from the database.
+        var syncedRecording = await _context.SyncedRecordings.FindAsync(dto.Id);
+        if (syncedRecording == null)
+        {
+            // If not found, attempt to sync the recording.
+            await _syncService.SyncRecordingByObjectAsync(dto);
+            syncedRecording = await _context.SyncedRecordings.FindAsync(dto.Id);
+        }
+
+        return syncedRecording;
+    }
+
     [OutputCache(Duration = 60, VaryByQueryKeys = new[] { "RecordingsCache" })]
     [HttpGet("")]
     public async Task<IActionResult> SearchRecordings([FromQuery] RecordingSearchFiltersDto filtersDto)
@@ -160,6 +179,44 @@ public class RecordingController : ControllerBase
         {
             _logger.LogError(ex, "Synchronization failed.");
             return StatusCode(500, new { Message = "Error synchronizing recordings.", Error = ex.Message });
+        }
+    }
+
+    [HttpGet("stream")]
+    public async Task<IActionResult> GetStreamingUrl([FromQuery] RecordingDto dto)
+    {
+        try
+        {
+            var syncedRecording = await GetSyncedRecordingAsync(dto);
+            if (syncedRecording == null)
+            {
+                return NotFound(new { Message = "Recording not found." });
+            }
+
+            return Ok(new { StreamingUrl = syncedRecording.StreamingUrl });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Message = "Error retrieving streaming URL", Error = ex.Message });
+        }
+    }
+
+    [HttpGet("download")]
+    public async Task<IActionResult> GetDownloadUrl([FromQuery] RecordingDto dto)
+    {
+        try
+        {
+            var syncedRecording = await GetSyncedRecordingAsync(dto);
+            if (syncedRecording == null)
+            {
+                return NotFound(new { Message = "Recording not found." });
+            }
+
+            return Ok(new { DownloadUrl = syncedRecording.DownloadUrl });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new { Message = "Error retrieving download URL", Error = ex.Message });
         }
     }
 }
