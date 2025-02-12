@@ -15,7 +15,8 @@ namespace backend.Controllers;
 
 [Authorize]
 [ApiController]
-[Route("api/[controller]")]
+[ApiVersion(ApiVersionConstants.VersionString)]
+[Route("api/v{version:apiVersion}/[controller]")]
 public class RecordingController : ControllerBase
 {
     private readonly ILogger<RecordingController> _logger;
@@ -61,19 +62,19 @@ public class RecordingController : ControllerBase
     }
 
     private async Task<PagedResponseDto<RecordingDto>> SearchAndProcessRecordings(
-        RecordingSearchFiltersDto? filtersDto, 
+        RecordingSearchFiltersDto? filtersDto,
         PaginationDto pagination)
     {
         try
         {
             var pagedResults = await _historicRecordingsService.SearchRecordingsAsync(filtersDto, pagination);
-            
+
             var mappedItems = await MapRawRecordingToDto(pagedResults.Items.ToList());
 
             if (!string.IsNullOrEmpty(filtersDto?.Search))
             {
                 mappedItems = mappedItems.Where(x =>
-                    x.Caller.Contains(filtersDto.Search) || 
+                    x.Caller.Contains(filtersDto.Search) ||
                     x.Receiver.Contains(filtersDto.Search)
                 ).ToList();
             }
