@@ -1,4 +1,5 @@
 using System.Text;
+using backend.Constants;
 using backend.Data;
 using backend.Data.Models;
 using backend.Middleware;
@@ -12,6 +13,8 @@ using backend.Services.Storage;
 using backend.Services.Sync;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -61,6 +64,21 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.PropertyNamingPolicy = null;
         options.JsonSerializerOptions.WriteIndented = true;
     });
+
+// Add API versioning
+builder.Services.AddApiVersioning(options =>
+{
+    options.DefaultApiVersion = new ApiVersion(ApiVersionConstants.MajorVersion, ApiVersionConstants.MinorVersion);
+    options.AssumeDefaultVersionWhenUnspecified = true;
+    options.ReportApiVersions = true;
+    options.ApiVersionReader = ApiVersionReader.Combine(
+        new UrlSegmentApiVersionReader(),
+        new HeaderApiVersionReader(ApiVersionConstants.HeaderName),
+        new QueryStringApiVersionReader(ApiVersionConstants.QueryStringParam)
+    );
+});
+
+builder.Services.AddEndpointsApiExplorer();
 
 var connection = String.Empty;
 

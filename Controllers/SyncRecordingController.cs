@@ -1,13 +1,16 @@
+using backend.Constants;
 using backend.DTOs;
 using backend.Services.Sync;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+
 namespace backend.Controllers
 
 {
     [Authorize]
     [ApiController]
-    [Route("api/[controller]")]
+    [ApiVersion(ApiVersionConstants.VersionString)]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public class SyncRecordingController : ControllerBase
     {
         private readonly ISyncService _syncService;
@@ -28,7 +31,7 @@ namespace backend.Controllers
                 return BadRequest(new { Message = "Invalid request body." });
             }
 
-            try 
+            try
             {
                 await _syncService.SynchronizeRecordingsAsync(request.StartDate, request.EndDate);
                 return Ok(new { Message = "Synchronization completed successfully." });

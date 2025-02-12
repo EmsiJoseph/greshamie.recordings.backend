@@ -9,12 +9,14 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 using Microsoft.Extensions.Logging;
+using backend.Constants;
 
 namespace backend.Controllers
 {
     [Authorize]
     [ApiController]
-    [Route("api/[controller]")]
+    [ApiVersion(ApiVersionConstants.VersionString)]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public class AuditController : ControllerBase
     {
         private readonly IAuditService _auditService;

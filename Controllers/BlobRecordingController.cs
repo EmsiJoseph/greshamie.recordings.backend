@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Threading.Tasks;
+using backend.Constants;
 using backend.Data;
 using backend.Data.Models;
 using backend.DTOs;
@@ -13,7 +14,8 @@ namespace backend.Controllers
 {
     [Authorize]
     [ApiController]
-    [Route("api/[controller]")]
+    [ApiVersion(ApiVersionConstants.VersionString)]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public class BlobRecordingController : ControllerBase
     {
         private readonly ApplicationDbContext _dbContext;
@@ -44,6 +46,7 @@ namespace backend.Controllers
                 await _syncService.SyncRecordingByObjectAsync(dto);
                 syncedRecording = await _dbContext.SyncedRecordings.FindAsync(dto.Id);
             }
+
             return syncedRecording;
         }
 
@@ -58,6 +61,7 @@ namespace backend.Controllers
                 {
                     return NotFound(new { Message = "Recording not found." });
                 }
+
                 return Ok(new { StreamingUrl = syncedRecording.StreamingUrl });
             }
             catch (Exception ex)
@@ -77,6 +81,7 @@ namespace backend.Controllers
                 {
                     return NotFound(new { Message = "Recording not found." });
                 }
+
                 return Ok(new { DownloadUrl = syncedRecording.DownloadUrl });
             }
             catch (Exception ex)
