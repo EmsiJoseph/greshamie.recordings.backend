@@ -155,7 +155,7 @@ namespace backend.Controllers
                 var jwtToken = GenerateJwtToken(user, role);
 
                 // Log the login event using your audit service and the predefined constant.
-                await _auditService.LogAuditEntryAsync(user.Id, AuditEventsConstants.UserLoggedInId, "User logged in.");
+                await _auditService.LogAuditEntryAsync(user.Id, AuditEventsConstants.UserLoggedInId, null, "User logged in.");
 
                 return Ok(new
                 {
@@ -290,7 +290,7 @@ namespace backend.Controllers
             _logger.LogInformation("Logout successful.");
 
             // Log the logout event using your audit service and the predefined constant.
-            await _auditService.LogAuditEntryAsync(userId, AuditEventsConstants.UserLoggedOutId, "User logged out.");
+            await _auditService.LogAuditEntryAsync(userId, AuditEventsConstants.UserLoggedOutId, null, "User logged out.");
             return Ok(new { message = "Logged out successfully." });
         }
     }
