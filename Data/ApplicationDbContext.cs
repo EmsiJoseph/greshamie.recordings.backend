@@ -1,5 +1,6 @@
 using backend.Data.Models;
 using backend.Data.Seeds;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
@@ -20,24 +21,17 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, string>
     {
         base.OnModelCreating(builder);
 
+        // These seeds will always run
         builder.SeedAuditEvent();
         builder.SeedCallType();
         builder.SeedAuditEventType();
 
+        // Always configure the user role seed data, but don't check tables here
         var adminUserName = _configuration["AdminCredentials:UserName"];
         var adminPassword = _configuration["AdminCredentials:Password"];
-        var adminRoleId = _configuration["UserRole:AdminRoleId"];
-        var userRoleId = _configuration["UserRole:UserRoleId"];
-        var adminUserId = _configuration["UserRole:UserId"];
+        builder.SeedUserRole(adminUserName, adminPassword);
 
-        if (string.IsNullOrEmpty(adminUserName) || string.IsNullOrEmpty(adminPassword) ||
-            string.IsNullOrEmpty(adminRoleId) || string.IsNullOrEmpty(userRoleId) || string.IsNullOrEmpty(adminUserId))
-        {
-            throw new InvalidOperationException("Admin credentials not found in configuration.");
-        }
-
-        builder.SeedUserRole(adminUserName, adminPassword, adminRoleId, userRoleId, adminUserId);
-
+        // Entity configurations
         builder.Entity<AuditEntry>()
             .HasOne(ae => ae.Event)
             .WithMany(e => e.AuditEntries)
@@ -58,13 +52,21 @@ public class ApplicationDbContext : IdentityDbContext<User, Role, string>
             .HasForeignKey(ae => ae.RecordId)
             .OnDelete(DeleteBehavior.SetNull)
             .IsRequired(false);
-        
+
         builder.Entity<AuditEvent>()
             .HasOne(ae => ae.Type)
             .WithMany(et => et.Events)
             .HasForeignKey(ae => ae.TypeId)
             .OnDelete(DeleteBehavior.NoAction)
             .IsRequired();
+    }
+
+    /// <summary>
+    /// Checks if identity tables are empty and needs seeding
+    /// </summary>
+    public bool NeedsIdentitySeeding()
+    {
+        return !Users.Any() && !Roles.Any() && !Set<IdentityUserRole<string>>().Any();
     }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

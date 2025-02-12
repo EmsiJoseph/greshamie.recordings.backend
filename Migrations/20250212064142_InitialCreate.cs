@@ -62,17 +62,18 @@ namespace backend.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "AuditEvents",
+                name: "AuditEventTypes",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    NormalizedName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_AuditEvents", x => x.Id);
+                    table.PrimaryKey("PK_AuditEventTypes", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -215,6 +216,26 @@ namespace backend.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "AuditEvents",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    TypeId = table.Column<int>(type: "int", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_AuditEvents", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_AuditEvents_AuditEventTypes_TypeId",
+                        column: x => x.TypeId,
+                        principalTable: "AuditEventTypes",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "AuditEntries",
                 columns: table => new
                 {
@@ -252,28 +273,22 @@ namespace backend.Migrations
                 columns: new[] { "Id", "ConcurrencyStamp", "CreatedAt", "Description", "IsActive", "Level", "Name", "NormalizedName", "UpdatedAt" },
                 values: new object[,]
                 {
-                    { "903281ca-54d2-4d9f-8e9e-ef529d0afd4c", null, new DateTime(2025, 2, 11, 8, 28, 29, 311, DateTimeKind.Utc).AddTicks(1253), "Administrator role with full access", true, 100, "Admin", "ADMIN", new DateTime(2025, 2, 11, 8, 28, 29, 311, DateTimeKind.Utc).AddTicks(1258) },
-                    { "b7ee85d4-608f-4671-9a00-71cb05ffc2d4", null, new DateTime(2025, 2, 11, 8, 28, 29, 311, DateTimeKind.Utc).AddTicks(2289), "Standard user role with limited access", true, 90, "User", "USER", new DateTime(2025, 2, 11, 8, 28, 29, 311, DateTimeKind.Utc).AddTicks(2290) }
+                    { "1", "4e1cbdf6-4549-4b69-a445-1380b7c43817", new DateTime(2025, 2, 12, 6, 41, 41, 560, DateTimeKind.Utc).AddTicks(1556), "Administrator role", true, 0, "Admin", "ADMIN", new DateTime(2025, 2, 12, 6, 41, 41, 560, DateTimeKind.Utc).AddTicks(1559) },
+                    { "2", "c3e9813d-9c0d-42a5-b0d8-dc72819fb0ee", new DateTime(2025, 2, 12, 6, 41, 41, 567, DateTimeKind.Utc).AddTicks(6262), "User role", true, 0, "User", "USER", new DateTime(2025, 2, 12, 6, 41, 41, 567, DateTimeKind.Utc).AddTicks(6265) }
                 });
 
             migrationBuilder.InsertData(
                 table: "AspNetUsers",
                 columns: new[] { "Id", "AccessFailedCount", "ClarifyGoAccessToken", "ClarifyGoAccessTokenExpiry", "ConcurrencyStamp", "Email", "EmailConfirmed", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "RefreshToken", "RefreshTokenExpiry", "SecurityStamp", "TwoFactorEnabled", "UserName" },
-                values: new object[] { "ccb2c35c-99a6-4d9c-8ee0-d0aec4a9a48a", 0, null, null, "22334a72-f8fc-4e68-9b0d-d0041d2f7d76", null, false, false, null, null, "GHIE-API", "AQAAAAIAAYagAAAAEGSuMmqtFEvIsSFmB8+Z1VdC3o7JSDW+xaKm07gHx/xONVNAJ87bpdut7/8PD5+sWQ==", null, false, null, null, "0356dc1e-cf91-41cb-be09-23269ece7cb0", false, "GHIE-API" });
+                values: new object[] { "1", 0, null, null, "8f9f0bdd-ca7c-4396-97ec-580d229e2614", "GHIE-API@example.com", true, false, null, "GHIE-API@EXAMPLE.COM", "GHIE-API", "AQAAAAIAAYagAAAAECo3LyRlhrImfGjxj9RWY2BwAUnnk3hNyTbPhdsODP3NtTebDNDlvOmm/xUnWBJgIw==", null, false, null, null, "602e9e39-1b9e-47c9-9a54-7909ffe461b4", false, "GHIE-API" });
 
             migrationBuilder.InsertData(
-                table: "AuditEvents",
-                columns: new[] { "Id", "Description", "Name" },
+                table: "AuditEventTypes",
+                columns: new[] { "Id", "Description", "Name", "NormalizedName" },
                 values: new object[,]
                 {
-                    { 1, "A user successfully logged in.", "UserLoggedIn" },
-                    { 2, "A user logged out.", "UserLoggedOut" },
-                    { 3, "A new record was played.", "RecordPlayed" },
-                    { 4, "An existing record was exported.", "RecordExported" },
-                    { 5, "A record was deleted.", "RecordDeleted" },
-                    { 6, "A token was refreshed.", "TokenRefreshed" },
-                    { 7, "A manual sync was performed.", "ManualSync" },
-                    { 8, "An auto sync was performed.", "AutoSync" }
+                    { 1, "Events related to user sessions.", "Session", "SESSION" },
+                    { 2, "Events related to call recordings.", "Recording", "RECORDING" }
                 });
 
             migrationBuilder.InsertData(
@@ -289,7 +304,22 @@ namespace backend.Migrations
             migrationBuilder.InsertData(
                 table: "AspNetUserRoles",
                 columns: new[] { "RoleId", "UserId" },
-                values: new object[] { "903281ca-54d2-4d9f-8e9e-ef529d0afd4c", "ccb2c35c-99a6-4d9c-8ee0-d0aec4a9a48a" });
+                values: new object[] { "1", "1" });
+
+            migrationBuilder.InsertData(
+                table: "AuditEvents",
+                columns: new[] { "Id", "Description", "Name", "TypeId" },
+                values: new object[,]
+                {
+                    { 1, "A user successfully logged in.", "UserLoggedIn", 1 },
+                    { 2, "A user logged out.", "UserLoggedOut", 1 },
+                    { 3, "A new record was played.", "RecordPlayed", 2 },
+                    { 4, "An existing record was exported.", "RecordExported", 2 },
+                    { 5, "A record was deleted.", "RecordDeleted", 2 },
+                    { 6, "A token was refreshed. The old token is now invalid.", "TokenRefreshed", 1 },
+                    { 7, "A manual sync was performed.", "ManualSync", 2 },
+                    { 8, "An auto sync was performed.", "AutoSync", 2 }
+                });
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
@@ -351,6 +381,11 @@ namespace backend.Migrations
                 name: "IX_AuditEntries_UserId",
                 table: "AuditEntries",
                 column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_AuditEvents_TypeId",
+                table: "AuditEvents",
+                column: "TypeId");
         }
 
         /// <inheritdoc />
@@ -388,6 +423,9 @@ namespace backend.Migrations
 
             migrationBuilder.DropTable(
                 name: "SyncedRecordings");
+
+            migrationBuilder.DropTable(
+                name: "AuditEventTypes");
         }
     }
 }

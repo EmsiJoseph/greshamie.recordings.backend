@@ -111,8 +111,8 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            UserId = "ccb2c35c-99a6-4d9c-8ee0-d0aec4a9a48a",
-                            RoleId = "903281ca-54d2-4d9f-8e9e-ef529d0afd4c"
+                            UserId = "1",
+                            RoleId = "1"
                         });
                 });
 
@@ -410,25 +410,27 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "903281ca-54d2-4d9f-8e9e-ef529d0afd4c",
-                            CreatedAt = new DateTime(2025, 2, 11, 10, 4, 2, 758, DateTimeKind.Utc).AddTicks(1563),
-                            Description = "Administrator role with full access",
+                            Id = "1",
+                            ConcurrencyStamp = "f5dd7f67-3d93-4f3a-a911-1adb40bbd3df",
+                            CreatedAt = new DateTime(2025, 2, 12, 6, 42, 24, 739, DateTimeKind.Utc).AddTicks(4088),
+                            Description = "Administrator role",
                             IsActive = true,
-                            Level = 100,
+                            Level = 0,
                             Name = "Admin",
                             NormalizedName = "ADMIN",
-                            UpdatedAt = new DateTime(2025, 2, 11, 10, 4, 2, 758, DateTimeKind.Utc).AddTicks(1567)
+                            UpdatedAt = new DateTime(2025, 2, 12, 6, 42, 24, 739, DateTimeKind.Utc).AddTicks(4090)
                         },
                         new
                         {
-                            Id = "b7ee85d4-608f-4671-9a00-71cb05ffc2d4",
-                            CreatedAt = new DateTime(2025, 2, 11, 10, 4, 2, 758, DateTimeKind.Utc).AddTicks(2678),
-                            Description = "Standard user role with limited access",
+                            Id = "2",
+                            ConcurrencyStamp = "37c77ed3-57e0-4067-9fdf-ab9e995a08c5",
+                            CreatedAt = new DateTime(2025, 2, 12, 6, 42, 24, 746, DateTimeKind.Utc).AddTicks(5639),
+                            Description = "User role",
                             IsActive = true,
-                            Level = 90,
+                            Level = 0,
                             Name = "User",
                             NormalizedName = "USER",
-                            UpdatedAt = new DateTime(2025, 2, 11, 10, 4, 2, 758, DateTimeKind.Utc).AddTicks(2678)
+                            UpdatedAt = new DateTime(2025, 2, 12, 6, 42, 24, 746, DateTimeKind.Utc).AddTicks(5644)
                         });
                 });
 
@@ -541,15 +543,15 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "ccb2c35c-99a6-4d9c-8ee0-d0aec4a9a48a",
+                            Id = "1",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "d3b8fade-4f09-4d80-993f-d6e17b26ea48",
-                            EmailConfirmed = false,
+                            ConcurrencyStamp = "2c966cbc-1905-424a-90be-99269da8c211",
+                            EmailConfirmed = true,
                             LockoutEnabled = false,
                             NormalizedUserName = "GHIE-API",
-                            PasswordHash = "AQAAAAIAAYagAAAAEB61LPkXf6px8MpqV4BXrAVbufHhW6gSzyUm0gbZK5Hnz0z1qwH0qsESv5eR+cQnGA==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEBhkT0sHWFMsOkqlevgIwi9a99eXPRDePmw0+lLpkNY3UvCOxQTSq2gkp9bIRdHNXg==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "26c13de7-923b-4c68-8347-30278af7c44e",
+                            SecurityStamp = "2cee6bc6-4268-4d37-b67b-be550ba1a755",
                             TwoFactorEnabled = false,
                             UserName = "GHIE-API"
                         });

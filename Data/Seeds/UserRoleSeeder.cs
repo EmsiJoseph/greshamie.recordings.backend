@@ -1,63 +1,58 @@
-﻿using backend.Constants;
+﻿using System;
+using backend.Constants;
 using backend.Data.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
-namespace backend.Data
+namespace backend.Data.Seeds
 {
     public static class UserRoleSeeder
     {
-        public static void SeedUserRole(this ModelBuilder modelBuilder, string adminUserName, string adminPassword,
-            string adminRoleIdFromConfig, string userRoleIdFromConfig, string adminUserIdFromConfig)
+        public static void SeedUserRole(this ModelBuilder builder, string? adminUsername, string? adminPassword)
         {
-            if (string.IsNullOrEmpty(adminPassword))
+            if (string.IsNullOrEmpty(adminUsername) || string.IsNullOrEmpty(adminPassword))
             {
-                throw new ArgumentException("Admin password cannot be null or empty", nameof(adminPassword));
+                throw new ArgumentException("Admin credentials are not configured properly");
             }
 
-            var adminRoleId = adminRoleIdFromConfig;
-            var userRoleId = userRoleIdFromConfig;
-            var adminUserId = adminUserIdFromConfig;
-
-            // Define roles without HasData to avoid duplicate key issues`
-            var adminRole = new Role
-            {
-                Id = adminRoleId,
-                Name = RolesConstants.Admin,
-                NormalizedName = RolesConstants.Admin.ToUpperInvariant(),
-                Description = "Administrator role with full access",
-                Level = 100
-            };
-
-            var userRole = new Role
-            {
-                Id = userRoleId,
-                Name = RolesConstants.User,
-                NormalizedName = RolesConstants.User.ToUpperInvariant(),
-                Description = "Standard user role with limited access",
-                Level = 90
-            };
+            builder.Entity<Role>().HasData(
+                new Role
+                {
+                    Id = "1",
+                    Name = RolesConstants.Admin,
+                    NormalizedName = RolesConstants.Admin.ToUpper(),
+                    ConcurrencyStamp = Guid.NewGuid().ToString(),
+                    Description = "Administrator role"
+                },
+                new Role
+                {
+                    Id = "2",
+                    Name = RolesConstants.User,
+                    NormalizedName = RolesConstants.User.ToUpper(),
+                    ConcurrencyStamp = Guid.NewGuid().ToString(),
+                    Description = "User role"
+                }
+            );
 
             var hasher = new PasswordHasher<User>();
             var adminUser = new User
             {
-                Id = adminUserId,
-                UserName = adminUserName,
-                NormalizedUserName = adminUserName.ToUpperInvariant(),
+                Id = "1",
+                UserName = adminUsername,
+                NormalizedUserName = adminUsername.ToUpper(),
+                EmailConfirmed = true,
                 SecurityStamp = Guid.NewGuid().ToString(),
-                ConcurrencyStamp = Guid.NewGuid().ToString(),
-                PasswordHash = hasher.HashPassword(null, adminPassword)
+                ConcurrencyStamp = Guid.NewGuid().ToString()
             };
+            adminUser.PasswordHash = hasher.HashPassword(adminUser, adminPassword);
 
-            // Use InsertData instead of HasData for more control
-            modelBuilder.Entity<Role>().HasData(adminRole);
-            modelBuilder.Entity<Role>().HasData(userRole);
-            modelBuilder.Entity<User>().HasData(adminUser);
-            modelBuilder.Entity<IdentityUserRole<string>>().HasData(
+            builder.Entity<User>().HasData(adminUser);
+
+            builder.Entity<IdentityUserRole<string>>().HasData(
                 new IdentityUserRole<string>
                 {
-                    UserId = adminUserId,
-                    RoleId = adminRoleId
+                    RoleId = "1",
+                    UserId = "1"
                 }
             );
         }

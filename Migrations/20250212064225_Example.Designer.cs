@@ -12,8 +12,8 @@ using backend.Data;
 namespace backend.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250211090544_Seeders")]
-    partial class Seeders
+    [Migration("20250212064225_Example")]
+    partial class Example
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -114,8 +114,8 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            UserId = "ccb2c35c-99a6-4d9c-8ee0-d0aec4a9a48a",
-                            RoleId = "903281ca-54d2-4d9f-8e9e-ef529d0afd4c"
+                            UserId = "1",
+                            RoleId = "1"
                         });
                 });
 
@@ -192,7 +192,12 @@ namespace backend.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
+                    b.Property<int>("TypeId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("TypeId");
 
                     b.ToTable("AuditEvents");
 
@@ -201,49 +206,101 @@ namespace backend.Migrations
                         {
                             Id = 1,
                             Description = "A user successfully logged in.",
-                            Name = "UserLoggedIn"
+                            Name = "UserLoggedIn",
+                            TypeId = 1
                         },
                         new
                         {
                             Id = 2,
                             Description = "A user logged out.",
-                            Name = "UserLoggedOut"
+                            Name = "UserLoggedOut",
+                            TypeId = 1
                         },
                         new
                         {
                             Id = 3,
                             Description = "A new record was played.",
-                            Name = "RecordPlayed"
+                            Name = "RecordPlayed",
+                            TypeId = 2
                         },
                         new
                         {
                             Id = 4,
                             Description = "An existing record was exported.",
-                            Name = "RecordExported"
+                            Name = "RecordExported",
+                            TypeId = 2
                         },
                         new
                         {
                             Id = 5,
                             Description = "A record was deleted.",
-                            Name = "RecordDeleted"
+                            Name = "RecordDeleted",
+                            TypeId = 2
                         },
                         new
                         {
                             Id = 6,
-                            Description = "A token was refreshed.",
-                            Name = "TokenRefreshed"
+                            Description = "A token was refreshed. The old token is now invalid.",
+                            Name = "TokenRefreshed",
+                            TypeId = 1
                         },
                         new
                         {
                             Id = 7,
                             Description = "A manual sync was performed.",
-                            Name = "ManualSync"
+                            Name = "ManualSync",
+                            TypeId = 2
                         },
                         new
                         {
                             Id = 8,
                             Description = "An auto sync was performed.",
-                            Name = "AutoSync"
+                            Name = "AutoSync",
+                            TypeId = 2
+                        });
+                });
+
+            modelBuilder.Entity("backend.Data.Models.AuditEventType", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AuditEventTypes");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 2,
+                            Description = "Events related to call recordings.",
+                            Name = "Recording",
+                            NormalizedName = "RECORDING"
+                        },
+                        new
+                        {
+                            Id = 1,
+                            Description = "Events related to user sessions.",
+                            Name = "Session",
+                            NormalizedName = "SESSION"
                         });
                 });
 
@@ -356,25 +413,27 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "903281ca-54d2-4d9f-8e9e-ef529d0afd4c",
-                            CreatedAt = new DateTime(2025, 2, 11, 9, 5, 43, 857, DateTimeKind.Utc).AddTicks(7948),
-                            Description = "Administrator role with full access",
+                            Id = "1",
+                            ConcurrencyStamp = "f5dd7f67-3d93-4f3a-a911-1adb40bbd3df",
+                            CreatedAt = new DateTime(2025, 2, 12, 6, 42, 24, 739, DateTimeKind.Utc).AddTicks(4088),
+                            Description = "Administrator role",
                             IsActive = true,
-                            Level = 100,
+                            Level = 0,
                             Name = "Admin",
                             NormalizedName = "ADMIN",
-                            UpdatedAt = new DateTime(2025, 2, 11, 9, 5, 43, 857, DateTimeKind.Utc).AddTicks(7951)
+                            UpdatedAt = new DateTime(2025, 2, 12, 6, 42, 24, 739, DateTimeKind.Utc).AddTicks(4090)
                         },
                         new
                         {
-                            Id = "b7ee85d4-608f-4671-9a00-71cb05ffc2d4",
-                            CreatedAt = new DateTime(2025, 2, 11, 9, 5, 43, 857, DateTimeKind.Utc).AddTicks(8938),
-                            Description = "Standard user role with limited access",
+                            Id = "2",
+                            ConcurrencyStamp = "37c77ed3-57e0-4067-9fdf-ab9e995a08c5",
+                            CreatedAt = new DateTime(2025, 2, 12, 6, 42, 24, 746, DateTimeKind.Utc).AddTicks(5639),
+                            Description = "User role",
                             IsActive = true,
-                            Level = 90,
+                            Level = 0,
                             Name = "User",
                             NormalizedName = "USER",
-                            UpdatedAt = new DateTime(2025, 2, 11, 9, 5, 43, 857, DateTimeKind.Utc).AddTicks(8938)
+                            UpdatedAt = new DateTime(2025, 2, 12, 6, 42, 24, 746, DateTimeKind.Utc).AddTicks(5644)
                         });
                 });
 
@@ -487,15 +546,15 @@ namespace backend.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "ccb2c35c-99a6-4d9c-8ee0-d0aec4a9a48a",
+                            Id = "1",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "343ef2d0-716b-403e-acc4-69c76927ddd7",
-                            EmailConfirmed = false,
+                            ConcurrencyStamp = "2c966cbc-1905-424a-90be-99269da8c211",
+                            EmailConfirmed = true,
                             LockoutEnabled = false,
                             NormalizedUserName = "GHIE-API",
-                            PasswordHash = "AQAAAAIAAYagAAAAENb718KHpOMnwT4gtH+5LkmlBbx3abSo+7zYIJxu+cw2Xg8f9URa3JkDkSY4lIK22w==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEBhkT0sHWFMsOkqlevgIwi9a99eXPRDePmw0+lLpkNY3UvCOxQTSq2gkp9bIRdHNXg==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "d3caf6a3-1379-4e8d-b6a6-601b7c1c76bc",
+                            SecurityStamp = "2cee6bc6-4268-4d37-b67b-be550ba1a755",
                             TwoFactorEnabled = false,
                             UserName = "GHIE-API"
                         });
@@ -580,7 +639,23 @@ namespace backend.Migrations
 
             modelBuilder.Entity("backend.Data.Models.AuditEvent", b =>
                 {
+                    b.HasOne("backend.Data.Models.AuditEventType", "Type")
+                        .WithMany("Events")
+                        .HasForeignKey("TypeId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Type");
+                });
+
+            modelBuilder.Entity("backend.Data.Models.AuditEvent", b =>
+                {
                     b.Navigation("AuditEntries");
+                });
+
+            modelBuilder.Entity("backend.Data.Models.AuditEventType", b =>
+                {
+                    b.Navigation("Events");
                 });
 
             modelBuilder.Entity("backend.Data.Models.SyncedRecording", b =>

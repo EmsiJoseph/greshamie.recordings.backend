@@ -1,4 +1,5 @@
 ﻿using backend.Data;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Shine.Extensions
@@ -13,16 +14,44 @@ namespace Shine.Extensions
 
             try
             {
+                // Check if any pending migrations
+                if (context.Database.GetPendingMigrations().Any())
+                {
+                    logger.LogInformation("Applying pending migrations...");
+                    context.Database.Migrate();
+                }
 
+                // After migration, check if we need to seed identity data
+                if (context.NeedsIdentitySeeding())
+                {
+                    logger.LogInformation("Performing initial identity data seeding...");
+                    context.Database.OpenConnection();
+                    try
+                    {
+                        // Disable constraint checks
+                        context.Database.ExecuteSqlRaw("SET IDENTITY_INSERT dbo.AspNetUsers ON");
+                        context.Database.ExecuteSqlRaw("SET IDENTITY_INSERT dbo.AspNetRoles ON");
+                        
+                        // Save changes to trigger the seeding
+                        context.SaveChanges();
+                        
+                        // Re-enable constraint checks
+                        context.Database.ExecuteSqlRaw("SET IDENTITY_INSERT dbo.AspNetUsers OFF");
+                        context.Database.ExecuteSqlRaw("SET IDENTITY_INSERT dbo.AspNetRoles OFF");
+                        
+                        logger.LogInformation("Initial identity data seeding completed.");
+                    }
+                    finally
+                    {
+                        context.Database.CloseConnection();
+                    }
+                }
 
-                // Create new database and apply migrations
-                context.Database.Migrate();
-
-                logger.LogInformation("Database migrated successfully");
+                logger.LogInformation("Database is up to date.");
             }
             catch (Exception ex)
             {
-                logger.LogError(ex, "An error occurred while migrating the database");
+                logger.LogError(ex, "An error occurred while migrating or seeding the database.");
                 throw;
             }
         }
