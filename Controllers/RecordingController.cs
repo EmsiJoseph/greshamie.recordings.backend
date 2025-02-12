@@ -1,4 +1,6 @@
+using System.Security.Claims;
 using System.Text.Json;
+using Azure.Core;
 using backend.ClarifyGoClasses;
 using backend.Constants;
 using backend.Data;
@@ -6,6 +8,7 @@ using backend.Data.Models;
 using backend.DTOs;
 using backend.Exceptions;
 using backend.Extensions;
+using backend.Services.Audits;
 using backend.Services.ClarifyGoServices.HistoricRecordings;
 using backend.Services.ClarifyGoServices.LiveRecordings;
 using backend.Services.Sync;
@@ -26,13 +29,16 @@ public class RecordingController : ControllerBase
     private readonly IHistoricRecordingsService _historicRecordingsService;
     private readonly ISyncService _syncService;
     private readonly ApplicationDbContext _context;
+    private readonly IAuditService _auditService;
+
 
     public RecordingController(
         ILogger<RecordingController> logger,
         ILiveRecordingsService liveRecordingsService,
         IHistoricRecordingsService historicRecordingsService,
         ISyncService syncService,
-        ApplicationDbContext context
+        ApplicationDbContext context,
+        IAuditService auditService
     )
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -42,6 +48,7 @@ public class RecordingController : ControllerBase
                                      throw new ArgumentNullException(nameof(historicRecordingsService));
         _context = context ?? throw new ArgumentNullException(nameof(context));
         _syncService = syncService ?? throw new ArgumentNullException(nameof(syncService));
+        _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
     }
 
     private async Task<List<RecordingDto>> MapRawRecordingToDto(
@@ -173,6 +180,18 @@ public class RecordingController : ControllerBase
         try
         {
             await _syncService.SynchronizeRecordingsAsync(request.StartDate, request.EndDate);
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "User not found" });
+            }
+
+            // Log the recording sync event using your audit service with date range
+            string logMessage = $"User synced recordings from {request.StartDate:yyyy-MM-dd} to {request.EndDate:yyyy-MM-dd}";
+            await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.ManualSync, null, logMessage);
+
+
             return Ok(new { Message = "Synchronization completed successfully." });
         }
         catch (Exception ex)
@@ -193,6 +212,15 @@ public class RecordingController : ControllerBase
                 return NotFound(new { Message = "Recording not found." });
             }
 
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "User not found" });
+            }
+
+            string logMessage = $"User played the recording.";
+            await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.RecordPlayed, null, logMessage);
+
             return Ok(new { StreamingUrl = syncedRecording.StreamingUrl });
         }
         catch (Exception ex)
@@ -211,6 +239,15 @@ public class RecordingController : ControllerBase
             {
                 return NotFound(new { Message = "Recording not found." });
             }
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                return Unauthorized(new { message = "User not found" });
+            }
+
+            string logMessage = $"User downloaded the recording.";
+            await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.RecordExported, null, logMessage);
 
             return Ok(new { DownloadUrl = syncedRecording.DownloadUrl });
         }

@@ -209,7 +209,7 @@ namespace backend.Controllers
             await _userManager.UpdateAsync(user);
 
             // Log the refresh event using your audit service and the predefined constant.
-            await _auditService.LogAuditEntryAsync(user.Id, AuditEventsConstants.TokenRefreshedId, "Token refreshed.");
+            await _auditService.LogAuditEntryAsync(user.Id, AuditEventsConstants.TokenRefreshedId,null, "Token refreshed.");
 
             return Ok(new
             {
@@ -272,9 +272,6 @@ namespace backend.Controllers
 
             string userId = userIdClaim.Value;
             _logger.LogInformation($"User ID extracted: {userId}");
-
-            // Log the logout event using your audit service and the predefined constant.
-            await _auditService.LogAuditEntryAsync(userId, AuditEventsConstants.UserLoggedOutId, "User logged out.");
 
             // Optionally, invalidate the refresh token and ClarifyGo access token if they exist in the database.
             var user = await _userManager.FindByIdAsync(userId);
