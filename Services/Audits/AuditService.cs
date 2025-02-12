@@ -75,6 +75,11 @@ namespace backend.Services.Audits
                     .Include(x => x.User)
                     .AsQueryable();
 
+                if (!string.IsNullOrEmpty(dto.EventType))
+                {
+                    query = query.Where(x => x.Event.Type.Name == dto.EventType);
+                }
+
                 if (!string.IsNullOrEmpty(dto.Search))
                 {
                     query = query.Where(x =>
@@ -82,8 +87,7 @@ namespace backend.Services.Audits
                         (x.User.UserName.Contains(dto.Search) ||
                          x.RecordId.Contains(dto.Search) ||
                          x.Event.Name.Contains(dto.Search) ||
-                         x.Details.Contains(dto.Search) ||
-                         x.Event.Type.Name.Contains(dto.EventType ?? dto.Search))
+                         x.Details.Contains(dto.Search))
                     );
                 }
 
