@@ -2,6 +2,7 @@ using System.Text.Json;
 using backend.ClarifyGoClasses;
 using backend.Constants;
 using backend.Data;
+using backend.Data.Models;
 using backend.DTOs;
 using backend.Exceptions;
 using backend.Extensions;
@@ -104,6 +105,24 @@ public class RecordingController : ControllerBase
         }
     }
 
+    /// <summary>
+    /// Retrieves a synced recording from the database. If it doesn’t exist,
+    /// it calls the sync service to export and sync the recording.
+    /// </summary>
+    private async Task<SyncedRecording> GetSyncedRecordingAsync(RecordingDto dto)
+    {
+        // Attempt to get the synced recording from the database.
+        var syncedRecording = await _context.SyncedRecordings.FindAsync(dto.Id);
+        if (syncedRecording == null)
+        {
+            // If not found, attempt to sync the recording.
+            await _syncService.SyncRecordingByObjectAsync(dto);
+            syncedRecording = await _context.SyncedRecordings.FindAsync(dto.Id);
+        }
+
+        return syncedRecording;
+    }
+
     [OutputCache(Duration = 60, VaryByQueryKeys = new[] { "RecordingsCache" })]
     [HttpGet("")]
     public async Task<IActionResult> SearchRecordings([FromQuery] RecordingSearchFiltersDto filtersDto)
@@ -163,87 +182,41 @@ public class RecordingController : ControllerBase
         }
     }
 
-    [Authorize(Roles = $"{RolesConstants.Admin}")]
-    [HttpDelete("{recordingId}")]
-    public async Task<IActionResult> DeleteRecording(string recordingId)
+    [HttpGet("stream")]
+    public async Task<IActionResult> GetStreamingUrl([FromQuery] RecordingDto dto)
     {
         try
         {
-            if (string.IsNullOrEmpty(recordingId))
+            var syncedRecording = await GetSyncedRecordingAsync(dto);
+            if (syncedRecording == null)
             {
-                return BadRequest(new { message = "Recording ID is required" });
+                return NotFound(new { Message = "Recording not found." });
             }
 
-            bool results = await _historicRecordingsService.DeleteRecordingAsync(recordingId);
-            if (!results)
-            {
-                return NotFound(new { message = "Recording not found" });
-            }
-
-            return NoContent();
+            return Ok(new { StreamingUrl = syncedRecording.StreamingUrl });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error while deleting recording {RecordingId}", recordingId);
-            return StatusCode(500, new { message = "An unexpected error occurred" });
+            return StatusCode(500, new { Message = "Error retrieving streaming URL", Error = ex.Message });
         }
     }
 
-    [Authorize(Roles = $"{RolesConstants.Admin}")]
-    [HttpGet("admin-only")]
-    public IActionResult AdminOnly()
-    {
-        return Ok("Admin only");
-    }
-
-
-    [HttpGet("{recordingId}/mp3")]
-    public async Task<IActionResult> GetRecording(string recordingId)
+    [HttpGet("download")]
+    public async Task<IActionResult> GetDownloadUrl([FromQuery] RecordingDto dto)
     {
         try
         {
-            if (string.IsNullOrEmpty(recordingId))
+            var syncedRecording = await GetSyncedRecordingAsync(dto);
+            if (syncedRecording == null)
             {
-                return BadRequest(new { message = "Recording ID is required" });
+                return NotFound(new { Message = "Recording not found." });
             }
 
-            var recording = await _historicRecordingsService.ExportMp3Async(recordingId);
-            if (recording == null)
-            {
-                return NotFound(new { message = "Recording not found" });
-            }
-
-            return Ok(recording);
+            return Ok(new { DownloadUrl = syncedRecording.DownloadUrl });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error while getting recording {RecordingId}", recordingId);
-            return StatusCode(500, new { message = "An unexpected error occurred" });
-        }
-    }
-
-    [HttpGet("{recordingId}/wav")]
-    public async Task<IActionResult> GetRecordingWav(string recordingId)
-    {
-        try
-        {
-            if (string.IsNullOrEmpty(recordingId))
-            {
-                return BadRequest(new { message = "Recording ID is required" });
-            }
-
-            var recording = await _historicRecordingsService.ExportWavAsync(recordingId);
-            if (recording == null)
-            {
-                return NotFound(new { message = "Recording not found" });
-            }
-
-            return Ok(recording);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error while getting recording {RecordingId}", recordingId);
-            return StatusCode(500, new { message = "An unexpected error occurred" });
+            return StatusCode(500, new { Message = "Error retrieving download URL", Error = ex.Message });
         }
     }
 }
