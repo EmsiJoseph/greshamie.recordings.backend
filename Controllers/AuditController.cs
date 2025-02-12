@@ -69,18 +69,22 @@ namespace backend.Controllers
             }
         }
 
-        [OutputCache(Duration = 60, VaryByQueryKeys = new[] { "search", "pageNumber", "pageSize" })]
+        [OutputCache(Duration = 60, VaryByQueryKeys = new[] { "search", "pageOffset", "pageSize" })]
         [HttpGet("")]
-        public async Task<IActionResult> GetAll([FromQuery] string? search, [FromQuery] int pageOffSet = 0, [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> GetAll(
+            [FromQuery] string? search, 
+            [FromQuery] int pageOffset = 0, 
+            [FromQuery] int pageSize = 10)
         {
             try
             {
-                _logger.LogInformation("Searching audit entries with search term: {Search}, Page: {Page}, Size: {Size}", 
-                    search, pageOffSet, pageSize);
+                _logger.LogInformation(
+                    "Searching audit entries with search term: {Search}, PageOffset: {Offset}, Size: {Size}", 
+                    search, pageOffset, pageSize);
 
                 var pagination = new PaginationDto
                 {
-                    PageOffSet = pageOffSet,
+                    PageOffset = pageOffset,
                     PageSize = pageSize
                 };
 

@@ -132,7 +132,7 @@ namespace backend.Services.Audits
                 var totalPages = (int)Math.Ceiling(totalCount / (double)pagination.PageSize);
 
                 var entries = await query
-                    .Skip((pagination.PageOffSet - 1) * pagination.PageSize)
+                    .Skip(pagination.PageOffset * pagination.PageSize)
                     .Take(pagination.PageSize)
                     .Select(audit => new AuditEntryDto
                     {
@@ -150,10 +150,12 @@ namespace backend.Services.Audits
                 return new PagedResponseDto<AuditEntryDto>
                 {
                     Items = entries,
-                    PageNumber = pagination.PageOffSet,
+                    PageOffset = pagination.PageOffset,
                     PageSize = pagination.PageSize,
                     TotalPages = totalPages,
-                    TotalCount = totalCount
+                    TotalCount = totalCount,
+                    HasNext = (pagination.PageOffset + 1) * pagination.PageSize < totalCount,
+                    HasPrevious = pagination.PageOffset > 0
                 };
             }
             catch (Exception ex)
