@@ -61,7 +61,7 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
             // String parameters
             builder
                 .AddParameter(ClarifyGoQueryParameters.PhoneNumber, filters.PhoneNumber)
-                .AddParameter(ClarifyGoQueryParameters.Direction, filters.CallDirection.ToLowerInvariant())
+                .AddParameter(ClarifyGoQueryParameters.Direction, filters.CallDirection?.ToLowerInvariant())
                 .AddParameter(ClarifyGoQueryParameters.Device, filters.DeviceNumber)
                 .AddParameter(ClarifyGoQueryParameters.HuntGroupNumber, filters.HuntGroupNumber)
                 .AddParameter(ClarifyGoQueryParameters.AccountCode, filters.AccountCode)
@@ -88,7 +88,7 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
                     searchFiltersDto.StartDate,
                     searchFiltersDto.EndDate);
 
-                var queryString = BuildQueryParameters(searchFiltersDto);
+                var queryString =  BuildQueryParameters(searchFiltersDto);
                 var fullUrl = baseUrl + queryString;
                 
                 Console.WriteLine($"Full URL: {fullUrl}");

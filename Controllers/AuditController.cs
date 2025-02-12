@@ -27,50 +27,7 @@ namespace backend.Controllers
             _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
-
-        private async Task<List<AuditEntryDto>> SearchAndProcessAuditEntries(string? search)
-        {
-            try
-            {
-                _logger.LogInformation("Fetching audit entries");
-                var entries = await _auditService.GetAuditEntriesAsync();
-                
-                _logger.LogInformation("Processing {Count} entries with search term: {Search}", 
-                    entries?.Count ?? 0, search ?? "null");
-
-                if (entries == null)
-                {
-                    _logger.LogWarning("GetAuditEntriesAsync returned null");
-                    return new List<AuditEntryDto>();
-                }
-
-                if (!string.IsNullOrEmpty(search))
-                {
-                    entries = entries.Where(x =>
-                        (!string.IsNullOrEmpty(x.Username) && x.Username.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                        (!string.IsNullOrEmpty(x.RecordingId) && x.RecordingId.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                        (!string.IsNullOrEmpty(x.EventName) && x.EventName.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                        (!string.IsNullOrEmpty(x.Details) && x.Details.Contains(search, StringComparison.OrdinalIgnoreCase)) ||
-                        (!string.IsNullOrEmpty(x.EventType) && x.EventType.Contains(search, StringComparison.OrdinalIgnoreCase))
-                    ).ToList();
-                    
-                    _logger.LogInformation("Found {Count} entries after search filter", entries.Count);
-                }
-
-                return entries;
-            }
-            catch (ServiceException ex)
-            {
-                _logger.LogError(ex, "Service error searching audit entries. Search term: {Search}", search);
-                throw;
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Unexpected error while searching audit entries. Search term: {Search}", search);
-                throw new ServiceException($"Failed to retrieve audit entries: {ex.Message}", 500);
-            }
-        }
-
+        
         [OutputCache(Duration = 60, VaryByQueryKeys = new[] { "search", "pageOffset", "pageSize" })]
         [HttpGet("")]
         public async Task<IActionResult> GetAll(
@@ -89,6 +46,7 @@ namespace backend.Controllers
                     PageOffset = pageOffset,
                     PageSize = pageSize
                 };
+                // TODO: Implement filter by date time range
 
                 var results = await _auditService.GetAuditEntriesAsync(search, pagination);
                 return Ok(results);
