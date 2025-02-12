@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using backend.DTOs;
 
 namespace backend.Services.Sync
 {
@@ -8,6 +9,6 @@ namespace backend.Services.Sync
     {
         Task SynchronizeRecordingsAsync(DateTime fromDate, DateTime toDate);
 
-        Task SyncRecordingByIdAsync(string recordingId);
+        Task SyncRecordingByObjectAsync(RecordingDto dto);
     }
 }

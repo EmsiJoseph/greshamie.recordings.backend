@@ -1,11 +1,9 @@
-using System;
-using System.Threading.Tasks;
+using backend.DTOs;
 using backend.Services.Sync;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Logging;
-
 namespace backend.Controllers
+
 {
     [Authorize]
     [ApiController]
@@ -23,11 +21,16 @@ namespace backend.Controllers
 
         // POST: api/sync/synchronize?fromDate=2025-01-01&toDate=2025-01-31
         [HttpPost("synchronize")]
-        public async Task<IActionResult> Synchronize([FromQuery] DateTime fromDate, [FromQuery] DateTime toDate)
+        public async Task<IActionResult> Synchronize([FromBody] SyncDateRangeDto request)
         {
+            if (request == null)
+            {
+                return BadRequest(new { Message = "Invalid request body." });
+            }
+
             try 
             {
-                await _syncService.SynchronizeRecordingsAsync(fromDate, toDate);
+                await _syncService.SynchronizeRecordingsAsync(request.StartDate, request.EndDate);
                 return Ok(new { Message = "Synchronization completed successfully." });
             }
             catch (Exception ex)
