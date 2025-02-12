@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
 using backend.Constants;
+using backend.DTOs.Audit;
 
 namespace backend.Controllers
 {
@@ -15,30 +16,19 @@ namespace backend.Controllers
     public class AuditController(IAuditService auditService, ILogger<AuditController> logger)
         : ControllerBase
     {
-        private readonly IAuditService _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
+        private readonly IAuditService _auditService =
+            auditService ?? throw new ArgumentNullException(nameof(auditService));
+
         private readonly ILogger<AuditController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-        [OutputCache(Duration = 60, VaryByQueryKeys = ["search", "pageOffset", "pageSize"])]
+        [OutputCache(Duration = 60, VaryByQueryKeys = ["AuditRequestDto"])]
         [HttpGet("")]
         public async Task<IActionResult> GetAll(
-            [FromQuery] string? search,
-            [FromQuery] int pageOffset = 0,
-            [FromQuery] int pageSize = 10)
+            [FromQuery] AuditRequestDto dto)
         {
             try
             {
-                _logger.LogInformation(
-                    "Searching audit entries with search term: {Search}, PageOffset: {Offset}, Size: {Size}",
-                    search, pageOffset, pageSize);
-
-                var pagination = new PaginationDto
-                {
-                    PageOffset = pageOffset,
-                    PageSize = pageSize
-                };
-                // TODO: Implement filter by date time range
-
-                var results = await _auditService.GetAuditEntriesAsync(search, pagination);
+                var results = await _auditService.GetAuditEntriesAsync(dto);
                 return Ok(results);
             }
             catch (ServiceException ex)

@@ -13,13 +13,7 @@ namespace backend.Services.Audits
         /// <param name="recordId">Optional identifier for the related recording.</param>
         /// <param name="details">Optional details about the event.</param>
         Task LogAuditEntryAsync(string userId, int eventId, string? recordId = null, string? details = null);
-
-        /// <summary>
-        /// Retrieves all audit entries.
-        /// </summary>
-        /// <returns>A list of audit entries.</returns>
-        Task<List<AuditEntryDto>> GetAuditEntriesAsync();
-
+        
         /// <summary>
         /// Retrieves a specific audit entry by its identifier.
         /// </summary>
@@ -48,6 +42,6 @@ namespace backend.Services.Audits
         /// <param name="search">Optional search term.</param>
         /// <param name="pagination">Pagination parameters.</param>
         /// <returns>A paginated list of audit entries.</returns>
-        Task<PagedResponseDto<AuditEntryDto>> GetAuditEntriesAsync(string? search, PaginationDto pagination);
+        Task<PagedResponseDto<AuditEntryDto>> GetAuditEntriesAsync(AuditRequestDto dto);
     }
 }

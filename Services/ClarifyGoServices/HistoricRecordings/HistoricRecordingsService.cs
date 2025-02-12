@@ -121,7 +121,7 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
                 return new PagedResponseDto<HistoricRecordingRaw>
                 {
                     Items = recordings,
-                    PageOffset = searchFiltersDto.PageOffset,
+                    PageOffSet = searchFiltersDto.PageOffset,
                     PageSize = searchFiltersDto.PageSize,
                     TotalPages = totalPages,
                     TotalCount = totalCount,
