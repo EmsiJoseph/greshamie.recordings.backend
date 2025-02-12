@@ -30,11 +30,16 @@ public class RecordingController(
     : ControllerBase
 {
     private readonly ILogger<RecordingController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
     private readonly IHistoricRecordingsService _historicRecordingsService = historicRecordingsService ??
-                                                                             throw new ArgumentNullException(nameof(historicRecordingsService));
+                                                                             throw new ArgumentNullException(
+                                                                                 nameof(historicRecordingsService));
+
     private readonly ISyncService _syncService = syncService ?? throw new ArgumentNullException(nameof(syncService));
     private readonly ApplicationDbContext _context = context ?? throw new ArgumentNullException(nameof(context));
-    private readonly IAuditService _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
+
+    private readonly IAuditService
+        _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
 
 
     private async Task<List<RecordingDto>> MapRawRecordingToDto(
@@ -117,6 +122,10 @@ public class RecordingController(
         return syncedRecording ?? throw new Exception("Synced recording not found.");
     }
 
+    /// <summary>
+    /// Search for recordings with various filters.
+    /// Results are cached for 60 seconds to improve performance.
+    /// </summary>
     [OutputCache(Duration = 60, VaryByQueryKeys = ["RecordingsCache"])]
     [HttpGet("")]
     public async Task<IActionResult> SearchRecordings([FromQuery] RecordingSearchFiltersDto? filtersDto)
@@ -147,6 +156,10 @@ public class RecordingController(
         }
     }
 
+    /// <summary>
+    /// Sync recordings from a specific date range.
+    /// This will fetch recordings from ClarifyGo and store them locally.
+    /// </summary>
     [HttpPost("sync")]
     public async Task<IActionResult> Synchronize([FromBody] SyncDateRangeDto? request)
     {
@@ -168,7 +181,14 @@ public class RecordingController(
             // Log the recording sync event using your audit service with date range
             string logMessage =
                 $"User synced recordings from {request.StartDate:yyyy-MM-dd} to {request.EndDate:yyyy-MM-dd}";
-            await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.ManualSync, null, logMessage);
+            var auditEntry = new AuditEntry
+            {
+                UserId = userId,
+                EventId = AuditEventTypes.ManualSync,
+                Details = logMessage
+            };
+
+            await _auditService.LogAuditEntryAsync(auditEntry);
 
 
             return Ok(new { Message = "Synchronization completed successfully." });
@@ -180,16 +200,16 @@ public class RecordingController(
         }
     }
 
+    /// <summary>
+    /// Get a URL to stream a recording.
+    /// The URL is temporary and will expire after a short time.
+    /// </summary>
     [HttpGet("stream")]
     public async Task<IActionResult> GetStreamingUrl([FromQuery] RecordingDto dto)
     {
         try
         {
             var syncedRecording = await GetSyncedRecordingAsync(dto);
-            if (syncedRecording == null)
-            {
-                return NotFound(new { Message = "Recording not found." });
-            }
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
@@ -198,8 +218,16 @@ public class RecordingController(
             }
 
             string logMessage = $"User played the recording.";
-            await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.RecordPlayed, syncedRecording.Id.ToString(),
-                logMessage);
+
+            var auditEntry = new AuditEntry
+            {
+                UserId = userId,
+                EventId = AuditEventTypes.RecordPlayed,
+                RecordId = syncedRecording.Id,
+                Details = logMessage
+            };
+
+            await _auditService.LogAuditEntryAsync(auditEntry);
 
             return Ok(new { syncedRecording.StreamingUrl });
         }
@@ -209,16 +237,16 @@ public class RecordingController(
         }
     }
 
+    /// <summary>
+    /// Get a URL to download a recording.
+    /// The URL is temporary and will expire after a short time.
+    /// </summary>
     [HttpGet("download")]
     public async Task<IActionResult> GetDownloadUrl([FromQuery] RecordingDto dto)
     {
         try
         {
             var syncedRecording = await GetSyncedRecordingAsync(dto);
-            if (syncedRecording == null)
-            {
-                return NotFound(new { Message = "Recording not found." });
-            }
 
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
@@ -227,8 +255,16 @@ public class RecordingController(
             }
 
             string logMessage = $"User downloaded the recording.";
-            await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.RecordExported,
-                syncedRecording.Id.ToString(), logMessage);
+
+            var auditEntry = new AuditEntry
+            {
+                UserId = userId,
+                EventId = AuditEventTypes.RecordExported,
+                RecordId = syncedRecording.Id,
+                Details = logMessage
+            };
+
+            await _auditService.LogAuditEntryAsync(auditEntry);
 
             return Ok(new { syncedRecording.DownloadUrl });
         }
