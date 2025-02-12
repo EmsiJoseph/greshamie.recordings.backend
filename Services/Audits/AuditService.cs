@@ -18,7 +18,7 @@ namespace backend.Services.Audits
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task LogAuditEntryAsync(string userId, int eventId, string? details = null)
+        public async Task LogAuditEntryAsync(string userId, int eventId, string? recordId = null, string? details = null)
         {
             try
             {
@@ -45,6 +45,8 @@ namespace backend.Services.Audits
                 {
                     UserId = userId,
                     EventId = eventId,
+                    RecordId = recordId,
+                    Timestamp = DateTime.UtcNow,
                     Details = details
                 };
 
