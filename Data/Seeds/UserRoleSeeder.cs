@@ -7,18 +7,19 @@ namespace backend.Data
 {
     public static class UserRoleSeeder
     {
-        public static void SeedUserRole(this ModelBuilder modelBuilder, string adminUserName, string adminPassword)
+        public static void SeedUserRole(this ModelBuilder modelBuilder, string adminUserName, string adminPassword,
+            string adminRoleIdFromConfig, string userRoleIdFromConfig, string adminUserIdFromConfig)
         {
             if (string.IsNullOrEmpty(adminPassword))
             {
                 throw new ArgumentException("Admin password cannot be null or empty", nameof(adminPassword));
             }
 
-            var adminRoleId = Guid.NewGuid().ToString();
-            var userRoleId = Guid.NewGuid().ToString();
-            var adminUserId = Guid.NewGuid().ToString();
+            var adminRoleId = adminRoleIdFromConfig;
+            var userRoleId = userRoleIdFromConfig;
+            var adminUserId = adminUserIdFromConfig;
 
-            // Define roles without HasData to avoid duplicate key issues
+            // Define roles without HasData to avoid duplicate key issues`
             var adminRole = new Role
             {
                 Id = adminRoleId,
