@@ -21,29 +21,21 @@ namespace backend.Controllers;
 [ApiController]
 [ApiVersion(ApiVersionConstants.VersionString)]
 [Route("api/v{version:apiVersion}/[controller]")]
-public class RecordingController : ControllerBase
+public class RecordingController(
+    ILogger<RecordingController> logger,
+    IHistoricRecordingsService historicRecordingsService,
+    ISyncService syncService,
+    ApplicationDbContext context,
+    IAuditService auditService)
+    : ControllerBase
 {
-    private readonly ILogger<RecordingController> _logger;
-    private readonly IHistoricRecordingsService _historicRecordingsService;
-    private readonly ISyncService _syncService;
-    private readonly ApplicationDbContext _context;
-    private readonly IAuditService _auditService;
+    private readonly ILogger<RecordingController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+    private readonly IHistoricRecordingsService _historicRecordingsService = historicRecordingsService ??
+                                                                             throw new ArgumentNullException(nameof(historicRecordingsService));
+    private readonly ISyncService _syncService = syncService ?? throw new ArgumentNullException(nameof(syncService));
+    private readonly ApplicationDbContext _context = context ?? throw new ArgumentNullException(nameof(context));
+    private readonly IAuditService _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
 
-
-    public RecordingController(
-        ILogger<RecordingController> logger,
-        IHistoricRecordingsService historicRecordingsService,
-        ISyncService syncService,
-        ApplicationDbContext context,
-        IAuditService auditService)
-    {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _historicRecordingsService = historicRecordingsService ??
-                                     throw new ArgumentNullException(nameof(historicRecordingsService));
-        _context = context ?? throw new ArgumentNullException(nameof(context));
-        _syncService = syncService ?? throw new ArgumentNullException(nameof(syncService));
-        _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
-    }
 
     private async Task<List<RecordingDto>> MapRawRecordingToDto(
         List<HistoricRecordingRaw> historicRecordingsRaw)
