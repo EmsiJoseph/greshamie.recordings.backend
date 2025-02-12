@@ -44,11 +44,12 @@ namespace backend.Services.Sync
         {
             try
             {
-                var results = await _historicRecordingsService.SearchRecordingsAsync(searchFilters);
+                var pagedResponse = await _historicRecordingsService.SearchRecordingsAsync(searchFilters);
+                var results = pagedResponse.Items;
                 foreach (var result in results)
                 {
                     var (Id, MediaStartedTime) =
-                        (result.HistoricRecording.Id, result.HistoricRecording.MediaStartedTime);
+                        (result.Id, result.MediaStartedTime);
 
                     // If the recording already exists, skip it.
                     if (await _dbContext.SyncedRecordings.AnyAsync(r => r.Id == Id))

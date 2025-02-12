@@ -16,7 +16,7 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
         /// <param name="pagination">Pagination parameters.</param>
         /// <returns>A paged response containing the search results.</returns>
         Task<PagedResponseDto<ClarifyGoHistoricRecordingRaw>> SearchRecordingsAsync(
-            RecordingSearchFiltersDto searchFiltersDto, PaginationDto pagination);
+            RecordingSearchFiltersDto searchFiltersDto, PaginationDto? pagination = null);
 
         /// <summary>
         /// Deletes a recording specified by its ID.

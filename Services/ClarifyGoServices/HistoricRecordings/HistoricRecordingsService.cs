@@ -124,7 +124,7 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
         }
 
         public async Task<PagedResponseDto<ClarifyGoHistoricRecordingRaw>> SearchRecordingsAsync(
-            RecordingSearchFiltersDto searchFiltersDto, PaginationDto pagination)
+            RecordingSearchFiltersDto searchFiltersDto, PaginationDto? pagination)
         {
             try
             {
