@@ -154,7 +154,7 @@ namespace backend.Controllers
                 var jwtToken = GenerateJwtToken(user, role ?? string.Empty);
 
                 // Log the login event using your audit service and the predefined constant.
-                await auditService.LogAuditEntryAsync(user.Id, AuditEventsConstants.UserLoggedInId, "User logged in.");
+                await _auditService.LogAuditEntryAsync(user.Id, AuditEventsConstants.UserLoggedInId, null, "User logged in.");
 
                 return Ok(new LoginResponseDto
                 {
@@ -206,7 +206,7 @@ namespace backend.Controllers
             await _userManager.UpdateAsync(user);
 
             // Log the refresh event using your audit service and the predefined constant.
-            await auditService.LogAuditEntryAsync(user.Id, AuditEventsConstants.TokenRefreshedId, "Token refreshed.");
+            await _auditService.LogAuditEntryAsync(user.Id, AuditEventsConstants.TokenRefreshedId,null, "Token refreshed.");
 
             return Ok(new LoginResponseDto
             {
@@ -267,9 +267,7 @@ namespace backend.Controllers
             }
 
             string userId = userIdClaim.Value;
-
-            // Log the logout event using your audit service and the predefined constant.
-            await auditService.LogAuditEntryAsync(userId, AuditEventsConstants.UserLoggedOutId, "User logged out.");
+            _logger.LogInformation($"User ID extracted: {userId}");
 
             // Optionally, invalidate the refresh token and ClarifyGo access token if they exist in the database.
             var user = await _userManager.FindByIdAsync(userId);
@@ -286,7 +284,7 @@ namespace backend.Controllers
             _logger.LogInformation("Logout successful.");
 
             // Log the logout event using your audit service and the predefined constant.
-            await auditService.LogAuditEntryAsync(userId, AuditEventsConstants.UserLoggedOutId, "User logged out.");
+            await _auditService.LogAuditEntryAsync(userId, AuditEventsConstants.UserLoggedOutId, null, "User logged out.");
             return Ok(new { message = "Logged out successfully." });
         }
     }

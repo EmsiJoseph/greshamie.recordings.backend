@@ -10,8 +10,9 @@ namespace backend.Services.Audits
         /// </summary>
         /// <param name="userId">The identifier of the user related to the audit event.</param>
         /// <param name="eventId">The identifier for the audit event.</param>
+        /// <param name="recordId">Optional identifier for the related recording.</param>
         /// <param name="details">Optional details about the event.</param>
-        Task LogAuditEntryAsync(string userId, int eventId, string? details = null);
+        Task LogAuditEntryAsync(string userId, int eventId, string? recordId = null, string? details = null);
 
         /// <summary>
         /// Retrieves all audit entries.

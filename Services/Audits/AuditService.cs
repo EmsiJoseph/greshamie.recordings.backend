@@ -12,7 +12,7 @@ namespace backend.Services.Audits
         private readonly ApplicationDbContext _context = context ?? throw new ArgumentNullException(nameof(context));
         private readonly ILogger<AuditService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
-        public async Task LogAuditEntryAsync(string userId, int eventId, string? details = null)
+        public async Task LogAuditEntryAsync(string userId, int eventId, string? recordId = null, string? details = null)
         {
             try
             {
@@ -39,6 +39,8 @@ namespace backend.Services.Audits
                 {
                     UserId = userId,
                     EventId = eventId,
+                    RecordId = recordId,
+                    Timestamp = DateTime.UtcNow,
                     Details = details
                 };
 
