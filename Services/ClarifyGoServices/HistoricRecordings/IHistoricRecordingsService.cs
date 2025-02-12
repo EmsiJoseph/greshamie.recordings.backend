@@ -2,7 +2,7 @@ using System;
 using System.IO;
 using System.Text.Json;
 using System.Threading.Tasks;
-using backend.Classes;
+using backend.ClarifyGoClasses;
 using backend.DTOs;
 
 namespace backend.Services.ClarifyGoServices.HistoricRecordings
@@ -10,13 +10,12 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
     public interface IHistoricRecordingsService
     {
         /// <summary>
-        /// Searches for historic recordings based on the specified date range and filter criteria.
+        /// Searches for historic recordings with pagination support.
         /// </summary>
-        /// <param name="startDate">The start date for the search period.</param>
-        /// <param name="endDate">The end date for the search period.</param>
-        /// <param name="searchFiltersDto">Optional frontend-friendly filter criteria.</param>
-        /// <returns>A <see cref="HistoricRecordingSearchResults"/> object containing the search results.</returns>
-        Task<IEnumerable<HistoricRecordingSearchResult>> SearchRecordingsAsync(
+        /// <param name="searchFiltersDto">Search and filter criteria.</param>
+        /// <param name="pagination">Pagination parameters.</param>
+        /// <returns>A paged response containing the search results.</returns>
+        Task<PagedResponseDto<ClarifyGoHistoricRecordingRaw>> SearchRecordingsAsync(
             RecordingSearchFiltersDto searchFiltersDto);
 
         /// <summary>

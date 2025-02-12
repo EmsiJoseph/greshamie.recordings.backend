@@ -1,12 +1,14 @@
 using System.Text.Json;
-using backend.Classes;
+using backend.ClarifyGoClasses;
 using backend.Constants;
 using backend.Data;
+using backend.Data.Models;
 using backend.DTOs;
 using backend.Exceptions;
 using backend.Extensions;
 using backend.Services.ClarifyGoServices.HistoricRecordings;
 using backend.Services.ClarifyGoServices.LiveRecordings;
+using backend.Services.Sync;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
@@ -15,18 +17,21 @@ namespace backend.Controllers;
 
 [Authorize]
 [ApiController]
-[Route("api/[controller]")]
+[ApiVersion(ApiVersionConstants.VersionString)]
+[Route("api/v{version:apiVersion}/[controller]")]
 public class RecordingController : ControllerBase
 {
     private readonly ILogger<RecordingController> _logger;
     private readonly ILiveRecordingsService _liveRecordingsService;
     private readonly IHistoricRecordingsService _historicRecordingsService;
+    private readonly ISyncService _syncService;
     private readonly ApplicationDbContext _context;
 
     public RecordingController(
         ILogger<RecordingController> logger,
         ILiveRecordingsService liveRecordingsService,
         IHistoricRecordingsService historicRecordingsService,
+        ISyncService syncService,
         ApplicationDbContext context
     )
     {
@@ -36,6 +41,7 @@ public class RecordingController : ControllerBase
         _historicRecordingsService = historicRecordingsService ??
                                      throw new ArgumentNullException(nameof(historicRecordingsService));
         _context = context ?? throw new ArgumentNullException(nameof(context));
+        _syncService = syncService ?? throw new ArgumentNullException(nameof(syncService));
     }
 
     private async Task<List<RecordingDto>> MapRawRecordingToDto(
@@ -60,33 +66,61 @@ public class RecordingController : ControllerBase
         }).ToList());
     }
 
-    private async Task<List<RecordingDto>> SearchAndProcessRecordings(RecordingSearchFiltersDto? filtersDto)
+    private async Task<PagedResponseDto<RecordingDto>> SearchAndProcessRecordings(
+        RecordingSearchFiltersDto? filtersDto)
     {
         try
         {
-            var historicRecordingsSearchResult = await _historicRecordingsService.SearchRecordingsAsync(filtersDto);
-            var historicRecordingSearchResults = historicRecordingsSearchResult.ToList();
-            var historicRecordingsRaw = historicRecordingSearchResults.Select(x => x.HistoricRecording).ToList();
+            var pagedResults = await _historicRecordingsService.SearchRecordingsAsync(filtersDto);
 
-            if (filtersDto.Search != null)
+            var mappedItems = await MapRawRecordingToDto(pagedResults.Items.ToList());
+
+            if (!string.IsNullOrEmpty(filtersDto?.Search))
             {
-                historicRecordingsRaw = historicRecordingsRaw.Where(x =>
-                    x.CallingParty.Contains(filtersDto.Search) || x.CalledParty.Contains(filtersDto.Search)).ToList();
+                mappedItems = mappedItems.Where(x =>
+                    x.Caller.Contains(filtersDto.Search) ||
+                    x.Receiver.Contains(filtersDto.Search)
+                ).ToList();
             }
-           
-            return await MapRawRecordingToDto(historicRecordingsRaw);
+
+            return new PagedResponseDto<RecordingDto>
+            {
+                Items = mappedItems,
+                PageOffset = pagedResults.PageOffset,
+                PageSize = pagedResults.PageSize,
+                TotalPages = pagedResults.TotalPages,
+                TotalCount = pagedResults.TotalCount,
+                HasNext = pagedResults.HasNext,
+                HasPrevious = pagedResults.HasPrevious
+            };
         }
-        catch (ServiceException ex)
+        catch (ServiceException)
         {
-            _logger.LogError(ex, "Error searching recordings");
             throw;
         }
         catch (Exception ex)
         {
-            // Something unexpected happened
             _logger.LogError(ex, "Unexpected error while searching recordings");
             throw new ServiceException($"Unexpected error: {ex.Message}", 500);
         }
+    }
+
+    /// <summary>
+    /// Retrieves a synced recording from the database. If it doesn’t exist,
+    /// it calls the sync service to export and sync the recording.
+    /// </summary>
+    private async Task<SyncedRecording> GetSyncedRecordingAsync(RecordingDto dto)
+    {
+        // Attempt to get the synced recording from the database.
+        var syncedRecording = await _context.SyncedRecordings.FindAsync(dto.Id);
+        if (syncedRecording == null)
+        {
+            // If not found, attempt to sync the recording.
+            await _syncService.SyncRecordingByObjectAsync(dto);
+            syncedRecording = await _context.SyncedRecordings.FindAsync(dto.Id);
+        }
+
+        return syncedRecording;
     }
 
     [OutputCache(Duration = 60, VaryByQueryKeys = new[] { "RecordingsCache" })]
@@ -113,6 +147,7 @@ public class RecordingController : ControllerBase
 
             _logger.LogInformation("Search Filters: {Filters}", JsonSerializer.Serialize(filtersDto));
 
+
             var results = await SearchAndProcessRecordings(filtersDto);
             return Ok(results);
         }
@@ -127,87 +162,61 @@ public class RecordingController : ControllerBase
         }
     }
 
-    [Authorize(Roles = $"{RolesConstants.Admin}")]
-    [HttpDelete("{recordingId}")]
-    public async Task<IActionResult> DeleteRecording(string recordingId)
+    [HttpPost("sync")]
+    public async Task<IActionResult> Synchronize([FromBody] SyncDateRangeDto request)
     {
+        if (request == null)
+        {
+            return BadRequest(new { Message = "Invalid request body." });
+        }
+
         try
         {
-            if (string.IsNullOrEmpty(recordingId))
-            {
-                return BadRequest(new { message = "Recording ID is required" });
-            }
-
-            bool results = await _historicRecordingsService.DeleteRecordingAsync(recordingId);
-            if (!results)
-            {
-                return NotFound(new { message = "Recording not found" });
-            }
-
-            return NoContent();
+            await _syncService.SynchronizeRecordingsAsync(request.StartDate, request.EndDate);
+            return Ok(new { Message = "Synchronization completed successfully." });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error while deleting recording {RecordingId}", recordingId);
-            return StatusCode(500, new { message = "An unexpected error occurred" });
+            _logger.LogError(ex, "Synchronization failed.");
+            return StatusCode(500, new { Message = "Error synchronizing recordings.", Error = ex.Message });
         }
     }
 
-    [Authorize(Roles = $"{RolesConstants.Admin}")]
-    [HttpGet("admin-only")]
-    public IActionResult AdminOnly()
-    {
-        return Ok("Admin only");
-    }
-
-
-    [HttpGet("{recordingId}/mp3")]
-    public async Task<IActionResult> GetRecording(string recordingId)
+    [HttpGet("stream")]
+    public async Task<IActionResult> GetStreamingUrl([FromQuery] RecordingDto dto)
     {
         try
         {
-            if (string.IsNullOrEmpty(recordingId))
+            var syncedRecording = await GetSyncedRecordingAsync(dto);
+            if (syncedRecording == null)
             {
-                return BadRequest(new { message = "Recording ID is required" });
+                return NotFound(new { Message = "Recording not found." });
             }
 
-            var recording = await _historicRecordingsService.ExportMp3Async(recordingId);
-            if (recording == null)
-            {
-                return NotFound(new { message = "Recording not found" });
-            }
-
-            return Ok(recording);
+            return Ok(new { StreamingUrl = syncedRecording.StreamingUrl });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error while getting recording {RecordingId}", recordingId);
-            return StatusCode(500, new { message = "An unexpected error occurred" });
+            return StatusCode(500, new { Message = "Error retrieving streaming URL", Error = ex.Message });
         }
     }
 
-    [HttpGet("{recordingId}/wav")]
-    public async Task<IActionResult> GetRecordingWav(string recordingId)
+    [HttpGet("download")]
+    public async Task<IActionResult> GetDownloadUrl([FromQuery] RecordingDto dto)
     {
         try
         {
-            if (string.IsNullOrEmpty(recordingId))
+            var syncedRecording = await GetSyncedRecordingAsync(dto);
+            if (syncedRecording == null)
             {
-                return BadRequest(new { message = "Recording ID is required" });
+                return NotFound(new { Message = "Recording not found." });
             }
 
-            var recording = await _historicRecordingsService.ExportWavAsync(recordingId);
-            if (recording == null)
-            {
-                return NotFound(new { message = "Recording not found" });
-            }
-
-            return Ok(recording);
+            return Ok(new { DownloadUrl = syncedRecording.DownloadUrl });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error while getting recording {RecordingId}", recordingId);
-            return StatusCode(500, new { message = "An unexpected error occurred" });
+            return StatusCode(500, new { Message = "Error retrieving download URL", Error = ex.Message });
         }
     }
 }

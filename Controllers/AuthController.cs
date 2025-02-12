@@ -18,7 +18,8 @@ using backend.Services;
 namespace backend.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [ApiVersion(ApiVersionConstants.VersionString)]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public class AuthController : ControllerBase
     {
         private readonly ITokenService _tokenService;

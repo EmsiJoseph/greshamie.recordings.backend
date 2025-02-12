@@ -109,6 +109,64 @@ namespace backend.Services.Audits
             }
         }
 
+        public async Task<PagedResponseDto<AuditEntryDto>> GetAuditEntriesAsync(string? search, PaginationDto pagination)
+        {
+            try
+            {
+                _logger.LogInformation("Fetching audit entries from database with pagination");
+                
+                var query = _context.AuditEntries
+                    .Include(x => x.Event.Type)
+                    .Include(x => x.User)
+                    .AsQueryable();
+
+                if (!string.IsNullOrEmpty(search))
+                {
+                    query = query.Where(x =>
+                        (x.User.UserName.Contains(search)) ||
+                        (x.RecordId.Contains(search)) ||
+                        (x.Event.Name.Contains(search)) ||
+                        (x.Details.Contains(search)) ||
+                        (x.Event.Type.Name.Contains(search)));
+                }
+
+                var totalCount = await query.CountAsync();
+                var totalPages = (int)Math.Ceiling(totalCount / (double)pagination.PageSize);
+
+                var entries = await query
+                    .Skip(pagination.PageOffset * pagination.PageSize)
+                    .Take(pagination.PageSize)
+                    .Select(audit => new AuditEntryDto
+                    {
+                        Id = audit.Id,
+                        Username = audit.User != null ? audit.User.UserName : "Unknown",
+                        RecordingId = audit.RecordId ?? "N/A",
+                        EventName = audit.Event != null ? audit.Event.Name : "Unknown",
+                        EventType = audit.Event.Type != null ? audit.Event.Type.Name : "Unknown",
+                        Details = audit.Details ?? "No details",
+                        Timestamp = audit.Timestamp
+                    })
+                    .OrderByDescending(x => x.Timestamp)
+                    .ToListAsync();
+
+                return new PagedResponseDto<AuditEntryDto>
+                {
+                    Items = entries,
+                    PageOffset = pagination.PageOffset,
+                    PageSize = pagination.PageSize,
+                    TotalPages = totalPages,
+                    TotalCount = totalCount,
+                    HasNext = (pagination.PageOffset + 1) * pagination.PageSize < totalCount,
+                    HasPrevious = pagination.PageOffset > 0
+                };
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving audit entries from database");
+                throw new ServiceException("Failed to retrieve audit entries", 500);
+            }
+        }
+
         public async Task<AuditEntryDto> GetAuditEntryByIdAsync(int id)
         {
             try
