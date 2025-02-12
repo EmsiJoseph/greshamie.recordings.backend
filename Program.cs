@@ -1,7 +1,9 @@
 using System.Text;
+using System.Text.Json;
 using backend.Constants;
 using backend.Data;
 using backend.Data.Models;
+using backend.Extensions;
 using backend.Middleware;
 using backend.Services.Audits;
 using backend.Services.Auth;
@@ -18,7 +20,6 @@ using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Shine.Extensions;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -61,7 +62,8 @@ builder.Services.AddAuthorization();
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        options.JsonSerializerOptions.PropertyNamingPolicy = null;
+        // Use camelCase for all property names by default
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         options.JsonSerializerOptions.WriteIndented = true;
     });
 
@@ -80,7 +82,7 @@ builder.Services.AddApiVersioning(options =>
 
 builder.Services.AddEndpointsApiExplorer();
 
-var connection = String.Empty;
+string connection;
 
 if (builder.Environment.IsDevelopment())
 
@@ -91,16 +93,27 @@ if (builder.Environment.IsDevelopment())
 }
 else
 {
-    connection = configuration["ConnectionStrings:DefaultConnection"];
+    connection = configuration["ConnectionStrings:DefaultConnection"] ??
+                 throw new InvalidOperationException(
+                     "Connection string 'DefaultConnection' not found.");
 }
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseSqlServer(connection));
+{
+    options.UseSqlServer(connection);
+
+    // Move sensitive data logging configuration here and make it conditional
+    if (builder.Environment.IsDevelopment())
+    {
+        options.EnableSensitiveDataLogging()
+            .EnableDetailedErrors();
+    }
+});
 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 
-builder.Services.AddIdentityCore<User>(options => { })
+builder.Services.AddIdentityCore<User>()
     .AddRoles<Role>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
@@ -159,8 +172,6 @@ builder.Services.AddHttpClient<ICommentsService, CommentsService>(client =>
 {
     client.BaseAddress = new Uri(apiBaseUri);
 });
-
-builder.Services.AddHttpClient<ISyncService, SyncService>(client => { client.BaseAddress = new Uri(apiBaseUri); });
 
 builder.Services.AddHttpClient<ITagsService, TagsService>(client => { client.BaseAddress = new Uri(apiBaseUri); });
 

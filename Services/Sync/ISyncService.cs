@@ -1,14 +1,10 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-using backend.DTOs;
+using backend.DTOs.Recording;
 
-namespace backend.Services.Sync
+namespace backend.Services.Sync;
+
+public interface ISyncService
 {
-    public interface ISyncService
-    {
-        Task SynchronizeRecordingsAsync(DateTime fromDate, DateTime toDate);
+    Task SynchronizeRecordingsAsync(DateTime fromDate, DateTime toDate);
 
-        Task SyncRecordingByObjectAsync(RecordingDto dto);
-    }
+    Task SyncRecordingByObjectAsync(RecordingDto dto);
 }

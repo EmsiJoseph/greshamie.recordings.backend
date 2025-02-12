@@ -1,4 +1,4 @@
-﻿using backend.DTOs;
+﻿using backend.DTOs.Recording;
 
 namespace backend.Services.ClarifyGoServices.LiveRecordings;
 

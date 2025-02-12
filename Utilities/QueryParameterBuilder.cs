@@ -2,12 +2,7 @@ namespace backend.Utilities
 {
     public class QueryParameterBuilder
     {
-        private readonly List<KeyValuePair<string, string>> _parameters;
-
-        public QueryParameterBuilder()
-        {
-            _parameters = new List<KeyValuePair<string, string>>();
-        }
+        private readonly List<KeyValuePair<string, string>> _parameters = new();
 
         public QueryParameterBuilder AddParameter<T>(string name, T? value, bool encode = true) where T : class
         {
@@ -22,6 +17,7 @@ namespace backend.Utilities
                     ));
                 }
             }
+
             return this;
         }
 
@@ -42,13 +38,14 @@ namespace backend.Utilities
                     _parameters.Add(new KeyValuePair<string, string>(name, stringValue));
                 }
             }
+
             return this;
         }
 
         public string Build()
         {
-            return _parameters.Count == 0 
-                ? string.Empty 
+            return _parameters.Count == 0
+                ? string.Empty
                 : "?" + string.Join("&", _parameters.Select(p => $"{p.Key}={p.Value}"));
         }
     }

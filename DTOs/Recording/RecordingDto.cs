@@ -1,16 +1,14 @@
-﻿using System.Text.Json.Serialization;
-
-namespace backend.DTOs;
+﻿namespace backend.DTOs.Recording;
 
 public class RecordingDto
 {
-    [JsonPropertyName("id")] public string? Id { get; set; }
-    [JsonPropertyName("caller")] public string? Caller { get; set; }
-    [JsonPropertyName("receiver")] public string? Receiver { get; set; }
-    [JsonPropertyName("startDateTime")] public DateTime? StartDateTime { get; set; }
-    [JsonPropertyName("endDateTime")] public DateTime? EndDateTime { get; set; }
-    [JsonPropertyName("callType")] public string? CallType { get; set; }
-    [JsonPropertyName("isLive")] public bool? IsLive { get; set; }
-    [JsonPropertyName("durationSeconds")] public int? DurationSeconds { get; set; }
-    [JsonPropertyName("recorder")] public string? Recorder { get; set; }
+    public string? Id { get; set; }
+    public string? Caller { get; set; }
+    public string? Receiver { get; set; }
+    public DateTime? StartDateTime { get; set; }
+    public DateTime? EndDateTime { get; set; }
+    public string? CallType { get; set; }
+    public bool? IsLive { get; set; }
+    public int? DurationSeconds { get; set; }
+    public string? Recorder { get; set; }
 }

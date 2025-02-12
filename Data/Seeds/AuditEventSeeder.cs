@@ -1,4 +1,4 @@
-using backend.Constants;
+using backend.Constants.Audit;
 using backend.Data.Models;
 using Microsoft.EntityFrameworkCore;
 

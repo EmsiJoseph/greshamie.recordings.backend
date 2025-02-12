@@ -1,13 +1,12 @@
-﻿using System;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 
-namespace backend.DTOs
+namespace backend.DTOs.Recording
 {
     public class RecordingSearchFiltersDto
     {
         // Global Search
         public string Search { get; set; } = string.Empty;
-        
+
         // Start date and time (inclusive) of the search period in UTC.
         // Example: "2022-01-15T09:00:00Z"
         public DateTime? StartDate { get; set; }
@@ -29,12 +28,10 @@ namespace backend.DTOs
         public TimeSpan? LatestTimeOfDay { get; set; }
 
         // Only include recordings with a duration greater than or equal to this value (in seconds).
-        [Range(0, int.MaxValue)]
-        public int? MinimumDurationSeconds { get; set; }
+        [Range(0, int.MaxValue)] public int? MinimumDurationSeconds { get; set; }
 
         // Only include recordings with a duration less than or equal to this value (in seconds).
-        [Range(0, int.MaxValue)]
-        public int? MaximumDurationSeconds { get; set; }
+        [Range(0, int.MaxValue)] public int? MaximumDurationSeconds { get; set; }
 
         // Only include recordings where the calling or called party contains these digits.
         // Example: "+441202"

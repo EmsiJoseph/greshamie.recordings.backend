@@ -1,4 +1,4 @@
-namespace backend.Constants;
+namespace backend.Constants.Audit;
 
 public static class AuditEventsConstants
 {

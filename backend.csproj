@@ -57,7 +57,6 @@
       <Folder Include="ClarifyGoServices\HistoricRecordings\" />
       <Folder Include="ClarifyGoServices\LiveRecordings\" />
       <Folder Include="ClarifyGoServices\Tags\" />
-      <Folder Include="Models\" />
     </ItemGroup>
 
 </Project>

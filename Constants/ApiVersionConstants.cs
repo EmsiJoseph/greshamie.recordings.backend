@@ -1,5 +1,5 @@
-namespace backend.Constants
-{
+namespace backend.Constants;
+
     public static class ApiVersionConstants
     {
         public const int MajorVersion = 1;
@@ -8,4 +8,4 @@ namespace backend.Constants
         public const string HeaderName = "X-Api-Version";
         public const string QueryStringParam = "api-version";
     }
-}
+

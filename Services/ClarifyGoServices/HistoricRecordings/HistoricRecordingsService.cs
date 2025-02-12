@@ -1,26 +1,23 @@
 using System.Net;
 using System.Text.Json;
 using backend.ClarifyGoClasses;
-using backend.Constants;
+using backend.Constants.ClarifyGo;
 using backend.DTOs;
+using backend.DTOs.Recording;
 using backend.Exceptions;
 using backend.Services.Auth;
 using IdentityModel.Client;
-using Microsoft.IdentityModel.Tokens;
 using backend.Utilities;
 
 namespace backend.Services.ClarifyGoServices.HistoricRecordings
 {
-    public class HistoricRecordingsService : IHistoricRecordingsService
+    public class HistoricRecordingsService(HttpClient httpClient, ITokenService tokenService)
+        : IHistoricRecordingsService
     {
-        private readonly HttpClient _httpClient;
-        private readonly ITokenService _tokenService;
+        private readonly HttpClient _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
 
-        public HistoricRecordingsService(HttpClient httpClient, ITokenService tokenService)
-        {
-            _httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
-            _tokenService = tokenService ?? throw new ArgumentNullException(nameof(tokenService));
-        }
+        private readonly ITokenService _tokenService =
+            tokenService ?? throw new ArgumentNullException(nameof(tokenService));
 
         public void SetBearerToken(string token)
         {
@@ -77,7 +74,7 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
             return builder.Build();
         }
 
-        public async Task<PagedResponseDto<ClarifyGoHistoricRecordingRaw>> SearchRecordingsAsync(
+        public async Task<PagedResponseDto<HistoricRecordingRaw>> SearchRecordingsAsync(
             RecordingSearchFiltersDto searchFiltersDto)
         {
             try
@@ -88,10 +85,8 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
                     searchFiltersDto.StartDate,
                     searchFiltersDto.EndDate);
 
-                var queryString =  BuildQueryParameters(searchFiltersDto);
+                var queryString = BuildQueryParameters(searchFiltersDto);
                 var fullUrl = baseUrl + queryString;
-                
-                Console.WriteLine($"Full URL: {fullUrl}");
 
                 var response = await _httpClient.GetAsync(fullUrl);
 
@@ -106,24 +101,24 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
                     throw new ServiceException($"Recording service error: {error}", (int)response.StatusCode);
                 }
 
+                Console.WriteLine($"response content: {response.Content}");
+
                 var searchResultsObj =
-                    await response.Content.ReadFromJsonAsync<ClarifyGoHistoricRecordingSearchResults>();
+                    await response.Content.ReadFromJsonAsync<HistoricRecordingSearchResults>();
                 if (searchResultsObj == null)
                 {
                     throw new ServiceException("Invalid response from recording service", 502);
                 }
 
-                var recordings = searchResultsObj.SearchResults?
-                    .Select(x => x.HistoricRecording)
-                    .ToList() ?? new List<ClarifyGoHistoricRecordingRaw>();
+                var recordings = searchResultsObj.SearchResults.Select(x => x.HistoricRecording)
+                    .ToList();
 
                 var totalCount = searchResultsObj.TotalResults;
-                
-              
-                
-                var totalPages = (int)Math.Ceiling(totalCount / (double)searchFiltersDto.PageSize);
 
-                return new PagedResponseDto<ClarifyGoHistoricRecordingRaw>
+
+                var totalPages = (int)Math.Ceiling(totalCount / (double)searchFiltersDto.PageSize!);
+
+                return new PagedResponseDto<HistoricRecordingRaw>
                 {
                     Items = recordings,
                     PageOffset = searchFiltersDto.PageOffset,
@@ -165,10 +160,6 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
                 if (response.IsSuccessStatusCode)
                 {
                     return true;
-                }
-                else if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
-                {
-                    return false;
                 }
                 else
                 {

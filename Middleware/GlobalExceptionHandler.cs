@@ -3,26 +3,17 @@ using backend.Exceptions;
 
 namespace backend.Middleware
 {
-    public class GlobalExceptionHandler
+    public class GlobalExceptionHandler(RequestDelegate next, ILogger<GlobalExceptionHandler> logger)
     {
-        private readonly RequestDelegate _next;
-        private readonly ILogger<GlobalExceptionHandler> _logger;
-
-        public GlobalExceptionHandler(RequestDelegate next, ILogger<GlobalExceptionHandler> logger)
-        {
-            _next = next;
-            _logger = logger;
-        }
-
         public async Task InvokeAsync(HttpContext context)
         {
             try
             {
-                await _next(context);
+                await next(context);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An unexpected error occurred");
+                logger.LogError(ex, "An unexpected error occurred");
                 await HandleExceptionAsync(context, ex);
             }
         }

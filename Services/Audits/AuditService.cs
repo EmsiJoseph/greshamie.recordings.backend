@@ -1,22 +1,16 @@
 ﻿using backend.Data;
 using backend.Data.Models;
-using backend.Exceptions;
 using backend.DTOs;
+using backend.Exceptions;
+using backend.DTOs.Audit;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 
 namespace backend.Services.Audits
 {
-    public class AuditService : IAuditService
+    public class AuditService(ApplicationDbContext context, ILogger<AuditService> logger) : IAuditService
     {
-        private readonly ApplicationDbContext _context;
-        private readonly ILogger<AuditService> _logger;
-
-        public AuditService(ApplicationDbContext context, ILogger<AuditService> logger)
-        {
-            _context = context ?? throw new ArgumentNullException(nameof(context));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        }
+        private readonly ApplicationDbContext _context = context ?? throw new ArgumentNullException(nameof(context));
+        private readonly ILogger<AuditService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         public async Task LogAuditEntryAsync(string userId, int eventId, string? details = null)
         {
@@ -57,21 +51,12 @@ namespace backend.Services.Audits
 
                 if (changes == 0)
                 {
-                    throw new ServiceException("No changes were saved to the database", 500);
+                    throw new ServiceException("No changes were saved to the database");
                 }
-
-                Console.WriteLine($"Audit entry logged successfully: {auditEntry.Id}");
             }
             catch (DbUpdateException ex)
             {
-                Console.WriteLine($"Database error: {ex.InnerException?.Message ?? ex.Message}");
-                throw new ServiceException($"Failed to save audit entry: {ex.InnerException?.Message ?? ex.Message}",
-                    500);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Unexpected error: {ex.Message}");
-                throw;
+                throw new ServiceException($"Failed to save audit entry: {ex.InnerException?.Message ?? ex.Message}");
             }
         }
 
@@ -80,39 +65,39 @@ namespace backend.Services.Audits
             try
             {
                 _logger.LogInformation("Fetching audit entries from database");
-                
+
                 var entries = await _context.AuditEntries
                     .Include(x => x.Event.Type)
                     .Include(x => x.User)
                     .Select(audit => new AuditEntryDto
                     {
                         Id = audit.Id,
-                        Username = audit.User != null ? audit.User.UserName : "Unknown",
+                        Username = audit.User.UserName,
                         RecordingId = audit.RecordId ?? "N/A",
-                        EventName = audit.Event != null ? audit.Event.Name : "Unknown",
-                        EventType = audit.Event.Type != null ? audit.Event.Type.Name : "Unknown",
+                        EventName = audit.Event.Name,
+                        EventType = audit.Event.Type.Name,
                         Details = audit.Details ?? "No details",
                         Timestamp = audit.Timestamp
                     })
                     .OrderByDescending(x => x.Timestamp)
                     .ToListAsync();
 
-                _logger.LogInformation("Retrieved {Count} audit entries", entries.Count);
                 return entries;
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving audit entries from database");
-                throw new ServiceException("Failed to retrieve audit entries", 500);
+                throw new ServiceException("Failed to retrieve audit entries");
             }
         }
 
-        public async Task<PagedResponseDto<AuditEntryDto>> GetAuditEntriesAsync(string? search, PaginationDto pagination)
+        public async Task<PagedResponseDto<AuditEntryDto>> GetAuditEntriesAsync(string? search,
+            PaginationDto pagination)
         {
             try
             {
                 _logger.LogInformation("Fetching audit entries from database with pagination");
-                
+
                 var query = _context.AuditEntries
                     .Include(x => x.Event.Type)
                     .Include(x => x.User)
@@ -121,11 +106,13 @@ namespace backend.Services.Audits
                 if (!string.IsNullOrEmpty(search))
                 {
                     query = query.Where(x =>
-                        (x.User.UserName.Contains(search)) ||
-                        (x.RecordId.Contains(search)) ||
-                        (x.Event.Name.Contains(search)) ||
-                        (x.Details.Contains(search)) ||
-                        (x.Event.Type.Name.Contains(search)));
+                        (x.User.UserName != null && x.RecordId != null && x.Details != null) &&
+                        (x.User.UserName.Contains(search) ||
+                         x.RecordId.Contains(search) ||
+                         x.Event.Name.Contains(search) ||
+                         x.Details.Contains(search) ||
+                         x.Event.Type.Name.Contains(search))
+                    );
                 }
 
                 var totalCount = await query.CountAsync();
@@ -137,10 +124,10 @@ namespace backend.Services.Audits
                     .Select(audit => new AuditEntryDto
                     {
                         Id = audit.Id,
-                        Username = audit.User != null ? audit.User.UserName : "Unknown",
+                        Username = audit.User.UserName,
                         RecordingId = audit.RecordId ?? "N/A",
-                        EventName = audit.Event != null ? audit.Event.Name : "Unknown",
-                        EventType = audit.Event.Type != null ? audit.Event.Type.Name : "Unknown",
+                        EventName = audit.Event.Name,
+                        EventType = audit.Event.Type.Name,
                         Details = audit.Details ?? "No details",
                         Timestamp = audit.Timestamp
                     })
@@ -161,7 +148,7 @@ namespace backend.Services.Audits
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving audit entries from database");
-                throw new ServiceException("Failed to retrieve audit entries", 500);
+                throw new ServiceException("Failed to retrieve audit entries");
             }
         }
 
@@ -190,7 +177,7 @@ namespace backend.Services.Audits
             }
             catch (Exception ex)
             {
-                throw new ServiceException($"Failed to retrieve audit entry: {ex.Message}", 500);
+                throw new ServiceException($"Failed to retrieve audit entry: {ex.Message}");
             }
         }
 
@@ -238,7 +225,7 @@ namespace backend.Services.Audits
             }
             catch (Exception ex)
             {
-                throw new ServiceException($"Failed to retrieve audit entries: {ex.Message}", 500);
+                throw new ServiceException($"Failed to retrieve audit entries: {ex.Message}");
             }
         }
     }

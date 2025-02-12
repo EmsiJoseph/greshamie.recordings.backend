@@ -3,36 +3,37 @@
 namespace backend.ClarifyGoClasses
 {
     // Represents the overall search results response.
-    public class ClarifyGoHistoricRecordingSearchResults
+    public class HistoricRecordingSearchResults
     {
-        public List<ClarifyGoHistoricRecordingSearchResult> SearchResults { get; set; } =
-            new List<ClarifyGoHistoricRecordingSearchResult>();
+        [JsonPropertyName("searchResults")]
+        public List<HistoricRecordingSearchResult> SearchResults { get; set; } =
+            new List<HistoricRecordingSearchResult>();
 
-        public int TotalResults { get; set; }
+        [JsonPropertyName("totalResults")] public int TotalResults { get; set; }
     }
 
     // Represents an individual search result item.
-    public class ClarifyGoHistoricRecordingSearchResult
+    public class HistoricRecordingSearchResult
     {
         // The recording details.
-
+        [JsonPropertyName("recording")]
         public HistoricRecordingRaw HistoricRecording { get; set; } = new HistoricRecordingRaw();
 
         // Count of screen recordings.
-
+        [JsonPropertyName("screenRecordingCount")]
         public int ScreenRecordingCount { get; set; }
 
         // Count of tags.
-        public int TagCount { get; set; }
+        [JsonPropertyName("tagCount")] public int TagCount { get; set; }
 
         // Count of comments.
-        public int CommentCount { get; set; }
+        [JsonPropertyName("commentCount")] public int CommentCount { get; set; }
 
         // Count of PCI events.
-        public int PciEventCount { get; set; }
+        [JsonPropertyName("pciEventCount")] public int PciEventCount { get; set; }
 
         // Count of recording evaluations.
-
+        [JsonPropertyName("recordingEvaluationCount")]
         public int RecordingEvaluationCount { get; set; }
     }
 }
