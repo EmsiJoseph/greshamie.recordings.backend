@@ -39,5 +39,13 @@ namespace backend.Services.Audits
             string? userId = null,
             DateTime? startDate = null,
             DateTime? endDate = null);
+
+        /// <summary>
+        /// Retrieves paginated audit entries based on optional search and pagination parameters.
+        /// </summary>
+        /// <param name="search">Optional search term.</param>
+        /// <param name="pagination">Pagination parameters.</param>
+        /// <returns>A paginated list of audit entries.</returns>
+        Task<PagedResponseDto<AuditEntryDto>> GetAuditEntriesAsync(string? search, PaginationDto pagination);
     }
 }

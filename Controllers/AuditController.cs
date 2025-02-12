@@ -69,14 +69,26 @@ namespace backend.Controllers
             }
         }
 
-        [OutputCache(Duration = 60, VaryByQueryKeys = new[] { "AuditCache" })]
+        [OutputCache(Duration = 60, VaryByQueryKeys = new[] { "search", "pageOffset", "pageSize" })]
         [HttpGet("")]
-        public async Task<IActionResult> GetAll([FromQuery] string? search)
+        public async Task<IActionResult> GetAll(
+            [FromQuery] string? search, 
+            [FromQuery] int pageOffset = 0, 
+            [FromQuery] int pageSize = 10)
         {
             try
             {
-                _logger.LogInformation("Searching audit entries with search term: {Search}", search);
-                var results = await SearchAndProcessAuditEntries(search);
+                _logger.LogInformation(
+                    "Searching audit entries with search term: {Search}, PageOffset: {Offset}, Size: {Size}", 
+                    search, pageOffset, pageSize);
+
+                var pagination = new PaginationDto
+                {
+                    PageOffset = pageOffset,
+                    PageSize = pageSize
+                };
+
+                var results = await _auditService.GetAuditEntriesAsync(search, pagination);
                 return Ok(results);
             }
             catch (ServiceException ex)

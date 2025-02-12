@@ -1,5 +1,5 @@
 using System.Text.Json;
-using backend.Classes;
+using backend.ClarifyGoClasses;
 using backend.Constants;
 using backend.Data;
 using backend.DTOs;
@@ -60,30 +60,41 @@ public class RecordingController : ControllerBase
         }).ToList());
     }
 
-    private async Task<List<RecordingDto>> SearchAndProcessRecordings(RecordingSearchFiltersDto? filtersDto)
+    private async Task<PagedResponseDto<RecordingDto>> SearchAndProcessRecordings(
+        RecordingSearchFiltersDto? filtersDto, 
+        PaginationDto pagination)
     {
         try
         {
-            var historicRecordingsSearchResult = await _historicRecordingsService.SearchRecordingsAsync(filtersDto);
-            var historicRecordingSearchResults = historicRecordingsSearchResult.ToList();
-            var historicRecordingsRaw = historicRecordingSearchResults.Select(x => x.HistoricRecording).ToList();
+            var pagedResults = await _historicRecordingsService.SearchRecordingsAsync(filtersDto, pagination);
+            
+            var mappedItems = await MapRawRecordingToDto(pagedResults.Items.ToList());
 
-            if (filtersDto.Search != null)
+            if (!string.IsNullOrEmpty(filtersDto?.Search))
             {
-                historicRecordingsRaw = historicRecordingsRaw.Where(x =>
-                    x.CallingParty.Contains(filtersDto.Search) || x.CalledParty.Contains(filtersDto.Search)).ToList();
+                mappedItems = mappedItems.Where(x =>
+                    x.Caller.Contains(filtersDto.Search) || 
+                    x.Receiver.Contains(filtersDto.Search)
+                ).ToList();
             }
-           
-            return await MapRawRecordingToDto(historicRecordingsRaw);
+
+            return new PagedResponseDto<RecordingDto>
+            {
+                Items = mappedItems,
+                PageOffset = pagedResults.PageOffset,
+                PageSize = pagedResults.PageSize,
+                TotalPages = pagedResults.TotalPages,
+                TotalCount = pagedResults.TotalCount,
+                HasNext = pagedResults.HasNext,
+                HasPrevious = pagedResults.HasPrevious
+            };
         }
-        catch (ServiceException ex)
+        catch (ServiceException)
         {
-            _logger.LogError(ex, "Error searching recordings");
             throw;
         }
         catch (Exception ex)
         {
-            // Something unexpected happened
             _logger.LogError(ex, "Unexpected error while searching recordings");
             throw new ServiceException($"Unexpected error: {ex.Message}", 500);
         }
@@ -113,7 +124,13 @@ public class RecordingController : ControllerBase
 
             _logger.LogInformation("Search Filters: {Filters}", JsonSerializer.Serialize(filtersDto));
 
-            var results = await SearchAndProcessRecordings(filtersDto);
+            var pagination = new PaginationDto
+            {
+                PageOffset = filtersDto.PageOffset ?? 0,
+                PageSize = filtersDto.PageSize ?? 10
+            };
+
+            var results = await SearchAndProcessRecordings(filtersDto, pagination);
             return Ok(results);
         }
         catch (ServiceException ex)
