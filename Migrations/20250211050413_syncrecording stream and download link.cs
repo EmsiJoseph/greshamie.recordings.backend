@@ -8,7 +8,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace backend.Migrations
 {
     /// <inheritdoc />
-    public partial class RemovedUserSeeder : Migration
+    public partial class syncrecordingstreamanddownloadlink : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -81,6 +81,7 @@ namespace backend.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    IdFromClarify = table.Column<int>(type: "int", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     NormalizedName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
@@ -88,6 +89,23 @@ namespace backend.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_CallTypes", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SyncedRecordings",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    StreamingUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    DownloadUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    RecordingDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SyncedRecordings", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -204,6 +222,7 @@ namespace backend.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     EventId = table.Column<int>(type: "int", nullable: false),
+                    RecordId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     Timestamp = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Details = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true)
                 },
@@ -222,6 +241,12 @@ namespace backend.Migrations
                         principalTable: "AuditEvents",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_AuditEntries_SyncedRecordings_RecordId",
+                        column: x => x.RecordId,
+                        principalTable: "SyncedRecordings",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.InsertData(
@@ -229,9 +254,14 @@ namespace backend.Migrations
                 columns: new[] { "Id", "ConcurrencyStamp", "CreatedAt", "Description", "IsActive", "Level", "Name", "NormalizedName", "UpdatedAt" },
                 values: new object[,]
                 {
-                    { "0054ea5e-7751-4e14-b49d-33b6a8418a19", null, new DateTime(2025, 2, 7, 8, 36, 41, 610, DateTimeKind.Utc).AddTicks(4261), "User of Gresham Recordings", true, 90, "User", "USER", new DateTime(2025, 2, 7, 8, 36, 41, 610, DateTimeKind.Utc).AddTicks(4262) },
-                    { "952d75bb-1e47-4e65-b0ee-3502849a8cbd", null, new DateTime(2025, 2, 7, 8, 36, 41, 610, DateTimeKind.Utc).AddTicks(3066), "Administrator of Gresham Recordings", true, 90, "Admin", "ADMIN", new DateTime(2025, 2, 7, 8, 36, 41, 610, DateTimeKind.Utc).AddTicks(3072) }
+                    { "329e6542-ab1f-46ef-a00b-c8c0ca84d454", null, new DateTime(2025, 2, 11, 5, 4, 13, 364, DateTimeKind.Utc).AddTicks(2173), "Administrator", true, 100, "Admin", "ADMIN", new DateTime(2025, 2, 11, 5, 4, 13, 364, DateTimeKind.Utc).AddTicks(2176) },
+                    { "dfe960ff-f6a7-4d50-85b1-a39c062a1ea6", null, new DateTime(2025, 2, 11, 5, 4, 13, 364, DateTimeKind.Utc).AddTicks(3600), "User", true, 90, "User", "USER", new DateTime(2025, 2, 11, 5, 4, 13, 364, DateTimeKind.Utc).AddTicks(3601) }
                 });
+
+            migrationBuilder.InsertData(
+                table: "AspNetUsers",
+                columns: new[] { "Id", "AccessFailedCount", "ClarifyGoAccessToken", "ClarifyGoAccessTokenExpiry", "ConcurrencyStamp", "Email", "EmailConfirmed", "LockoutEnabled", "LockoutEnd", "NormalizedEmail", "NormalizedUserName", "PasswordHash", "PhoneNumber", "PhoneNumberConfirmed", "RefreshToken", "RefreshTokenExpiry", "SecurityStamp", "TwoFactorEnabled", "UserName" },
+                values: new object[] { "81437d01-53a2-45a1-933d-a10a18897440", 0, null, null, "080143b5-8a7b-43c7-a046-b5bbdd2f831f", null, false, false, null, null, "GHIE-API", "AQAAAAIAAYagAAAAEM8EmHNLPfhZfVItgV8CApcc7PEc5Mg+zhyQ+H0MMIwfYEEaKDUcR1p2zL31OpZaAw==", null, false, null, null, "14d170b5-5a1c-4c2f-8050-fae338812562", false, "GHIE-API" });
 
             migrationBuilder.InsertData(
                 table: "AuditEvents",
@@ -247,13 +277,18 @@ namespace backend.Migrations
 
             migrationBuilder.InsertData(
                 table: "CallTypes",
-                columns: new[] { "Id", "Description", "Name", "NormalizedName" },
+                columns: new[] { "Id", "Description", "IdFromClarify", "Name", "NormalizedName" },
                 values: new object[,]
                 {
-                    { 1, "An inbound call.", "incoming", "INCOMING" },
-                    { 2, "An outbound call.", "outgoing", "OUTGOING" },
-                    { 3, "An internal call.", "internal", "INTERNAL" }
+                    { 1, "An inbound call.", 0, "incoming", "INCOMING" },
+                    { 2, "An outbound call.", 1, "outgoing", "OUTGOING" },
+                    { 3, "An internal call.", 2, "internal", "INTERNAL" }
                 });
+
+            migrationBuilder.InsertData(
+                table: "AspNetUserRoles",
+                columns: new[] { "RoleId", "UserId" },
+                values: new object[] { "329e6542-ab1f-46ef-a00b-c8c0ca84d454", "81437d01-53a2-45a1-933d-a10a18897440" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
@@ -307,6 +342,11 @@ namespace backend.Migrations
                 column: "EventId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_AuditEntries_RecordId",
+                table: "AuditEntries",
+                column: "RecordId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_AuditEntries_UserId",
                 table: "AuditEntries",
                 column: "UserId");
@@ -344,6 +384,9 @@ namespace backend.Migrations
 
             migrationBuilder.DropTable(
                 name: "AuditEvents");
+
+            migrationBuilder.DropTable(
+                name: "SyncedRecordings");
         }
     }
 }

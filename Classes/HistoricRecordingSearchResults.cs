@@ -7,6 +7,9 @@ namespace backend.Classes
     {
         [JsonPropertyName("searchResults")]
         public List<HistoricRecordingSearchResult> SearchResults { get; set; } = new List<HistoricRecordingSearchResult>();
+        
+        [JsonPropertyName("totalResults")]
+        public int TotalResults { get; set; }
     }
 
     // Represents an individual search result item.

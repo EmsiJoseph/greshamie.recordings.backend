@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using backend.Exceptions;
+using backend.Exceptions;
 
 namespace backend.Services.Auth
 {
@@ -35,6 +36,8 @@ namespace backend.Services.Auth
             httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
 
         private readonly ILogger<TokenService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        
+        
 
         public async Task SetBearerTokenAsync(HttpClient httpClientFromExternalService)
         {
@@ -46,16 +49,16 @@ namespace backend.Services.Auth
                     throw new ServiceException("User not found in context", 401);
                 }
 
-                var userName = userClaims.FindFirstValue(ClaimTypes.Name);
-                if (string.IsNullOrEmpty(userName))
+                var userId = userClaims.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
                 {
                     throw new ServiceException("User name not found in token", 401);
                 }
 
-                var user = await _userManager.FindByNameAsync(userName);
+                var user = await _userManager.FindByIdAsync(userId);
                 if (user == null)
                 {
-                    throw new ServiceException($"User not found: {userName}", 401);
+                    throw new ServiceException($"User not found: {userId}", 401);
                 }
 
                 if (user.ClarifyGoAccessTokenExpiry < DateTime.UtcNow)
@@ -72,6 +75,7 @@ namespace backend.Services.Auth
 
                     var token = _protector.Unprotect(user.ClarifyGoAccessToken);
                     httpClientFromExternalService.SetBearerToken(token);
+                    
                 }
                 catch (Exception ex)
                 {
@@ -120,6 +124,21 @@ namespace backend.Services.Auth
 
             Console.WriteLine("Token: " + response.AccessToken);
             return response ?? throw new Exception("Access token is missing");
+        }
+
+        public async Task SetBearerTokenWithPasswordAsync(string username, string password, HttpClient httpClientFromExternalService)
+        {
+            try
+            {
+                var tokenResponse = await GetAccessTokenFromClarifyGo(username, password);
+                httpClientFromExternalService.SetBearerToken(tokenResponse.AccessToken);
+                
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "An error occurred while setting the bearer token.");
+                throw;
+            }
         }
     }
 }
