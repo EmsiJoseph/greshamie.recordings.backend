@@ -1,4 +1,4 @@
-﻿using backend.Classes;
+﻿using backend.ClarifyGoClasses;
 
 namespace backend.Services.ClarifyGoServices.Tags;
 

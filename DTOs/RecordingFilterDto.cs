@@ -88,11 +88,11 @@ namespace backend.DTOs
 
         // Zero-based index of the first result to return (for paging).
         // Default is 0.
-        public long? PageOffset { get; set; } = 0;
+        public int? PageOffset { get; set; } = 0;
 
         // Maximum number of results to return in this page.
         // Default is 50.
-        public long? PageSize { get; set; } = 50;
+        public int? PageSize { get; set; } = 50;
 
         // Specifies how to sort the results.
         // Possible values: "type", "from", "to", "duration", "isprimary".

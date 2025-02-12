@@ -1,4 +1,4 @@
-﻿namespace backend.Classes;
+﻿namespace backend.ClarifyGoClasses;
 
 public class ClarifyGoSearchFilters
 {
