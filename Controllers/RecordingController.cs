@@ -219,7 +219,7 @@ public class RecordingController : ControllerBase
             }
 
             string logMessage = $"User played the recording.";
-            await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.RecordPlayed, null, logMessage);
+            await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.RecordPlayed, syncedRecording.Id.ToString(), logMessage);
 
             return Ok(new { StreamingUrl = syncedRecording.StreamingUrl });
         }
@@ -247,7 +247,7 @@ public class RecordingController : ControllerBase
             }
 
             string logMessage = $"User downloaded the recording.";
-            await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.RecordExported, null, logMessage);
+            await _auditService.LogAuditEntryAsync(userId, AuditEventTypes.RecordExported, syncedRecording.Id.ToString(), logMessage);
 
             return Ok(new { DownloadUrl = syncedRecording.DownloadUrl });
         }
