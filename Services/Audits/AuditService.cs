@@ -68,7 +68,9 @@ public class AuditService(ApplicationDbContext context, ILogger<AuditService> lo
             // Apply filters only if they are provided
             if (!string.IsNullOrWhiteSpace(dto.EventType))
             {
-                query = query.Where(x => EF.Functions.Like(x.Event.Type.Name, dto.EventType));
+                query = dto.EventType == "ALL"
+                    ? query.Where(x => true)
+                    : query.Where(x => EF.Functions.Like(x.Event.Type.Name, dto.EventType));
             }
 
             if (dto.StartDate.HasValue && dto.EndDate.HasValue)
@@ -81,8 +83,8 @@ public class AuditService(ApplicationDbContext context, ILogger<AuditService> lo
             {
                 query = query.Where(x =>
                     (x.User.UserName != null && EF.Functions.Like(x.User.UserName, $"%{dto.Search}%")) ||
-                    (x.Event.Name != null && EF.Functions.Like(x.Event.Name, $"%{dto.Search}%")) ||
-                    (x.Event.Type.Name != null && EF.Functions.Like(x.Event.Type.Name, $"%{dto.Search}%")) ||
+                    EF.Functions.Like(x.Event.Name, $"%{dto.Search}%") ||
+                    EF.Functions.Like(x.Event.Type.Name, $"%{dto.Search}%") ||
                     (x.Details != null && EF.Functions.Like(x.Details, $"%{dto.Search}%")) ||
                     (x.RecordId != null && EF.Functions.Like(x.RecordId, $"%{dto.Search}%"))
                 );
@@ -112,8 +114,8 @@ public class AuditService(ApplicationDbContext context, ILogger<AuditService> lo
             // Convert to uppercase after data is retrieved
             foreach (var entry in entriesInPage)
             {
-                entry.EventName = entry.EventName.ToUpperInvariant();
-                entry.EventType = entry.EventType.ToUpperInvariant();
+                entry.EventName = entry.EventName?.ToUpperInvariant();
+                entry.EventType = entry.EventType?.ToUpperInvariant();
             }
 
             return new PagedResponseDto<AuditResponseDto>
