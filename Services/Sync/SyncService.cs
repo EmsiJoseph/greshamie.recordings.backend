@@ -11,7 +11,8 @@ public class SyncService(
     IHistoricRecordingsService historicRecordingsService,
     ApplicationDbContext dbContext,
     IBlobStorageService blobStorageService,
-    ILogger<SyncService> logger)
+    ILogger<SyncService> logger,
+    IConfiguration config)
     : ISyncService
 {
     private readonly ILogger<SyncService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -23,7 +24,7 @@ public class SyncService(
 
     private readonly IBlobStorageService _blobStorageService =
         blobStorageService ?? throw new ArgumentNullException(nameof(blobStorageService));
-
+    private readonly IConfiguration _config = config ?? throw new ArgumentNullException(nameof(config));
     /// <summary>
     /// Exports recordings matching the search filters to blob storage and saves new SyncedRecording records.
     /// Throws an exception if an error occurs.
@@ -60,8 +61,8 @@ public class SyncService(
 
                 // Upload the file and get both URLs from blob storage.
                 var downloadUrl =
-                    await _blobStorageService.UploadFileAsync(mp3Stream, "greshamrecordings", fileName);
-                var streamingUrl = await _blobStorageService.StreamingUrlAsync("greshamrecordings", fileName);
+                    await _blobStorageService.UploadFileAsync(mp3Stream, _config["BlobStorage:ContainerName"], fileName);
+                var streamingUrl = await _blobStorageService.StreamingUrlAsync(_config["BlobStorage:ContainerName"], fileName);
 
                 // Save the new record to the SyncedRecordings table.
                 var syncedRecording = new SyncedRecording
@@ -76,6 +77,7 @@ public class SyncService(
 
                 _dbContext.SyncedRecordings.Add(syncedRecording);
                 await _dbContext.SaveChangesAsync();
+                
             }
 
             return true;

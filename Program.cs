@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using Asp.Versioning;
 using backend.Constants;
 using backend.Data;
 using backend.Data.Models;
@@ -16,7 +17,6 @@ using backend.Services.Sync;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
