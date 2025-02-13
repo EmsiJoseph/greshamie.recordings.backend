@@ -65,7 +65,7 @@ public class AuditService(ApplicationDbContext context, ILogger<AuditService> lo
                 .Include(x => x.User)
                 .AsQueryable();
 
-            // Apply filters only if they are provided
+            // Apply event type filter
             if (!string.IsNullOrWhiteSpace(dto.EventType))
             {
                 query = dto.EventType.ToUpperInvariant() == "ALL"
@@ -73,12 +73,27 @@ public class AuditService(ApplicationDbContext context, ILogger<AuditService> lo
                     : query.Where(x => EF.Functions.Like(x.Event.Type.Name, dto.EventType));
             }
 
-            if (dto.StartDate.HasValue && dto.EndDate.HasValue)
+            // Apply date range filter with proper time boundaries
+            if (dto.StartDate.HasValue || dto.EndDate.HasValue)
             {
-                var endDate = dto.EndDate.Value.Date.AddDays(1).AddTicks(-1);
-                query = query.Where(x => x.Timestamp >= dto.StartDate.Value.Date && x.Timestamp <= endDate);
+                var startDate = dto.StartDate?.Date ?? DateTime.MinValue;
+                var endDate = dto.EndDate?.Date.AddDays(1).AddTicks(-1) ?? DateTime.MaxValue;
+
+                // Ensure start date is not after end date
+                if (startDate > endDate)
+                {
+                    throw new ServiceException("Start date cannot be after end date");
+                }
+
+                query = query.Where(x => x.Timestamp >= startDate && x.Timestamp <= endDate);
+                
+                _logger.LogInformation(
+                    "Applying date filter: Start={StartDate:yyyy-MM-dd HH:mm:ss}, End={EndDate:yyyy-MM-dd HH:mm:ss}", 
+                    startDate, 
+                    endDate);
             }
 
+            // Apply search filter
             if (!string.IsNullOrWhiteSpace(dto.Search))
             {
                 query = query.Where(x =>
