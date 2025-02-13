@@ -92,8 +92,8 @@ public class AuditService(ApplicationDbContext context, ILogger<AuditService> lo
                     Id = audit.Id,
                     UserName = audit.User.UserName,
                     RecordingId = audit.RecordId ?? "N/A",
-                    EventName = audit.Event.Name,
-                    EventType = audit.Event.Type.Name,
+                    EventName = audit.Event.Name.ToUpperInvariant(),
+                    EventType = audit.Event.Type.Name.ToUpperInvariant(),
                     Details = audit.Details ?? "No details",
                     Timestamp = audit.Timestamp
                 })
