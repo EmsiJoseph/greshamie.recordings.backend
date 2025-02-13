@@ -11,6 +11,7 @@ using backend.Extensions;
 using backend.Services.Audits;
 using backend.Services.ClarifyGoServices.HistoricRecordings;
 using backend.Services.Sync;
+using backend.Services.Storage;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.OutputCaching;
@@ -26,7 +27,8 @@ public class RecordingController(
     IHistoricRecordingsService historicRecordingsService,
     ISyncService syncService,
     ApplicationDbContext context,
-    IAuditService auditService)
+    IAuditService auditService,
+    IBlobStorageService blobStorageService)
     : ControllerBase
 {
     private readonly ILogger<RecordingController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -40,7 +42,8 @@ public class RecordingController(
 
     private readonly IAuditService
         _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
-
+    private readonly IBlobStorageService _blobStorageService = blobStorageService ??
+                                                               throw new ArgumentNullException(nameof(blobStorageService));
 
     private async Task<List<RecordingDto>> MapRawRecordingToDto(
         List<HistoricRecordingRaw> historicRecordingsRaw)
@@ -112,13 +115,17 @@ public class RecordingController(
     {
         // Attempt to get the synced recording from the database.
         var syncedRecording = await _context.SyncedRecordings.FindAsync(dto.Id);
+        
         if (syncedRecording == null)
         {
             // If not found, attempt to sync the recording.
             await _syncService.SyncRecordingByObjectAsync(dto);
             syncedRecording = await _context.SyncedRecordings.FindAsync(dto.Id);
         }
-
+        else
+        {
+            return syncedRecording;
+        }
         return syncedRecording ?? throw new Exception("Synced recording not found.");
     }
 
@@ -209,8 +216,13 @@ public class RecordingController(
     {
         try
         {
+            
             var syncedRecording = await GetSyncedRecordingAsync(dto);
-
+            if (syncedRecording != null)
+            {
+                var updateSaSUrl = await _blobStorageService.UpdateStreamingUrlAsync(,dto.Id);
+            }
+            
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
