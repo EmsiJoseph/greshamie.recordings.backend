@@ -187,6 +187,17 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Worker", policy =>
+    {
+        policy.WithOrigins("https://autosyncworker.azurewebsites.net")
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+    });
+});
+
 var app = builder.Build();
 
 // 5. Middleware Pipeline
@@ -204,6 +215,7 @@ else
 }
 
 app.UseCors("ReactClient");
+app.UseCors("Worker");
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseOutputCache();
