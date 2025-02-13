@@ -70,19 +70,11 @@ public class AuditService(ApplicationDbContext context, ILogger<AuditService> lo
                 query = query.Where(x => x.Event.Type.Name == dto.EventType);
             }
 
-            if (!string.IsNullOrEmpty(dto.Search))
+            if (!string.IsNullOrEmpty(dto.StartDate.ToString()) && !string.IsNullOrEmpty(dto.EndDate.ToString()))
             {
-                query = query.Where(x =>
-                    (x.User.UserName != null && x.RecordId != null && x.Details != null) &&
-                    (x.User.UserName.Contains(dto.Search) ||
-                     x.RecordId.Contains(dto.Search) ||
-                     x.Event.Name.Contains(dto.Search) ||
-                     x.Details.Contains(dto.Search))
-                );
+                query = query.Where(x => x.Timestamp >= dto.StartDate && x.Timestamp <= dto.EndDate);
             }
 
-            var totalCount = await query.CountAsync();
-            var totalPages = (int)Math.Ceiling(totalCount / (double)dto.PageSize);
 
             var entries = await query
                 .Skip(dto.PageOffSet * dto.PageSize)
@@ -99,6 +91,20 @@ public class AuditService(ApplicationDbContext context, ILogger<AuditService> lo
                 })
                 .OrderByDescending(x => x.Timestamp)
                 .ToListAsync();
+
+            if (!string.IsNullOrEmpty(dto?.Search))
+            {
+                entries = entries.Where(x =>
+                    x is { UserName: not null, EventName: not null, EventType: not null, Details: not null } &&
+                    (x.UserName.ToUpperInvariant().Contains(dto.Search.ToUpperInvariant()) ||
+                     x.EventName.ToUpperInvariant().Contains(dto.Search.ToUpperInvariant()) ||
+                     x.EventType.ToUpperInvariant().Contains(dto.Search.ToUpperInvariant()) ||
+                     x.Details.ToUpperInvariant().Contains(dto.Search.ToUpperInvariant()))
+                ).ToList();
+            }
+
+            var totalCount = entries.Count();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)dto.PageSize);
 
             return new PagedResponseDto<AuditResponseDto>
             {
