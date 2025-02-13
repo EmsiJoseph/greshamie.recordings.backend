@@ -77,8 +77,8 @@ public class RecordingController(
             if (!string.IsNullOrEmpty(filtersDto?.Search))
             {
                 mappedItems = mappedItems.Where(x =>
-                    x is { Caller: not null, Receiver: not null } && (x.Caller.Contains(filtersDto.Search) ||
-                                                                      x.Receiver.Contains(filtersDto.Search))
+                    x is { Caller: not null, Receiver: not null } && (x.Caller.ToUpperInvariant().Contains(filtersDto.Search.ToUpperInvariant()) ||
+                                                                      x.Receiver.ToUpperInvariant().Contains(filtersDto.Search.ToUpperInvariant()))
                 ).ToList();
             }
 
@@ -88,7 +88,7 @@ public class RecordingController(
                 PageOffSet = pagedResults.PageOffSet,
                 PageSize = pagedResults.PageSize,
                 TotalPages = pagedResults.TotalPages,
-                TotalCount = pagedResults.TotalCount,
+                TotalCount = mappedItems.Count,
                 HasNext = pagedResults.HasNext,
                 HasPrevious = pagedResults.HasPrevious
             };
