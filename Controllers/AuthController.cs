@@ -2,6 +2,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Asp.Versioning;
 using backend.Services.Audits;
 using backend.Constants;
 using backend.Constants.Audit;

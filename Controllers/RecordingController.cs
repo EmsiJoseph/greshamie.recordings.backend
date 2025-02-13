@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Asp.Versioning;
 using backend.ClarifyGoClasses;
 using backend.Constants;
 using backend.Constants.Audit;
@@ -213,7 +214,7 @@ public class RecordingController(
             var syncedRecording = await GetSyncedRecordingAsync(dto);
             if (syncedRecording != null)
             {
-                var updateSaSUrl = await _blobStorageService.UpdateStreamingUrlAsync(,dto.Id);
+                var updateSaSUrl = await _blobStorageService.UpdateStreamingUrlAsync(dto.Id);
             }
             
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
