@@ -77,21 +77,14 @@ public class RecordingController(
 
             var mappedItems = await MapRawRecordingToDto(pagedResults.Items.ToList());
 
-            if (!string.IsNullOrEmpty(filtersDto?.Search))
-            {
-                mappedItems = mappedItems.Where(x =>
-                    x is { Caller: not null, Receiver: not null } && (x.Caller.ToUpperInvariant().Contains(filtersDto.Search.ToUpperInvariant()) ||
-                                                                      x.Receiver.ToUpperInvariant().Contains(filtersDto.Search.ToUpperInvariant()))
-                ).ToList();
-            }
-
+           
             return new PagedResponseDto<RecordingDto>
             {
                 Items = mappedItems,
                 PageOffSet = pagedResults.PageOffSet,
                 PageSize = pagedResults.PageSize,
                 TotalPages = pagedResults.TotalPages,
-                TotalCount = mappedItems.Count,
+                TotalCount = pagedResults.TotalCount,
                 HasNext = pagedResults.HasNext,
                 HasPrevious = pagedResults.HasPrevious
             };

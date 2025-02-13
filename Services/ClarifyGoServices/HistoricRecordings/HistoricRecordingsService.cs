@@ -79,21 +79,17 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
         {
             try
             {
+                // First call to get current page and total pages
                 await _tokenService.SetBearerTokenAsync(_httpClient);
-
                 var baseUrl = ClarifyGoApiEndpoints.HistoricRecordings.Search(
                     searchFiltersDto.StartDate,
                     searchFiltersDto.EndDate);
 
                 var queryString = BuildQueryParameters(searchFiltersDto);
-                var fullUrl = baseUrl + queryString;
-
-                var response = await _httpClient.GetAsync(fullUrl);
+                var response = await _httpClient.GetAsync(baseUrl + queryString);
 
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
-                {
                     throw new ServiceException("Unauthorized access to recording service", 401);
-                }
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -101,31 +97,84 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
                     throw new ServiceException($"Recording service error: {error}", (int)response.StatusCode);
                 }
 
-                Console.WriteLine($"response content: {response.Content}");
-
-                var searchResultsObj =
-                    await response.Content.ReadFromJsonAsync<HistoricRecordingSearchResults>();
+                var searchResultsObj = await response.Content.ReadFromJsonAsync<HistoricRecordingSearchResults>();
                 if (searchResultsObj == null)
-                {
                     throw new ServiceException("Invalid response from recording service", 502);
+
+                var recordings = searchResultsObj.SearchResults.Select(x => x.HistoricRecording).ToList();
+                var totalPages = searchResultsObj.TotalResults;
+
+                // Second call to get last page
+                if (totalPages > 0)
+                {
+                    var lastPageFilters = new RecordingSearchFiltersDto
+                    {
+                        StartDate = searchFiltersDto.StartDate,
+                        EndDate = searchFiltersDto.EndDate,
+                        EarliestTimeOfDay = searchFiltersDto.EarliestTimeOfDay,
+                        LatestTimeOfDay = searchFiltersDto.LatestTimeOfDay,
+                        HasScreenRecording = searchFiltersDto.HasScreenRecording,
+                        HasPciComplianceEvents = searchFiltersDto.HasPciComplianceEvents,
+                        HasQualityEvaluation = searchFiltersDto.HasQualityEvaluation,
+                        FilterByRecordingEndTime = searchFiltersDto.FilterByRecordingEndTime,
+                        SearchUnallocatedDevices = searchFiltersDto.SearchUnallocatedDevices,
+                        SortDescending = searchFiltersDto.SortDescending,
+                        MinimumDurationSeconds = searchFiltersDto.MinimumDurationSeconds,
+                        MaximumDurationSeconds = searchFiltersDto.MaximumDurationSeconds,
+                        PageOffset = totalPages - 1,
+                        PageSize = searchFiltersDto.PageSize,
+                        PhoneNumber = searchFiltersDto.PhoneNumber,
+                        CallDirection = searchFiltersDto.CallDirection,
+                        DeviceNumber = searchFiltersDto.DeviceNumber,
+                        HuntGroupNumber = searchFiltersDto.HuntGroupNumber,
+                        AccountCode = searchFiltersDto.AccountCode,
+                        CallId = searchFiltersDto.CallId,
+                        CommentContains = searchFiltersDto.CommentContains,
+                        TagName = searchFiltersDto.TagName,
+                        BookmarkText = searchFiltersDto.BookmarkText,
+                        RecorderType = searchFiltersDto.RecorderType,
+                        RecorderId = searchFiltersDto.RecorderId,
+                        SortBy = searchFiltersDto.SortBy,
+                        RecordingGroupId = searchFiltersDto.RecordingGroupId
+                    };
+
+                    var lastPageQueryString = BuildQueryParameters(lastPageFilters);
+                    var lastPageResponse = await _httpClient.GetAsync(baseUrl + lastPageQueryString);
+
+                    if (lastPageResponse.IsSuccessStatusCode)
+                    {
+                        var lastPageResults =
+                            await lastPageResponse.Content.ReadFromJsonAsync<HistoricRecordingSearchResults>();
+                        if (lastPageResults != null)
+                        {
+                            // Calculate total count: (full pages × page size) + last page items
+                            var lastPageCount = lastPageResults.SearchResults.Count;
+                            var fullPagesCount = (totalPages - 1) * (searchFiltersDto.PageSize ?? 0);
+                            var totalCount = fullPagesCount + lastPageCount;
+
+                            return new PagedResponseDto<HistoricRecordingRaw>
+                            {
+                                Items = recordings,
+                                PageOffSet = searchFiltersDto.PageOffset,
+                                PageSize = searchFiltersDto.PageSize,
+                                TotalPages = totalPages,
+                                TotalCount = totalCount,
+                                HasNext = searchFiltersDto.PageOffset < totalPages - 1,
+                                HasPrevious = searchFiltersDto.PageOffset > 0
+                            };
+                        }
+                    }
                 }
 
-                var recordings = searchResultsObj.SearchResults.Select(x => x.HistoricRecording)
-                    .ToList();
-
-                var totalCount = searchResultsObj.TotalResults;
-
-
-                var totalPages = (int)Math.Ceiling(totalCount / (double)searchFiltersDto.PageSize!);
-
+                // Fallback if last page request fails
                 return new PagedResponseDto<HistoricRecordingRaw>
                 {
                     Items = recordings,
                     PageOffSet = searchFiltersDto.PageOffset,
                     PageSize = searchFiltersDto.PageSize,
                     TotalPages = totalPages,
-                    TotalCount = totalCount,
-                    HasNext = (searchFiltersDto.PageOffset + 1) * searchFiltersDto.PageSize < totalCount,
+                    TotalCount = totalPages * (searchFiltersDto.PageSize ?? 0), // Estimate
+                    HasNext = searchFiltersDto.PageOffset < totalPages - 1,
                     HasPrevious = searchFiltersDto.PageOffset > 0
                 };
             }

@@ -65,50 +65,60 @@ public class AuditService(ApplicationDbContext context, ILogger<AuditService> lo
                 .Include(x => x.User)
                 .AsQueryable();
 
-            if (!string.IsNullOrEmpty(dto.EventType))
+            // Apply filters only if they are provided
+            if (!string.IsNullOrWhiteSpace(dto.EventType))
             {
-                query = query.Where(x => x.Event.Type.Name == dto.EventType);
+                query = query.Where(x => EF.Functions.Like(x.Event.Type.Name, dto.EventType));
             }
 
-            if (!string.IsNullOrEmpty(dto.StartDate.ToString()) && !string.IsNullOrEmpty(dto.EndDate.ToString()))
+            if (dto.StartDate.HasValue && dto.EndDate.HasValue)
             {
-                query = query.Where(x => x.Timestamp >= dto.StartDate && x.Timestamp <= dto.EndDate);
+                var endDate = dto.EndDate.Value.Date.AddDays(1).AddTicks(-1);
+                query = query.Where(x => x.Timestamp >= dto.StartDate.Value.Date && x.Timestamp <= endDate);
             }
 
+            if (!string.IsNullOrWhiteSpace(dto.Search))
+            {
+                query = query.Where(x =>
+                    (x.User.UserName != null && EF.Functions.Like(x.User.UserName, $"%{dto.Search}%")) ||
+                    (x.Event.Name != null && EF.Functions.Like(x.Event.Name, $"%{dto.Search}%")) ||
+                    (x.Event.Type.Name != null && EF.Functions.Like(x.Event.Type.Name, $"%{dto.Search}%")) ||
+                    (x.Details != null && EF.Functions.Like(x.Details, $"%{dto.Search}%")) ||
+                    (x.RecordId != null && EF.Functions.Like(x.RecordId, $"%{dto.Search}%"))
+                );
+            }
 
-            var entries = await query
+            // Get total count before applying pagination
+            var totalCount = await query.CountAsync();
+            var totalPages = (int)Math.Ceiling(totalCount / (double)dto.PageSize);
+
+            // Apply ordering and pagination
+            var entriesInPage = await query
+                .OrderByDescending(x => x.Timestamp)
                 .Skip(dto.PageOffSet * dto.PageSize)
                 .Take(dto.PageSize)
                 .Select(audit => new AuditResponseDto
                 {
                     Id = audit.Id,
-                    UserName = audit.User.UserName,
+                    UserName = audit.User.UserName ?? "Unknown",
                     RecordingId = audit.RecordId ?? "N/A",
-                    EventName = audit.Event.Name.ToUpperInvariant(),
-                    EventType = audit.Event.Type.Name.ToUpperInvariant(),
+                    EventName = audit.Event.Name,
+                    EventType = audit.Event.Type.Name,
                     Details = audit.Details ?? "No details",
                     Timestamp = audit.Timestamp
                 })
-                .OrderByDescending(x => x.Timestamp)
                 .ToListAsync();
 
-            if (!string.IsNullOrEmpty(dto?.Search))
+            // Convert to uppercase after data is retrieved
+            foreach (var entry in entriesInPage)
             {
-                entries = entries.Where(x =>
-                    x is { UserName: not null, EventName: not null, EventType: not null, Details: not null } &&
-                    (x.UserName.ToUpperInvariant().Contains(dto.Search.ToUpperInvariant()) ||
-                     x.EventName.ToUpperInvariant().Contains(dto.Search.ToUpperInvariant()) ||
-                     x.EventType.ToUpperInvariant().Contains(dto.Search.ToUpperInvariant()) ||
-                     x.Details.ToUpperInvariant().Contains(dto.Search.ToUpperInvariant()))
-                ).ToList();
+                entry.EventName = entry.EventName.ToUpperInvariant();
+                entry.EventType = entry.EventType.ToUpperInvariant();
             }
-
-            var totalCount = entries.Count();
-            var totalPages = (int)Math.Ceiling(totalCount / (double)dto.PageSize);
 
             return new PagedResponseDto<AuditResponseDto>
             {
-                Items = entries,
+                Items = entriesInPage,
                 PageOffSet = dto.PageOffSet,
                 PageSize = dto.PageSize,
                 TotalPages = totalPages,
