@@ -68,7 +68,7 @@ public class AuditService(ApplicationDbContext context, ILogger<AuditService> lo
             // Apply filters only if they are provided
             if (!string.IsNullOrWhiteSpace(dto.EventType))
             {
-                query = dto.EventType == "ALL"
+                query = dto.EventType.ToUpperInvariant() == "ALL"
                     ? query.Where(x => true)
                     : query.Where(x => EF.Functions.Like(x.Event.Type.Name, dto.EventType));
             }
