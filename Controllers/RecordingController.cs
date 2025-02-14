@@ -43,8 +43,10 @@ public class RecordingController(
 
     private readonly IAuditService
         _auditService = auditService ?? throw new ArgumentNullException(nameof(auditService));
+
     private readonly IBlobStorageService _blobStorageService = blobStorageService ??
-                                                               throw new ArgumentNullException(nameof(blobStorageService));
+                                                               throw new ArgumentNullException(
+                                                                   nameof(blobStorageService));
 
     private async Task<List<RecordingDto>> MapRawRecordingToDto(
         List<HistoricRecordingRaw> historicRecordingsRaw)
@@ -61,9 +63,8 @@ public class RecordingController(
                   string.Empty
                 : string.Empty,
             IsLive = false, // TODO: Change this to dynamic if we know the shape of the live recordings
-            DurationSeconds = x is { MediaStartedTime: not null, MediaCompletedTime: not null }
-                ? (int)(x.MediaCompletedTime - x.MediaStartedTime).Value.TotalSeconds
-                : 0,
+            DurationSeconds =
+                (int)(x.MediaCompletedTime - x.MediaStartedTime).TotalSeconds,
             Recorder = x.RecorderId,
         }).ToList());
     }
@@ -78,7 +79,7 @@ public class RecordingController(
 
             var mappedItems = await MapRawRecordingToDto(pagedResults.Items.ToList());
 
-           
+
             return new PagedResponseDto<RecordingDto>
             {
                 Items = mappedItems,
@@ -109,7 +110,7 @@ public class RecordingController(
     {
         // Attempt to get the synced recording from the database.
         var syncedRecording = await _context.SyncedRecordings.FindAsync(dto.Id);
-        
+
         if (syncedRecording == null)
         {
             // If not found, attempt to sync the recording.
@@ -120,6 +121,7 @@ public class RecordingController(
         {
             return syncedRecording;
         }
+
         return syncedRecording ?? throw new Exception("Synced recording not found.");
     }
 
@@ -205,13 +207,12 @@ public class RecordingController(
     {
         try
         {
-            
             var syncedRecording = await GetSyncedRecordingAsync(dto);
             if (syncedRecording != null)
             {
                 var updateSaSUrl = await _blobStorageService.UpdateStreamingUrlAsync(dto.Id);
             }
-            
+
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrEmpty(userId))
             {
