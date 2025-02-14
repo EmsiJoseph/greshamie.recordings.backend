@@ -138,11 +138,6 @@ public class RecordingController(
                 return BadRequest(new { message = "Search filters are required" });
             }
 
-            // Ensure dates are set if not provided
-            filtersDto.StartDate ??= DateTime.Now.StartOfWeek(DayOfWeek.Monday);
-
-            filtersDto.EndDate ??= DateTime.Now;
-
             var results = await SearchAndProcessRecordings(filtersDto);
             return Ok(results);
         }

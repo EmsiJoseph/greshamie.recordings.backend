@@ -9,11 +9,11 @@ namespace backend.DTOs.Recording
 
         // Start date and time (inclusive) of the search period in UTC.
         // Example: "2022-01-15T09:00:00Z"
-        public DateTime? StartDate { get; set; }
+        public DateTime StartDate { get; set; }
 
         // End date and time (inclusive) of the search period in UTC.
         // Example: "2022-01-25T18:00:00Z"
-        public DateTime? EndDate { get; set; }
+        public DateTime EndDate { get; set; }
 
         // Specify whether to filter recordings by completion time (true) or start time (false).
         // Default is false if not provided.
@@ -89,7 +89,7 @@ namespace backend.DTOs.Recording
 
         // Maximum number of results to return in this page.
         // Default is 50.
-        public int? PageSize { get; set; } = 50;
+        public int? PageSize { get; set; } = 10;
 
         // Specifies how to sort the results.
         // Possible values: "type", "from", "to", "duration", "isprimary".
