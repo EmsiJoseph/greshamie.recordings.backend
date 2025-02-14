@@ -139,6 +139,12 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 // 2.6 Audit Service
 builder.Services.AddScoped<IAuditService, AuditService>();
 
+// 2.7. Sync Service
+builder.Services.AddScoped<ISyncService, SyncService>();
+
+// 2.8. Storage Service
+builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();
+
 
 // 3. HTTP Client Configurations
 var identityServerUri = configuration["ClarifyGoAPI:IdentityServerUri"]
@@ -169,12 +175,15 @@ builder.Services.AddHttpClient<ICommentsService, CommentsService>(client =>
 
 builder.Services.AddHttpClient<ITagsService, TagsService>(client => { client.BaseAddress = new Uri(apiBaseUri); });
 
+
+var clientApp = configuration["ClientApp:Uri"]
+                ?? String.Empty;
 // 4. Security Configuration
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("ReactClient", policy =>
+    options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000")
+        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "http://localhost:5136", clientApp)
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -192,6 +201,9 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddReverseProxy()
+    .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
+
 var app = builder.Build();
 
 // 5. Middleware Pipeline
@@ -208,7 +220,7 @@ else
     app.UseHsts();
 }
 
-app.UseCors("ReactClient");
+app.UseCors("AllowFrontend");
 app.UseCors("Worker");
 app.UseAuthentication();
 app.UseAuthorization();
@@ -216,4 +228,25 @@ app.UseOutputCache();
 app.UseRateLimiter();
 app.UseMiddleware<GlobalExceptionHandler>();
 app.MapControllers();
+
+
+app.MapReverseProxy();
+
+// app.UseDefaultFiles();
+// app.UseStaticFiles(new StaticFileOptions
+// {
+//     ServeUnknownFileTypes = true,
+// });
+//
+// app.Use(async (context, next) =>
+// {
+//     if (context.Request.Path == "/")
+//     {
+//         context.Request.Path = "/index.html";
+//     }
+//
+//     await next();
+// });
+
+
 app.Run();
