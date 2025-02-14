@@ -70,7 +70,7 @@ public class SyncService(
                     Id = id ?? string.Empty,
                     DownloadUrl = downloadUrl,
                     StreamingUrl = streamingUrl,
-                    RecordingDate = mediaStartedTime.Value,
+                    RecordingDate = mediaStartedTime,
                     CreatedAt = DateTime.UtcNow,
                     IsDeleted = false
                 };

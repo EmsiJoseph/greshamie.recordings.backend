@@ -12,7 +12,7 @@ public class HistoricRecordingRaw
     // List of PBX account endpoints.
 
     public List<PbxAccountEndpoint>? PbxAccountEndpoints { get; set; }
-    public DateTime? MediaCompletedTime { get; set; }
+    public DateTime MediaCompletedTime { get; set; }
 
     public DateTime? AlertedTime { get; set; }
 
@@ -48,7 +48,7 @@ public class HistoricRecordingRaw
 
     public int Channel { get; set; }
 
-    public DateTime? MediaStartedTime { get; set; }
+    public DateTime MediaStartedTime { get; set; }
 
     public bool IsHidden { get; set; }
 }
