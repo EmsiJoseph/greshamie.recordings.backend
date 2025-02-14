@@ -139,12 +139,6 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 // 2.6 Audit Service
 builder.Services.AddScoped<IAuditService, AuditService>();
 
-// 2.7 Blob Storage Service
-builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();
-
-// 2.8 Auto Sync Service
-builder.Services.AddScoped<ISyncService, SyncService>();
-
 
 // 3. HTTP Client Configurations
 var identityServerUri = configuration["ClarifyGoAPI:IdentityServerUri"]
