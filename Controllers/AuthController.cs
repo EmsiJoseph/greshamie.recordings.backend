@@ -65,8 +65,16 @@ namespace backend.Controllers
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
 
-            // Get settings from configuration.
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? string.Empty));
+            // Ensure the key is at least 32 bytes (256 bits)
+            var configKey = _configuration["Jwt:Key"] ?? string.Empty;
+            var keyBytes = Encoding.UTF8.GetBytes(configKey);
+            if (keyBytes.Length < 32)
+            {
+                // Pad the key to 32 bytes if it's too short
+                Array.Resize(ref keyBytes, 32);
+            }
+            
+            var key = new SymmetricSecurityKey(keyBytes);
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             // Set token expiration.
@@ -81,7 +89,7 @@ namespace backend.Controllers
             );
 
             var tokenString = new JwtSecurityTokenHandler().WriteToken(token);
-
+            
             return new JwtTokenResult
             {
                 Token = tokenString,
@@ -187,8 +195,9 @@ namespace backend.Controllers
                     }
                 });
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                Console.WriteLine($"Exception: {e.Message}");
                 return Unauthorized(new { message = "Invalid credentials" });
             }
         }
