@@ -66,7 +66,7 @@ namespace backend.Controllers
             };
 
             // Get settings from configuration.
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? string.Empty));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("G8cYw9fT!*XyZ76tVqLo#mK3nP5hB312321321" ?? string.Empty));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
             // Set token expiration.
