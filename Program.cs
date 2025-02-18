@@ -201,9 +201,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddReverseProxy()
-    .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
-
 var app = builder.Build();
 
 // 5. Middleware Pipeline
@@ -229,8 +226,6 @@ app.UseRateLimiter();
 app.UseMiddleware<GlobalExceptionHandler>();
 app.MapControllers();
 
-
-app.MapReverseProxy();
 
 // app.UseDefaultFiles();
 // app.UseStaticFiles(new StaticFileOptions
