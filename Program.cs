@@ -176,14 +176,14 @@ builder.Services.AddHttpClient<ICommentsService, CommentsService>(client =>
 builder.Services.AddHttpClient<ITagsService, TagsService>(client => { client.BaseAddress = new Uri(apiBaseUri); });
 
 
-var clientApp = configuration["ClientApp:Uri"]
+var allowedOrigins = configuration["AllowedOrigins"]
                 ?? String.Empty;
 // 4. Security Configuration
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "http://localhost:5136", clientApp)
+        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "http://localhost:5136", allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
