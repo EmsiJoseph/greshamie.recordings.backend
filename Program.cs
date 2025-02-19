@@ -138,7 +138,7 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 
 // 2.6 Audit Service
 builder.Services.AddScoped<IAuditService, AuditService>();
-
+ 
 // 2.7. Sync Service
 builder.Services.AddScoped<ISyncService, SyncService>();
 
@@ -174,16 +174,16 @@ builder.Services.AddHttpClient<ICommentsService, CommentsService>(client =>
 });
 
 builder.Services.AddHttpClient<ITagsService, TagsService>(client => { client.BaseAddress = new Uri(apiBaseUri); });
-
-
-var clientApp = configuration["ClientApp:Uri"]
+ 
+ 
+var allowedOrigins = configuration["AllowedOrigins"]
                 ?? String.Empty;
 // 4. Security Configuration
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
     {
-        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "http://localhost:5136", clientApp)
+        policy.WithOrigins("http://localhost:3000", "http://localhost:3001", "http://localhost:5136", allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials();
@@ -200,7 +200,10 @@ builder.Services.AddCors(options =>
             .AllowCredentials();
     });
 });
-
+ 
+builder.Services.AddReverseProxy()
+    .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
+ 
 var app = builder.Build();
 
 // 5. Middleware Pipeline
@@ -225,8 +228,10 @@ app.UseOutputCache();
 app.UseRateLimiter();
 app.UseMiddleware<GlobalExceptionHandler>();
 app.MapControllers();
-
-
+ 
+ 
+app.MapReverseProxy();
+ 
 // app.UseDefaultFiles();
 // app.UseStaticFiles(new StaticFileOptions
 // {
