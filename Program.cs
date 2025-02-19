@@ -20,11 +20,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-
-
+ 
+ 
 var builder = WebApplication.CreateBuilder(args);
 var configuration = builder.Configuration;
-
+ 
 // 1. Core Services
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddOutputCache();
@@ -37,7 +37,7 @@ builder.Services.AddRateLimiter(options =>
         opt.PermitLimit = 100;
     });
 });
-
+ 
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -56,9 +56,9 @@ builder.Services.AddAuthentication(options =>
         ClockSkew = TimeSpan.Zero
     };
 });
-
+ 
 builder.Services.AddAuthorization();
-
+ 
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -66,7 +66,7 @@ builder.Services.AddControllers()
         options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
         options.JsonSerializerOptions.WriteIndented = true;
     });
-
+ 
 // Add API versioning
 builder.Services.AddApiVersioning(options =>
 {
@@ -79,13 +79,13 @@ builder.Services.AddApiVersioning(options =>
         new QueryStringApiVersionReader(ApiVersionConstants.QueryStringParam)
     );
 });
-
+ 
 builder.Services.AddEndpointsApiExplorer();
-
+ 
 string connection;
-
+ 
 if (builder.Environment.IsDevelopment())
-
+ 
 {
     connection = builder.Configuration.GetConnectionString("LocalDefaultConnection") ??
                  throw new InvalidOperationException(
@@ -97,11 +97,11 @@ else
                  throw new InvalidOperationException(
                      "Connection string 'DefaultConnection' not found.");
 }
-
+ 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
 {
     options.UseSqlServer(connection);
-
+ 
     // Move sensitive data logging configuration here and make it conditional
     if (builder.Environment.IsDevelopment())
     {
@@ -109,73 +109,73 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
             .EnableDetailedErrors();
     }
 });
-
+ 
 builder.Services.AddDatabaseDeveloperPageExceptionFilter();
-
-
+ 
+ 
 builder.Services.AddIdentityCore<User>()
     .AddRoles<Role>()
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders();
-
-
+ 
+ 
 // 2. Application Services
 // 2.1. Live Recordings Service
 builder.Services.AddScoped<ILiveRecordingsService, LiveRecordingsService>();
-
+ 
 // 2.2 Historic Recordings Service
 builder.Services.AddScoped<IHistoricRecordingsService, HistoricRecordingsService>();
-
+ 
 // 2.3. Comments Service
 builder.Services.AddScoped<ICommentsService, CommentsService>();
-
+ 
 // 2.4 Tags Service
 builder.Services.AddScoped<ITagsService, TagsService>();
-
+ 
 // 2.5. Token Service
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ITokenService, TokenService>();
-
+ 
 // 2.6 Audit Service
 builder.Services.AddScoped<IAuditService, AuditService>();
-
+ 
 // 2.7. Sync Service
 builder.Services.AddScoped<ISyncService, SyncService>();
-
+ 
 // 2.8. Storage Service
 builder.Services.AddScoped<IBlobStorageService, BlobStorageService>();
-
-
+ 
+ 
 // 3. HTTP Client Configurations
 var identityServerUri = configuration["ClarifyGoAPI:IdentityServerUri"]
                         ?? throw new InvalidOperationException("Missing Identity Server URI configuration");
-
+ 
 var apiBaseUri = configuration["ClarifyGoAPI:ApiBaseUri"]
                  ?? throw new InvalidOperationException("Missing API base URI configuration");
-
+ 
 builder.Services.AddHttpClient<ITokenService, TokenService>(client =>
 {
     client.BaseAddress = new Uri(identityServerUri);
 });
-
+ 
 builder.Services.AddHttpClient<ILiveRecordingsService, LiveRecordingsService>(client =>
 {
     client.BaseAddress = new Uri(apiBaseUri);
 });
-
+ 
 builder.Services.AddHttpClient<IHistoricRecordingsService, HistoricRecordingsService>(client =>
 {
     client.BaseAddress = new Uri(apiBaseUri);
 });
-
+ 
 builder.Services.AddHttpClient<ICommentsService, CommentsService>(client =>
 {
     client.BaseAddress = new Uri(apiBaseUri);
 });
-
+ 
 builder.Services.AddHttpClient<ITagsService, TagsService>(client => { client.BaseAddress = new Uri(apiBaseUri); });
-
-
+ 
+ 
 var allowedOrigins = configuration["AllowedOrigins"]
                 ?? String.Empty;
 // 4. Security Configuration
@@ -189,7 +189,7 @@ builder.Services.AddCors(options =>
             .AllowCredentials();
     });
 });
-
+ 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Worker", policy =>
@@ -200,9 +200,12 @@ builder.Services.AddCors(options =>
             .AllowCredentials();
     });
 });
-
+ 
+builder.Services.AddReverseProxy()
+    .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
+ 
 var app = builder.Build();
-
+ 
 // 5. Middleware Pipeline
 // app.UseHttpsRedirection();
 if (app.Environment.IsDevelopment())
@@ -216,7 +219,7 @@ else
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
-
+ 
 app.UseCors("AllowFrontend");
 app.UseCors("Worker");
 app.UseAuthentication();
@@ -225,8 +228,10 @@ app.UseOutputCache();
 app.UseRateLimiter();
 app.UseMiddleware<GlobalExceptionHandler>();
 app.MapControllers();
-
-
+ 
+ 
+app.MapReverseProxy();
+ 
 // app.UseDefaultFiles();
 // app.UseStaticFiles(new StaticFileOptions
 // {
@@ -242,6 +247,6 @@ app.MapControllers();
 //
 //     await next();
 // });
-
-
+ 
+ 
 app.Run();
