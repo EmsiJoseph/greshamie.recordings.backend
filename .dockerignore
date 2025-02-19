@@ -1,0 +1,54 @@
+# Build output
+bin/
+obj/
+out/
+
+# Development
+*.user
+*.userosscache
+*.sln.docstates
+.vs/
+.vscode/
+Properties/launchSettings.json
+
+# Dependencies
+node_modules/
+packages/
+*.nupkg
+project.lock.json
+
+# Environmentks
+.env
+*.env
+appsettings.*.json
+!appsettings.json
+
+# Testing
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.TestResults
+TestResults/
+
+# IDEs and editors
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Logs and databases
+*.log
+*.sqlite
+*.mdf
+*.ldf
+*.db
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+
+# Git
+.git
+.gitignore
+.gitattributes
