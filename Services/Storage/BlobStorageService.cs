@@ -1,3 +1,4 @@
+using System.Text;
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Azure.Storage.Sas;
@@ -83,5 +84,21 @@ public class BlobStorageService : IBlobStorageService
         _dbContext.Update(record);
         await _dbContext.SaveChangesAsync();
         return newSasUrl;
+    }
+    
+    // New method to upload sync session JSON file.
+    public async Task<string> UploadSyncSessionFileAsync(string jsonContent)
+    {
+        // Get the container name from configuration.
+        var containerName = _config["BlobStorage:ContainerName"];
+
+        // Construct file name using only the date (UTC).
+        var fileName = $"syncSessions/{DateTime.UtcNow:yyyy-MM-dd}.json";
+
+        // Convert the JSON string into a stream.
+        using var jsonStream = new MemoryStream(Encoding.UTF8.GetBytes(jsonContent));
+
+        // Upload and return the URL.
+        return await UploadFileAsync(jsonStream, containerName, fileName);
     }
 }
