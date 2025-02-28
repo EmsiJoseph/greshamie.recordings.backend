@@ -1,3 +1,5 @@
+using System.Text;
+using System.Text.Json;
 using backend.Data;
 using backend.Data.Models;
 using backend.DTOs.Recording;
@@ -29,66 +31,67 @@ public class SyncService(
     /// Exports recordings matching the search filters to blob storage and saves new SyncedRecording records.
     /// Throws an exception if an error occurs.
     /// </summary>
-    private async Task<bool> ExportRecordingToBlob(RecordingSearchFiltersDto searchFilters)
+    private async Task<List<SyncedRecording>> ExportRecordingToBlob(RecordingSearchFiltersDto searchFilters)
+{
+    var syncedRecordings = new List<SyncedRecording>();
+
+    try
     {
-        try
+        var pagedResponse = await _historicRecordingsService.SearchRecordingsAsync(searchFilters);
+        var results = pagedResponse.Items;
+        foreach (var result in results)
         {
-            var pagedResponse = await _historicRecordingsService.SearchRecordingsAsync(searchFilters);
-            var results = pagedResponse.Items;
-            foreach (var result in results)
+            var (id, mediaStartedTime) = (result.Id, result.MediaStartedTime);
+
+            // If the recording already exists, skip it.
+            if (await _dbContext.SyncedRecordings.AnyAsync(r => r.Id == id))
             {
-                var (id, mediaStartedTime) =
-                    (result.Id, result.MediaStartedTime);
-
-                // If the recording already exists, skip it.
-                if (await _dbContext.SyncedRecordings.AnyAsync(r => r.Id == id))
-                {
-                    _logger.LogInformation($"Skipping already synced recording: {id}");
-                    continue;
-                }
-
-                if (mediaStartedTime == null)
-                {
-                    _logger.LogWarning($"Skipping recording with missing MediaStartedTime: {id}");
-                    continue;
-                }
-
-                // Format the file name based on the recording date and ID.
-                var fileName = $"{mediaStartedTime:yyyy/MM/dd}/{id}.mp3";
-
-                // Export the recording as an MP3 stream.
-                await using var mp3Stream = await _historicRecordingsService.ExportMp3Async(id ?? string.Empty);
-
-                // Upload the file and get both URLs from blob storage.
-                var downloadUrl =
-                    await _blobStorageService.UploadFileAsync(mp3Stream, _config["BlobStorage:ContainerName"], fileName);
-                var streamingUrl = await _blobStorageService.StreamingUrlAsync(_config["BlobStorage:ContainerName"], fileName);
-
-                // Save the new record to the SyncedRecordings table.
-                var syncedRecording = new SyncedRecording
-                {
-                    Id = id ?? string.Empty,
-                    DownloadUrl = downloadUrl,
-                    StreamingUrl = streamingUrl,
-                    RecordingDate = mediaStartedTime,
-                    CreatedAt = DateTime.UtcNow,
-                    IsDeleted = false
-                };
-
-                _dbContext.SyncedRecordings.Add(syncedRecording);
-                await _dbContext.SaveChangesAsync();
-                
+                _logger.LogInformation($"Skipping already synced recording: {id}");
+                continue;
             }
 
-            return true;
+            if (mediaStartedTime == null)
+            {
+                _logger.LogWarning($"Skipping recording with missing MediaStartedTime: {id}");
+                continue;
+            }
+
+            // Format the file name based on the recording date and ID.
+            var fileName = $"{mediaStartedTime:yyyy/MM/dd}/{id}.mp3";
+
+            // Export the recording as an MP3 stream.
+            await using var mp3Stream = await _historicRecordingsService.ExportMp3Async(id ?? string.Empty);
+
+            // Upload the file and get both URLs from blob storage.
+            var downloadUrl = await _blobStorageService.UploadFileAsync(mp3Stream, _config["BlobStorage:ContainerName"], fileName);
+            var streamingUrl = await _blobStorageService.StreamingUrlAsync(_config["BlobStorage:ContainerName"], fileName);
+
+            // Save the new record to the SyncedRecordings table.
+            var syncedRecording = new SyncedRecording
+            {
+                Id = id ?? string.Empty,
+                DownloadUrl = downloadUrl,
+                StreamingUrl = streamingUrl,
+                RecordingDate = mediaStartedTime,
+                CreatedAt = DateTime.UtcNow,
+                IsDeleted = false
+            };
+
+            _dbContext.SyncedRecordings.Add(syncedRecording);
+            await _dbContext.SaveChangesAsync();
+
+            // Add to the session list.
+            syncedRecordings.Add(syncedRecording);
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error exporting recordings to blob for search filters: {@SearchFilters}",
-                searchFilters);
-            throw new Exception("Error exporting recordings to blob for search filters", ex);
-        }
+
+        return syncedRecordings;
     }
+    catch (Exception ex)
+    {
+        _logger.LogError(ex, "Error exporting recordings to blob for search filters: {@SearchFilters}", searchFilters);
+        throw new Exception("Error exporting recordings to blob for search filters", ex);
+    }
+}
 
     /// <summary>
     /// Synchronizes recordings between the specified dates.
@@ -98,19 +101,27 @@ public class SyncService(
     {
         try
         {
-            // Create search filters to retrieve recordings from Clarify Go.
+            // Create search filters to retrieve recordings.
             var searchFilters = new RecordingSearchFiltersDto
             {
                 StartDate = fromDate,
                 EndDate = toDate
             };
 
-            // Export the recordings and sync them to blob storage.
-            bool exported = await ExportRecordingToBlob(searchFilters);
-            if (!exported)
+            // Export the recordings and obtain the list of newly synced recordings.
+            var syncedRecordings = await ExportRecordingToBlob(searchFilters);
+            if (syncedRecordings.Count == 0)
             {
-                throw new Exception("Export failed for the specified recordings.");
+                _logger.LogInformation("No new recordings were synced for the session from {FromDate} to {ToDate}", fromDate, toDate);
             }
+
+            // Serialize the synced recordings list to JSON.
+            var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+            var json = JsonSerializer.Serialize(syncedRecordings, jsonOptions);
+
+            // Use the blob service to upload the JSON file.
+            var sessionJsonUrl = await _blobStorageService.UploadSyncSessionFileAsync(json);
+            _logger.LogInformation("Sync session JSON saved at {SessionJsonUrl}", sessionJsonUrl);
         }
         catch (Exception ex)
         {
