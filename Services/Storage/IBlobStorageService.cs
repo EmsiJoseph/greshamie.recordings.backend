@@ -15,4 +15,5 @@ public interface IBlobStorageService
     Task<string> StreamingUrlAsync(string? containerName, string fileName);
     
     Task<string> UpdateStreamingUrlAsync(string recordingId);
+    Task<string> UploadSyncSessionFileAsync(string jsonContent);
 }
