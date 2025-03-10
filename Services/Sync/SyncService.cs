@@ -69,12 +69,15 @@ public class SyncService(
             // Save the new record to the SyncedRecordings table.
             var syncedRecording = new SyncedRecording
             {
-                Id = id ?? string.Empty,
+                Id = id ?? string.Empty, // Call ID
                 DownloadUrl = downloadUrl,
                 StreamingUrl = streamingUrl,
-                RecordingDate = mediaStartedTime,
+                RecordingDate = mediaStartedTime, // Date & Time in UTC
                 CreatedAt = DateTime.UtcNow,
-                IsDeleted = false
+                IsDeleted = false,
+                Caller = result.CallingParty, // Caller
+                Callee = result.CalledParty, // Callee
+                DurationSeconds = (int)(result.MediaCompletedTime - mediaStartedTime).TotalSeconds // Duration
             };
 
             _dbContext.SyncedRecordings.Add(syncedRecording);
