@@ -87,7 +87,7 @@ string connection;
 if (builder.Environment.IsDevelopment())
 
 {
-    connection = builder.Configuration.GetConnectionString("LocalDefaultConnection") ??
+    connection = builder.Configuration.GetConnectionString("DefaultConnection") ??
                  throw new InvalidOperationException(
                      "Connection string 'DefaultConnection' not found.");
 }

@@ -108,7 +108,9 @@ public class SyncService(
             var searchFilters = new RecordingSearchFiltersDto
             {
                 StartDate = fromDate,
-                EndDate = toDate
+                EndDate = toDate,
+                PageOffset = 0,
+                PageSize = 1000000 // Retrieve all recordings in one go
             };
 
             // Export the recordings and obtain the list of newly synced recordings.
