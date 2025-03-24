@@ -71,6 +71,7 @@ public class SyncService(
             var syncedRecording = new SyncedRecording
             {
                 Id = id ?? string.Empty, // Call ID
+                RecordingGroupID = result.RecordingGroupingId, // Recording Group ID to check if recordings are part of the same call
                 DownloadUrl = downloadUrl,
                 StreamingUrl = streamingUrl,
                 RecordingDate = mediaStartedTime, // Date & Time in UTC

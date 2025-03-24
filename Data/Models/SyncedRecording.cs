@@ -11,6 +11,9 @@ public class SyncedRecording
     [MaxLength(50)]
     public string Id { get; set; } = null!; // Recording ID from Clarify Go
 
+    [MaxLength(50)]
+    public string RecordingGroupID { get; set; } // Recording Group ID
+    
     [Required]
     [MaxLength(512)] // Increased from implicit default to handle long URLs
     public string StreamingUrl { get; set; } = null!; // Azure Blob Storage URL
@@ -34,6 +37,8 @@ public class SyncedRecording
 
     [MaxLength(50)] // Matches SQL Size = 50
     public string Callee { get; set; } // Callee
+    
+    
 
     public int DurationSeconds { get; set; } // Duration in seconds for easier storage
 

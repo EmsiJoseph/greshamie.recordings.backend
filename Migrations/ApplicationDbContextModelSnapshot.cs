@@ -423,26 +423,26 @@ namespace backend.Migrations
                         new
                         {
                             Id = "1",
-                            ConcurrencyStamp = "5cbb853d-9c21-4809-a34f-165aaa76b416",
-                            CreatedAt = new DateTime(2025, 3, 10, 3, 42, 14, 653, DateTimeKind.Utc).AddTicks(7445),
+                            ConcurrencyStamp = "1d9a4b5e-84de-417d-acf4-ccfc2208ab6b",
+                            CreatedAt = new DateTime(2025, 3, 24, 2, 38, 14, 559, DateTimeKind.Utc).AddTicks(134),
                             Description = "Administrator role",
                             IsActive = true,
                             Level = 0,
                             Name = "Admin",
                             NormalizedName = "ADMIN",
-                            UpdatedAt = new DateTime(2025, 3, 10, 3, 42, 14, 653, DateTimeKind.Utc).AddTicks(7448)
+                            UpdatedAt = new DateTime(2025, 3, 24, 2, 38, 14, 559, DateTimeKind.Utc).AddTicks(139)
                         },
                         new
                         {
                             Id = "2",
-                            ConcurrencyStamp = "99317ff0-c1ba-451a-9bf2-109e539e2ba1",
-                            CreatedAt = new DateTime(2025, 3, 10, 3, 42, 14, 660, DateTimeKind.Utc).AddTicks(6229),
+                            ConcurrencyStamp = "8511bea3-3ea3-4ee7-9389-9842efd64a58",
+                            CreatedAt = new DateTime(2025, 3, 24, 2, 38, 14, 565, DateTimeKind.Utc).AddTicks(9241),
                             Description = "User role",
                             IsActive = true,
                             Level = 0,
                             Name = "User",
                             NormalizedName = "USER",
-                            UpdatedAt = new DateTime(2025, 3, 10, 3, 42, 14, 660, DateTimeKind.Utc).AddTicks(6235)
+                            UpdatedAt = new DateTime(2025, 3, 24, 2, 38, 14, 565, DateTimeKind.Utc).AddTicks(9247)
                         });
                 });
 
@@ -481,6 +481,11 @@ namespace backend.Migrations
 
                     b.Property<DateTime>("RecordingDate")
                         .HasColumnType("datetime");
+
+                    b.Property<string>("RecordingGroupID")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<string>("StreamingUrl")
                         .IsRequired()
@@ -576,13 +581,13 @@ namespace backend.Migrations
                         {
                             Id = "1",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "1d36401c-37d0-4562-90fa-d163a4062092",
+                            ConcurrencyStamp = "4411e630-54d9-49e2-8396-b5dd8c73d6dd",
                             EmailConfirmed = true,
                             LockoutEnabled = false,
                             NormalizedUserName = "GHIE-API",
-                            PasswordHash = "AQAAAAIAAYagAAAAEF714DWUJDbO2nSfJxKSkq6rkrcBwXSK26en2Ndy8truv2oF+VncQheJ0+ZgOtyzpQ==",
+                            PasswordHash = "AQAAAAIAAYagAAAAEM1NaG8fBHyGvqQOkJx+wTqz4m677Mllt635tKWyIb9v6459r7qIhiPqthoxeNm6wQ==",
                             PhoneNumberConfirmed = false,
-                            SecurityStamp = "2903826d-902a-4d98-94aa-7a034164e43d",
+                            SecurityStamp = "3ac15ac5-620f-40c0-ab26-eb4b44eb0c69",
                             TwoFactorEnabled = false,
                             UserName = "GHIE-API"
                         });
