@@ -77,6 +77,7 @@ namespace backend.Data
                 entity.ToTable("SyncedRecordings");
                 entity.HasKey(sr => sr.Id);
                 entity.Property(sr => sr.Id).HasMaxLength(50).IsRequired();
+                entity.Property(sr => sr.RecordingGroupID).HasMaxLength(50);
                 entity.Property(sr => sr.StreamingUrl).HasMaxLength(512).IsRequired();
                 entity.Property(sr => sr.DownloadUrl).HasMaxLength(512).IsRequired();
                 entity.Property(sr => sr.IsDeleted).IsRequired();
