@@ -1,4 +1,5 @@
 using System.Text;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using backend.Data;
 using backend.Data.Models;
@@ -121,7 +122,7 @@ public class SyncService(
             }
 
             // Serialize the synced recordings list to JSON.
-            var jsonOptions = new JsonSerializerOptions { WriteIndented = true };
+            var jsonOptions = new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping };
             var json = JsonSerializer.Serialize(syncedRecordings, jsonOptions);
 
             // Use the blob service to upload the JSON file.
