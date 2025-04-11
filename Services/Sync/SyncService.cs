@@ -59,6 +59,8 @@ public class SyncService(
 
             // Format the file name based on the recording date and ID.
             var fileName = $"{mediaStartedTime:yyyy/MM/dd}/{id}.mp3";
+            // Format the JSON file name based on the recording date and ID.
+            var jsonFileName = $"{mediaStartedTime:yyyy/MM/dd}/{id}.json";
 
             // Export the recording as an MP3 stream.
             await using var mp3Stream = await _historicRecordingsService.ExportMp3Async(id ?? string.Empty);
@@ -81,7 +83,29 @@ public class SyncService(
                 Callee = result.CalledParty, // Callee
                 DurationSeconds = (int)(result.MediaCompletedTime - mediaStartedTime).TotalSeconds // Duration
             };
+            
+            // Serialize the individual recording to JSON.
+            var jsonOptions = new JsonSerializerOptions 
+            { 
+                WriteIndented = true, 
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping 
+            };
+            var json = JsonSerializer.Serialize(syncedRecording, jsonOptions);
 
+            // Upload the JSON file to blob storage.
+            try
+            {
+                using var jsonStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+                await _blobStorageService.UploadFileAsync(jsonStream, _config["BlobStorage:ContainerName"], jsonFileName);
+                _logger.LogInformation($"Uploaded JSON metadata for recording {id} to {jsonFileName}");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, $"Failed to upload JSON metadata for recording {id} to {jsonFileName}. Continuing sync process.");
+                // Continue processing other recordings even if JSON upload fails.
+            }
+            
+            // Save the new record to the SyncedRecordings table.
             _dbContext.SyncedRecordings.Add(syncedRecording);
             await _dbContext.SaveChangesAsync();
 
