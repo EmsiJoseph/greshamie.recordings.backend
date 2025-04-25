@@ -82,6 +82,8 @@ public class SyncService(
                 Caller = result.CallingParty, // Caller
                 Callee = result.CalledParty, // Callee
                 DurationSeconds = (int)(result.MediaCompletedTime - mediaStartedTime).TotalSeconds // Duration
+                
+                
             };
             
             // Serialize the individual recording to JSON.
@@ -90,7 +92,7 @@ public class SyncService(
                 WriteIndented = true, 
                 Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping 
             };
-            var json = JsonSerializer.Serialize(syncedRecording, jsonOptions);
+            var json = JsonSerializer.Serialize(result, jsonOptions);
 
             // Upload the JSON file to blob storage.
             try
