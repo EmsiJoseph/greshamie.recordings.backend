@@ -37,8 +37,6 @@ public class SyncedRecording
 
     [MaxLength(50)] // Matches SQL Size = 50
     public string Callee { get; set; } // Callee
-    
-    
 
     public int DurationSeconds { get; set; } // Duration in seconds for easier storage
 
