@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using Asp.Versioning;
 using backend.ClarifyGoClasses;
 using backend.Constants;
@@ -48,24 +49,92 @@ public class RecordingController(
                                                                throw new ArgumentNullException(
                                                                    nameof(blobStorageService));
 
-    private async Task<List<RecordingDto>> MapRawRecordingToDto(
-        List<HistoricRecordingRaw> historicRecordingsRaw)
+  private async Task<List<RecordingDto>> MapRawRecordingToDto(List<HistoricRecordingRaw> historicRecordingsRaw)
     {
-        return await Task.FromResult(historicRecordingsRaw.Select(x => new RecordingDto
+        var parenthesesRegex = new Regex(@"\(([^)]+)\)", RegexOptions.IgnoreCase);
+
+        return await Task.FromResult(historicRecordingsRaw.Select(x =>
         {
-            Id = x.Id,
-            Caller = x.CallingParty,
-            Receiver = x.CalledParty,
-            StartDateTime = x.MediaStartedTime,
-            EndDateTime = x.MediaCompletedTime,
-            CallType = x.CallType != null
-                ? _context.CallTypes.FirstOrDefault(ct => ct.IdFromClarify == x.CallType)?.NormalizedName ??
-                  string.Empty
-                : string.Empty,
-            IsLive = false, // TODO: Change this to dynamic if we know the shape of the live recordings
-            DurationSeconds =
-                (int)(x.MediaCompletedTime - x.MediaStartedTime).TotalSeconds,
-            Recorder = x.RecorderId,
+            // Handle Caller and CallerName
+            string caller = x.CallingParty ?? string.Empty;
+            string callerName = caller;
+            if (string.IsNullOrEmpty(caller))
+            {
+                callerName = "Unknown";
+                _logger.LogWarning("Blank Caller for recording ID {Id}", x.Id);
+            }
+            else
+            {
+                var callerMatch = parenthesesRegex.Match(caller);
+                if (callerMatch.Success)
+                {
+                    callerName = callerMatch.Groups[1].Value.Trim();
+                }
+                // If no parentheses, copy the raw value (e.g., phone number)
+                else
+                {
+                    callerName = caller;
+                }
+            }
+
+            // Handle Callee and ReceiverName
+            string callee = x.CalledParty ?? string.Empty;
+            string receiverName = callee;
+            var receiverMatch = parenthesesRegex.Match(callee);
+            if (receiverMatch.Success)
+            {
+                if (callee.StartsWith("Meeting", StringComparison.OrdinalIgnoreCase))
+                {
+                    string fullName = receiverMatch.Groups[1].Value.Trim();
+                    if (string.IsNullOrEmpty(fullName))
+                    {
+                        receiverName = "Meeting (Unknown)";
+                        _logger.LogWarning("Empty name in Meeting format for recording ID {Id}", x.Id);
+                    }
+                    else
+                    {
+                        string firstName = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? fullName;
+                        receiverName = $"Meeting ({firstName})";
+                    }
+                }
+                else
+                {
+                    receiverName = receiverMatch.Groups[1].Value.Trim();
+                }
+            }
+            else if (callee.StartsWith("Meeting", StringComparison.OrdinalIgnoreCase))
+            {
+                receiverName = "Meeting (Unknown)";
+                _logger.LogWarning("Malformed Meeting format without parentheses for recording ID {Id}", x.Id);
+            }
+            else
+            {
+                // If no parentheses and not a Meeting, copy the raw value (e.g., phone number)
+                receiverName = callee;
+            }
+
+            // Handle case where Caller and Callee are the same
+            if (!string.IsNullOrEmpty(caller) && caller == callee)
+            {
+                receiverName = callerName;
+            }
+
+            return new RecordingDto
+            {
+                Id = x.Id,
+                Caller = caller,
+                Receiver = callee,
+                CallerName = callerName,
+                ReceiverName = receiverName,
+                StartDateTime = x.MediaStartedTime,
+                EndDateTime = x.MediaCompletedTime,
+                CallType = x.CallType != null
+                    ? _context.CallTypes.FirstOrDefault(ct => ct.IdFromClarify == x.CallType)?.NormalizedName ?? string.Empty
+                    : string.Empty,
+                IsLive = false,
+                DurationSeconds = (int)(x.MediaCompletedTime - x.MediaStartedTime).TotalSeconds,
+                Recorder = x.RecorderId,
+            };
         }).ToList());
     }
 
