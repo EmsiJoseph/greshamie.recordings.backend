@@ -3,8 +3,13 @@
 public class RecordingDto
 {
     public string? Id { get; set; }
-    public string? Caller { get; set; }
+    public string? Caller { get; set; } 
     public string? Receiver { get; set; }
+    
+    public string? CallerName { get; set; }
+    
+    public string? ReceiverName { get; set; }
+
     public DateTime StartDateTime { get; set; }
     public DateTime EndDateTime { get; set; }
     public string? CallType { get; set; }

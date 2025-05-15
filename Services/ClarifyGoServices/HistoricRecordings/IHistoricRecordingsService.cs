@@ -36,5 +36,7 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
         /// Call this when getting new credentials.
         /// </summary>
         void SetBearerToken(string token);
+        
+        Task<PagedResponseDto<HistoricRecordingSearchResult>> SearchProcessedRecordingsAsync(RecordingSearchFiltersDto searchFiltersDto);
     }
 }
