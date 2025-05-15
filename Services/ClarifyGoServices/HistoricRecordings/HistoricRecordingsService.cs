@@ -1,7 +1,9 @@
 using System.Net;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using backend.ClarifyGoClasses;
 using backend.Constants.ClarifyGo;
+using backend.Data.Models;
 using backend.DTOs;
 using backend.DTOs.Recording;
 using backend.Exceptions;
@@ -195,6 +197,243 @@ namespace backend.Services.ClarifyGoServices.HistoricRecordings
                 throw new ServiceException($"Unexpected error: {ex.Message}");
             }
         }
+        
+        public async Task<PagedResponseDto<HistoricRecordingSearchResult>> SearchProcessedRecordingsAsync(RecordingSearchFiltersDto searchFiltersDto)
+    {
+        try
+        {
+            await _tokenService.SetBearerTokenAsync(_httpClient);
+            var baseUrl = ClarifyGoApiEndpoints.HistoricRecordings.Search(searchFiltersDto.StartDate, searchFiltersDto.EndDate);
+            var queryString = BuildQueryParameters(searchFiltersDto);
+            var response = await _httpClient.GetAsync(baseUrl + queryString);
+
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+                throw new ServiceException("Unauthorized access to recording service", 401);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                throw new ServiceException($"Recording service error: {error}", (int)response.StatusCode);
+            }
+
+            var searchResultsObj = await response.Content.ReadFromJsonAsync<HistoricRecordingSearchResults>();
+            if (searchResultsObj == null)
+                throw new ServiceException("Invalid response from recording service", 502);
+
+            // Process recordings with regex
+            var parenthesesRegex = new Regex(@"\(([^)]+)\)", RegexOptions.IgnoreCase);
+            var numberWithNameRegex = new Regex(@"^(.+?)\s*\(([^)]*)\)$", RegexOptions.IgnoreCase);
+            var meetingRegex = new Regex(@"^Meeting\s*\(([^)]*)\)$", RegexOptions.IgnoreCase);
+            var numberOnlyRegex = new Regex(@"^\+\d+$");
+
+            var processedResults = searchResultsObj.SearchResults.Select(result =>
+            {
+                var rawRecording = result.HistoricRecording;
+                string callingParty = rawRecording.CallingParty ?? string.Empty;
+                string? callingPartyNumber = null;
+                if (string.IsNullOrEmpty(callingParty))
+                {
+                    callingParty = "Unknown";
+                }
+                else
+                {
+                    var numberMatch = numberWithNameRegex.Match(callingParty);
+                    if (numberMatch.Success)
+                    {
+                        callingPartyNumber = numberMatch.Groups[1].Value.Trim();
+                        callingParty = numberMatch.Groups[2].Value.Trim();
+                        if (string.IsNullOrEmpty(callingParty))
+                        {
+                            callingParty = "Unknown";
+                        }
+                    }
+                    else if (numberOnlyRegex.IsMatch(callingParty))
+                    {
+                        callingPartyNumber = callingParty;
+                        callingParty = callingParty;
+                    }
+                    else
+                    {
+                        var parenthesesMatch = parenthesesRegex.Match(callingParty);
+                        if (parenthesesMatch.Success)
+                        {
+                            callingParty = parenthesesMatch.Groups[1].Value.Trim();
+                        }
+                    }
+                }
+
+                string calledParty = rawRecording.CalledParty ?? string.Empty;
+                string? calledPartyNumber = null;
+                var meetingMatch = meetingRegex.Match(calledParty);
+                if (meetingMatch.Success)
+                {
+                    string name = meetingMatch.Groups[1].Value.Trim();
+                    calledParty = string.IsNullOrEmpty(name) ? "Meeting (Unknown)" : $"Meeting ({name})";
+                }
+                else
+                {
+                    var numberMatch = numberWithNameRegex.Match(calledParty);
+                    if (numberMatch.Success)
+                    {
+                        calledPartyNumber = numberMatch.Groups[1].Value.Trim();
+                        calledParty = numberMatch.Groups[2].Value.Trim();
+                        if (string.IsNullOrEmpty(calledParty))
+                        {
+                            calledParty = "Unknown";
+                        }
+                    }
+                    else if (numberOnlyRegex.IsMatch(calledParty))
+                    {
+                        calledPartyNumber = calledParty;
+                        calledParty = calledParty;
+                    }
+                    else if (calledParty.StartsWith("Meeting", StringComparison.OrdinalIgnoreCase))
+                    {
+                        calledParty = "Meeting (Unknown)";
+                    }
+                    else
+                    {
+                        var parenthesesMatch = parenthesesRegex.Match(calledParty);
+                        if (parenthesesMatch.Success)
+                        {
+                            calledParty = parenthesesMatch.Groups[1].Value.Trim();
+                        }
+                    }
+                }
+
+                if (!string.IsNullOrEmpty(rawRecording.CallingParty) && rawRecording.CallingParty == rawRecording.CalledParty)
+                {
+                    calledPartyNumber = callingPartyNumber;
+                    calledParty = callingParty;
+                }
+
+                var processedRecording = new ProcessedRecording
+                {
+                    AccountId = rawRecording.AccountId,
+                    PbxId = rawRecording.PbxId,
+                    PbxAccountEndpoints = rawRecording.PbxAccountEndpoints,
+                    MediaCompletedTime = rawRecording.MediaCompletedTime,
+                    AlertedTime = rawRecording.AlertedTime,
+                    ConnectedTime = rawRecording.ConnectedTime,
+                    DisconnectedTime = rawRecording.DisconnectedTime,
+                    MediaServerId = rawRecording.MediaServerId,
+                    RecorderClusterId = rawRecording.RecorderClusterId,
+                    RecordingGroupingId = rawRecording.RecordingGroupingId,
+                    DirectRecordingLink = rawRecording.DirectRecordingLink,
+                    Id = rawRecording.Id,
+                    RecorderId = rawRecording.RecorderId,
+                    PbxAccounts = rawRecording.PbxAccounts,
+                    CallType = rawRecording.CallType,
+                    CallingParty = callingParty,
+                    CalledParty = calledParty,
+                    State = rawRecording.State,
+                    Channel = rawRecording.Channel,
+                    MediaStartedTime = rawRecording.MediaStartedTime,
+                    IsHidden = rawRecording.IsHidden,
+                    CallingPartyNumber = callingPartyNumber,
+                    CalledPartyNumber = calledPartyNumber
+                };
+
+                return new HistoricRecordingSearchResult
+                {
+                    HistoricRecording = processedRecording,
+                    ScreenRecordingCount = result.ScreenRecordingCount,
+                    TagCount = result.TagCount,
+                    CommentCount = result.CommentCount,
+                    PciEventCount = result.PciEventCount,
+                    RecordingEvaluationCount = result.RecordingEvaluationCount
+                };
+            }).ToList();
+
+            var totalPages = searchResultsObj.TotalResults;
+
+            if (totalPages > 0)
+            {
+                var lastPageFilters = new RecordingSearchFiltersDto
+                {
+                    StartDate = searchFiltersDto.StartDate,
+                    EndDate = searchFiltersDto.EndDate,
+                    EarliestTimeOfDay = searchFiltersDto.EarliestTimeOfDay,
+                    LatestTimeOfDay = searchFiltersDto.LatestTimeOfDay,
+                    HasScreenRecording = searchFiltersDto.HasScreenRecording,
+                    HasPciComplianceEvents = searchFiltersDto.HasPciComplianceEvents,
+                    HasQualityEvaluation = searchFiltersDto.HasQualityEvaluation,
+                    FilterByRecordingEndTime = searchFiltersDto.FilterByRecordingEndTime,
+                    SearchUnallocatedDevices = searchFiltersDto.SearchUnallocatedDevices,
+                    SortDescending = searchFiltersDto.SortDescending,
+                    MinimumDurationSeconds = searchFiltersDto.MinimumDurationSeconds,
+                    MaximumDurationSeconds = searchFiltersDto.MaximumDurationSeconds,
+                    PageOffset = totalPages - 1,
+                    PageSize = searchFiltersDto.PageSize,
+                    PhoneNumber = searchFiltersDto.PhoneNumber,
+                    CallDirection = searchFiltersDto.CallDirection,
+                    DeviceNumber = searchFiltersDto.DeviceNumber,
+                    HuntGroupNumber = searchFiltersDto.HuntGroupNumber,
+                    AccountCode = searchFiltersDto.AccountCode,
+                    CallId = searchFiltersDto.CallId,
+                    CommentContains = searchFiltersDto.CommentContains,
+                    TagName = searchFiltersDto.TagName,
+                    BookmarkText = searchFiltersDto.BookmarkText,
+                    RecorderType = searchFiltersDto.RecorderType,
+                    RecorderId = searchFiltersDto.RecorderId,
+                    SortBy = searchFiltersDto.SortBy,
+                    RecordingGroupId = searchFiltersDto.RecordingGroupId
+                };
+
+                var lastPageQueryString = BuildQueryParameters(lastPageFilters);
+                var lastPageResponse = await _httpClient.GetAsync(baseUrl + lastPageQueryString);
+
+                if (lastPageResponse.IsSuccessStatusCode)
+                {
+                    var lastPageResults = await lastPageResponse.Content.ReadFromJsonAsync<HistoricRecordingSearchResults>();
+                    if (lastPageResults != null)
+                    {
+                        var lastPageCount = lastPageResults.SearchResults.Count;
+                        var fullPagesCount = (totalPages - 1) * (searchFiltersDto.PageSize ?? 0);
+                        var totalCount = fullPagesCount + lastPageCount;
+
+                        return new PagedResponseDto<HistoricRecordingSearchResult>
+                        {
+                            Items = processedResults,
+                            PageOffSet = searchFiltersDto.PageOffset,
+                            PageSize = searchFiltersDto.PageSize,
+                            TotalPages = totalPages,
+                            TotalCount = totalCount,
+                            HasNext = searchFiltersDto.PageOffset < totalPages - 1,
+                            HasPrevious = searchFiltersDto.PageOffset > 0
+                        };
+                    }
+                }
+            }
+
+            return new PagedResponseDto<HistoricRecordingSearchResult>
+            {
+                Items = processedResults,
+                PageOffSet = searchFiltersDto.PageOffset,
+                PageSize = searchFiltersDto.PageSize,
+                TotalPages = totalPages,
+                TotalCount = totalPages * (searchFiltersDto.PageSize ?? 0),
+                HasNext = searchFiltersDto.PageOffset < totalPages - 1,
+                HasPrevious = searchFiltersDto.PageOffset > 0
+            };
+        }
+        catch (HttpRequestException ex)
+        {
+            throw new ServiceException($"Network error: {ex.Message}", 503);
+        }
+        catch (JsonException ex)
+        {
+            throw new ServiceException($"Invalid response format: {ex.Message}", 502);
+        }
+        catch (ServiceException)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            throw new ServiceException($"Unexpected error: {ex.Message}");
+        }
+    }
 
         public async Task<bool> DeleteRecordingAsync(string recordingId)
         {

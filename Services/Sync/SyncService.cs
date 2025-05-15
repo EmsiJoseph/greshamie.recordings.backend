@@ -28,101 +28,98 @@ public class SyncService(
     private readonly IBlobStorageService _blobStorageService =
         blobStorageService ?? throw new ArgumentNullException(nameof(blobStorageService));
     private readonly IConfiguration _config = config ?? throw new ArgumentNullException(nameof(config));
-    /// <summary>
+    
+    // <summary>
     /// Exports recordings matching the search filters to blob storage and saves new SyncedRecording records.
     /// Throws an exception if an error occurs.
     /// </summary>
     private async Task<List<SyncedRecording>> ExportRecordingToBlob(RecordingSearchFiltersDto searchFilters)
-{
-    var syncedRecordings = new List<SyncedRecording>();
-
-    try
     {
-        var pagedResponse = await _historicRecordingsService.SearchRecordingsAsync(searchFilters);
-        var results = pagedResponse.Items;
-        foreach (var result in results)
+        var syncedRecordings = new List<SyncedRecording>();
+
+        try
         {
-            var (id, mediaStartedTime) = (result.Id, result.MediaStartedTime);
-
-            // If the recording already exists, skip it.
-            if (await _dbContext.SyncedRecordings.AnyAsync(r => r.Id == id))
+            var pagedResponse = await _historicRecordingsService.SearchProcessedRecordingsAsync(searchFilters);
+            var results = pagedResponse.Items;
+            foreach (var result in results)
             {
-                _logger.LogInformation($"Skipping already synced recording: {id}");
-                continue;
+                var (id, mediaStartedTime) = (result.HistoricRecording.Id, result.HistoricRecording.MediaStartedTime);
+
+                if (await _dbContext.SyncedRecordings.AnyAsync(r => r.Id == id))
+                {
+                    _logger.LogInformation("Skipping already synced recording: {Id}", id);
+                    continue;
+                }
+
+                if (mediaStartedTime == null)
+                {
+                    _logger.LogWarning("Skipping recording with missing MediaStartedTime: {Id}", id);
+                    continue;
+                }
+
+                var mp3FileName = $"{mediaStartedTime:yyyy/MM/dd}/{id}.mp3";
+                var jsonFileName = $"{mediaStartedTime:yyyy/MM/dd}/{id}.json";
+
+                await using var mp3Stream = await _historicRecordingsService.ExportMp3Async(id ?? string.Empty);
+                var downloadUrl = await _blobStorageService.UploadFileAsync(mp3Stream, _config["BlobStorage:ContainerName"], mp3FileName);
+                var streamingUrl = await _blobStorageService.StreamingUrlAsync(_config["BlobStorage:ContainerName"], mp3FileName);
+
+                // Map to ProcessedRawRecording
+                var processedRecording = new ProcessedRawRecording
+                {
+                    Recording = (ProcessedRecording)result.HistoricRecording, // Already processed
+                    ScreenRecordingCount = result.ScreenRecordingCount,
+                    TagCount = result.TagCount,
+                    CommentCount = result.CommentCount,
+                    PciEventCount = result.PciEventCount,
+                    RecordingEvaluationCount = result.RecordingEvaluationCount
+                };
+
+                var jsonOptions = new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                    Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+                };
+                var json = JsonSerializer.Serialize(processedRecording, jsonOptions);
+
+                try
+                {
+                    using var jsonStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+                    await _blobStorageService.UploadFileAsync(jsonStream, _config["BlobStorage:ContainerName"], jsonFileName);
+                    _logger.LogInformation("Uploaded JSON metadata for recording {Id} to {FileName}", id, jsonFileName);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to upload JSON metadata for recording {Id} to {FileName}", id, jsonFileName);
+                }
+
+                var syncedRecording = new SyncedRecording
+                {
+                    Id = id ?? string.Empty,
+                    RecordingGroupID = result.HistoricRecording.RecordingGroupingId,
+                    DownloadUrl = downloadUrl,
+                    StreamingUrl = streamingUrl,
+                    RecordingDate = mediaStartedTime,
+                    CreatedAt = DateTime.UtcNow,
+                    IsDeleted = false,
+                    Caller = result.HistoricRecording.CallingParty,
+                    Callee = result.HistoricRecording.CalledParty,
+                    DurationSeconds = (int)(result.HistoricRecording.MediaCompletedTime - mediaStartedTime).TotalSeconds
+                };
+
+                _dbContext.SyncedRecordings.Add(syncedRecording);
+                await _dbContext.SaveChangesAsync();
+                syncedRecordings.Add(syncedRecording);
             }
 
-            if (mediaStartedTime == null)
-            {
-                _logger.LogWarning($"Skipping recording with missing MediaStartedTime: {id}");
-                continue;
-            }
-
-            // Format the file name based on the recording date and ID.
-            var fileName = $"{mediaStartedTime:yyyy/MM/dd}/{id}.mp3";
-            // Format the JSON file name based on the recording date and ID.
-            var jsonFileName = $"{mediaStartedTime:yyyy/MM/dd}/{id}.json";
-
-            // Export the recording as an MP3 stream.
-            await using var mp3Stream = await _historicRecordingsService.ExportMp3Async(id ?? string.Empty);
-
-            // Upload the file and get both URLs from blob storage.
-            var downloadUrl = await _blobStorageService.UploadFileAsync(mp3Stream, _config["BlobStorage:ContainerName"], fileName);
-            var streamingUrl = await _blobStorageService.StreamingUrlAsync(_config["BlobStorage:ContainerName"], fileName);
-
-            // Save the new record to the SyncedRecordings table.
-            var syncedRecording = new SyncedRecording
-            {
-                Id = id ?? string.Empty, // Call ID
-                RecordingGroupID = result.RecordingGroupingId, // Recording Group ID to check if recordings are part of the same call
-                DownloadUrl = downloadUrl,
-                StreamingUrl = streamingUrl,
-                RecordingDate = mediaStartedTime, // Date & Time in UTC
-                CreatedAt = DateTime.UtcNow,
-                IsDeleted = false,
-                Caller = result.CallingParty, // Caller
-                Callee = result.CalledParty, // Callee
-                DurationSeconds = (int)(result.MediaCompletedTime - mediaStartedTime).TotalSeconds // Duration
-                
-                
-            };
-            
-            // Serialize the individual recording to JSON.
-            var jsonOptions = new JsonSerializerOptions 
-            { 
-                WriteIndented = true, 
-                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping 
-            };
-            var json = JsonSerializer.Serialize(result, jsonOptions);
-
-            // Upload the JSON file to blob storage.
-            try
-            {
-                using var jsonStream = new MemoryStream(Encoding.UTF8.GetBytes(json));
-                await _blobStorageService.UploadFileAsync(jsonStream, _config["BlobStorage:ContainerName"], jsonFileName);
-                _logger.LogInformation($"Uploaded JSON metadata for recording {id} to {jsonFileName}");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, $"Failed to upload JSON metadata for recording {id} to {jsonFileName}. Continuing sync process.");
-                // Continue processing other recordings even if JSON upload fails.
-            }
-            
-            // Save the new record to the SyncedRecordings table.
-            _dbContext.SyncedRecordings.Add(syncedRecording);
-            await _dbContext.SaveChangesAsync();
-
-            // Add to the session list.
-            syncedRecordings.Add(syncedRecording);
+            return syncedRecordings;
         }
-
-        return syncedRecordings;
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error exporting recordings to blob for search filters: StartDate={StartDate}, EndDate={EndDate}", searchFilters.StartDate, searchFilters.EndDate);
+            throw new Exception("Error exporting recordings to blob for search filters", ex);
+        }
     }
-    catch (Exception ex)
-    {
-        _logger.LogError(ex, "Error exporting recordings to blob for search filters: {@SearchFilters}", searchFilters);
-        throw new Exception("Error exporting recordings to blob for search filters", ex);
-    }
-}
 
     /// <summary>
     /// Synchronizes recordings between the specified dates.
